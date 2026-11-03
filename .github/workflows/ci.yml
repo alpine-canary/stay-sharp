@@ -1,0 +1,135 @@
+# Pull-request and main-branch checks (task T010, research R13).
+#
+# No AWS credentials in any job except `cdk-diff`, which uses a read-only role (task T018) and
+# only runs for pull requests from branches of this repository: GitHub gives fork pull requests
+# no OIDC token. Every third-party action is pinned to a commit SHA. No artefacts are uploaded.
+
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CDK_VERSION: "2.1147.0"
+
+jobs:
+  python:
+    name: api and infra (ruff, mypy, pytest)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      dynamodb:
+        image: amazon/dynamodb-local:3.3.2
+        ports:
+          - 8000:8000
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: "3.13"
+      - name: api - install
+        run: uv sync --directory api --locked
+      - name: api - lint
+        run: |
+          uv run --directory api ruff check .
+          uv run --directory api ruff format --check .
+      - name: api - types
+        run: uv run --directory api mypy
+      - name: api - unit and contract tests
+        run: uv run --directory api pytest -m "not integration"
+      - name: api - integration tests (DynamoDB Local)
+        # Exit code 5 means "no tests collected": allowed only until the first integration test
+        # lands (task T031); remove this exception then.
+        run: uv run --directory api pytest -m integration || [ $? -eq 5 ]
+      - name: api - models match the contract
+        run: uv run --directory api python scripts/gen_models.py
+      - name: infra - install
+        run: uv sync --directory infra --locked
+      - name: infra - lint
+        run: |
+          uv run --directory infra ruff check .
+          uv run --directory infra ruff format --check .
+      - name: infra - types
+        run: uv run --directory infra mypy
+      - name: infra - CDK assertion tests
+        run: uv run --directory infra pytest
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+      - name: infra - cdk synth (no credentials)
+        run: make synth
+
+  front:
+    name: front end (eslint, tsc, vitest, build)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: front/package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: front/pnpm-lock.yaml
+      - name: install
+        run: pnpm --dir front install --frozen-lockfile
+      - name: types generated from the contract are up to date
+        run: |
+          pnpm --dir front gen:api
+          git diff --exit-code -- front/src/api/schema.ts
+      - name: lint
+        run: pnpm --dir front lint
+      - name: types
+        run: pnpm --dir front typecheck
+      - name: unit tests
+        run: pnpm --dir front test
+      - name: build (no source maps)
+        run: |
+          pnpm --dir front exec vite build
+          if find front/dist -name '*.map' | grep -q .; then echo "source maps found"; exit 1; fi
+
+  cdk-diff:
+    name: cdk diff (read-only)
+    # Same-repository pull requests only, and only once the read-only role exists (task T018).
+    if: >-
+      github.event_name == 'pull_request' &&
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      vars.AWS_DIFF_ROLE_ARN != ''
+    needs: [python]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+      - name: install
+        run: uv sync --directory infra --locked
+      # The role assumption step (aws-actions/configure-aws-credentials pinned to a SHA) and
+      # `cdk diff` against dev and prod are added with task T018. The diff stays in this log;
+      # it is never posted to the pull request.
+      - name: pending
+        run: echo "cdk diff is enabled with task T018"
