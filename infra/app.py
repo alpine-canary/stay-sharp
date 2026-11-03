@@ -1,20 +1,93 @@
-"""Stay Sharp CDK app.
+"""Stay Sharp CDK app (task T045, research R13, R14).
 
-Stages ``dev`` and ``prod`` live in one AWS account dedicated to the project (constitution 1.0.1).
-The account is never written here: it comes from the SSO profile at deploy time
-(``CDK_DEFAULT_ACCOUNT``). Stacks are added from Phase 2 on (tasks T018 to T045).
+Stages ``dev`` and ``prod`` live in one AWS account dedicated to the project (constitution 1.0.1),
+with ``staysharp-<stage>-*`` names. The account is never written here: it comes from the SSO
+profile at deploy time (``CDK_DEFAULT_ACCOUNT``). Without credentials (pull-request CI, tests) a
+placeholder account is used so the templates still synthesize; nothing can be deployed that way.
+
+Stacks:
+- ``staysharp-account`` (eu-central-2): GitHub OIDC roles, fingerprint bucket. Once.
+- ``staysharp-edge`` (us-east-1): certificate for the public name and the USD 20 budget. Once,
+  deployed first, removed last.
+- per stage, in eu-central-2: ``-ops``, ``-data``, ``-api``, ``-web``. Only prod uses the public
+  name and certificate (cross-region reference); dev uses its CloudFront domain.
 """
 
+from __future__ import annotations
+
+import os
+from typing import Any
+
 import aws_cdk as cdk
+
+from stacks.account_stack import AccountStack
+from stacks.api_stack import ApiStack
+from stacks.data_stack import DataStack
+from stacks.edge_stack import SITE_DOMAIN, EdgeStack
+from stacks.ops_stack import OpsStack
+from stacks.web_stack import WebStack
 
 REGION = "eu-central-2"
 EDGE_REGION = "us-east-1"
 STAGES = ("dev", "prod")
+PLACEHOLDER_ACCOUNT = "000000000000"
 
 
-def build_app() -> cdk.App:
-    app = cdk.App()
+def _context(app: cdk.App, name: str) -> Any:
+    return app.node.try_get_context(name)
+
+
+def build_app(context: dict[str, Any] | None = None) -> cdk.App:
+    app = cdk.App(context=context)
     cdk.Tags.of(app).add("project", "stay-sharp")
+    account = os.environ.get("CDK_DEFAULT_ACCOUNT") or PLACEHOLDER_ACCOUNT
+    main_env = cdk.Environment(account=account, region=REGION)
+    edge_env = cdk.Environment(account=account, region=EDGE_REGION)
+
+    AccountStack(
+        app,
+        "staysharp-account",
+        env=main_env,
+        github_owner=_context(app, "githubOwner"),
+        description="Stay Sharp: GitHub OIDC roles, leak-guard bucket (once per account)",
+    )
+    edge = EdgeStack(
+        app,
+        "staysharp-edge",
+        env=edge_env,
+        cross_region_references=True,
+        description="Stay Sharp: us-east-1 resources (certificate, budget)",
+    )
+
+    launch_dates: dict[str, str | None] = _context(app, "launchDate") or {}
+    site_commit = _context(app, "siteCommit") or "initial"
+    for stage in STAGES:
+        prefix = f"staysharp-{stage}"
+        OpsStack(app, f"{prefix}-ops", stage=stage, env=main_env)
+        data = DataStack(app, f"{prefix}-data", stage=stage, env=main_env)
+        api = ApiStack(
+            app,
+            f"{prefix}-api",
+            stage=stage,
+            table=data.table,
+            pepper=data.pepper,
+            launch_date=launch_dates.get(stage),
+            env=main_env,
+        )
+        prod = stage == "prod"
+        web = WebStack(
+            app,
+            f"{prefix}-web",
+            stage=stage,
+            api_domain=api.api_domain,
+            site_commit=site_commit,
+            domain_name=SITE_DOMAIN if prod else None,
+            certificate=edge.certificate if prod else None,
+            env=main_env,
+            cross_region_references=prod,
+        )
+        if prod:
+            web.add_stack_dependency(edge)
     return app
 
 

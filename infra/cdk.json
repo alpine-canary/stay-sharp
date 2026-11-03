@@ -1,9 +1,24 @@
 {
   "app": "uv run python app.py",
   "requireApproval": "broadening",
-  "watch": { "exclude": ["tests", "cdk.out", ".venv"] },
+  "watch": {
+    "exclude": [
+      "tests",
+      "cdk.out",
+      ".venv"
+    ]
+  },
   "context": {
     "@aws-cdk/core:checkSecretUsage": true,
-    "@aws-cdk/core:target-partitions": ["aws"]
+    "@aws-cdk/core:target-partitions": [
+      "aws"
+    ],
+    "githubOwner": "alpine-canary",
+    "launchDate": {
+      "dev": "2026-11-01",
+      "prod": null
+    },
+    "siteCommit": "initial",
+    "@aws-cdk/core:defaultCrossStackReferences": "strong"
   }
 }
