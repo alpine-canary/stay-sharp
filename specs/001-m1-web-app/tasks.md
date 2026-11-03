@@ -82,7 +82,7 @@ dev. No user story can start before this phase ends.
 - [x] T026 [P] Implement `api/src/staysharp/domain/calendar.py` to pass T021
 - [x] T027 [P] Implement `api/src/staysharp/domain/grading.py` to pass T022; `SuspiciouslyFast` threshold 3 s, 5 s for `spot` and `logic` (FR-005d), returned as a flag, not applied to the grade
 - [x] T028 [P] Implement `api/src/staysharp/domain/views.py` (the only way a question leaves the server) to pass T023
-- [ ] T029 [P] Implement `api/src/staysharp/domain/cancellation.py` to pass T024
+- [x] T029 [P] Implement `api/src/staysharp/domain/cancellation.py` to pass T024
 
 ### Storage and AWS access
 
