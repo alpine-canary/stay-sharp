@@ -1,0 +1,891 @@
+<title>Stay Sharp</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one narrow column like a code-review pane. The question is the "diff", your pick is a yellow review flag, verdicts use review colours. */
+:root{
+  --bg:#EDF0F4; --surface:#FFFFFF; --ink:#141E30; --muted:#566377; --line:#D3D9E2;
+  --accent:#2A49D4; --accent-ink:#FFFFFF; --accent-soft:#E3E8FC;
+  --flag:#E9B10F; --flag-soft:#FFF3C7;
+  --good:#1B7A4B; --good-soft:#DCF2E6; --bad:#BE3328; --bad-soft:#FADFDB; --half:#9A6100; --half-soft:#FBEACB;
+  --code-bg:#F5F7FA; --gutter:#8792A3;
+  --display:"Bricolage Grotesque","Segoe UI",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0D121B; --surface:#151C28; --ink:#E6EBF3; --muted:#98A4B6; --line:#283244;
+  --accent:#8199FF; --accent-ink:#0D121B; --accent-soft:#1D2646;
+  --flag:#F2C230; --flag-soft:#372F12;
+  --good:#4CC28A; --good-soft:#143224; --bad:#FF7B6F; --bad-soft:#3B1B19; --half:#F0B44C; --half-soft:#382A11;
+  --code-bg:#101722; --gutter:#677387; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0D121B; --surface:#151C28; --ink:#E6EBF3; --muted:#98A4B6; --line:#283244;
+  --accent:#8199FF; --accent-ink:#0D121B; --accent-soft:#1D2646;
+  --flag:#F2C230; --flag-soft:#372F12;
+  --good:#4CC28A; --good-soft:#143224; --bad:#FF7B6F; --bad-soft:#3B1B19; --half:#F0B44C; --half-soft:#382A11;
+  --code-bg:#101722; --gutter:#677387; color-scheme:dark}
+
+body{background:var(--bg);color:var(--ink);font:16px/1.55 var(--body)}
+.wrap{max-width:720px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:grid;gap:20px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;line-height:1.1}
+p{margin:0}
+a{color:var(--accent)}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.top{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.mark{display:flex;align-items:center;gap:10px;font-family:var(--display);font-weight:800;font-size:24px;letter-spacing:-.01em;background:none;border:0;padding:0;cursor:pointer}
+.mark i{width:14px;height:22px;background:var(--flag);border-radius:3px;display:block}
+.chip{font:600 13px/1 var(--body);padding:8px 12px;border-radius:999px;background:var(--surface);border:1px solid var(--line);display:inline-flex;gap:6px;align-items:center;font-variant-numeric:tabular-nums}
+.chip b{font-family:var(--mono)}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;display:grid;gap:16px;min-width:0}
+.eyebrow{font:600 12px/1 var(--body);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.hero h1{font-size:clamp(40px,9vw,64px);font-weight:800;letter-spacing:-.02em}
+.hero .sub{color:var(--muted)}
+.tagline{font-family:var(--display);font-weight:600;font-size:19px}
+.decks{list-style:none;margin:0;padding:0;display:grid;gap:0;border-top:1px solid var(--line)}
+.decks li{display:grid;grid-template-columns:2.2em 1fr auto;gap:8px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line)}
+.decks .n{font-family:var(--mono);color:var(--muted);font-size:13px}
+.decks .d{color:var(--muted);font-size:14px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:10px;padding:12px 20px;font-weight:600;cursor:pointer}
+.btn[disabled]{opacity:.4;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line)}
+
+.grid14{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:8px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px;text-align:left;cursor:pointer;display:grid;gap:6px}
+.tile.today{border-color:var(--ink)}
+.tile .t1{font:600 14px var(--mono)}
+.tile .t2{font-size:12px;color:var(--muted)}
+.sq{display:flex;gap:3px;min-height:10px}
+.sq span{width:10px;height:10px;border-radius:2px;background:var(--line)}
+.s1{background:var(--good)!important}.s05{background:var(--half)!important}.s0{background:var(--bad)!important}
+
+.pips{display:flex;gap:6px}
+.pip{flex:1;height:6px;border-radius:3px;background:var(--line)}
+.pip.cur{background:var(--ink)}
+.qhead{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+.qtitle{font-size:22px;font-weight:600;font-family:var(--display);line-height:1.25}
+.hint{color:var(--muted);font-size:14px}
+
+.code{background:var(--code-bg);border:1px solid var(--line);border-radius:10px;overflow-x:auto;font:13.5px/1.65 var(--mono);padding-block:8px}
+.code .in{display:grid;min-width:max-content}
+.ln{display:flex;text-align:left;background:none;border:0;border-left:3px solid transparent;padding:0 14px 0 0;font:inherit;white-space:pre;cursor:pointer}
+.ln:hover{background:var(--accent-soft)}
+.ln .g{flex:none;width:2.8em;text-align:right;padding-right:12px;color:var(--gutter);user-select:none}
+.ln[aria-pressed="true"]{background:var(--flag-soft);border-left-color:var(--flag)}
+.ln.ok{background:var(--good-soft);border-left-color:var(--good)}
+.ln.ko{background:var(--bad-soft);border-left-color:var(--bad)}
+.ln[disabled]{cursor:default}
+pre.flow{margin:0;padding:6px 16px;white-space:pre}
+
+.opts{display:grid;gap:8px}
+.opt{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:start;text-align:left;width:100%;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:var(--surface);cursor:pointer;line-height:1.45}
+.opt .k{font:600 12px/1.9 var(--mono);color:var(--muted);border:1px solid var(--line);border-radius:5px;padding:0 6px}
+.opt:hover{border-color:var(--accent)}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.opt.ok{border-color:var(--good);background:var(--good-soft)}
+.opt.ko{border-color:var(--bad);background:var(--bad-soft)}
+.opt[disabled]{cursor:default}
+
+.fb{border-left:4px solid var(--line);background:var(--code-bg);padding:14px 16px;border-radius:0 10px 10px 0;display:grid;gap:8px}
+.fb.v1{border-color:var(--good)}.fb.v05{border-color:var(--half)}.fb.v0{border-color:var(--bad)}
+.fb .verdict{font-family:var(--display);font-weight:800;font-size:18px}
+.v1 .verdict{color:var(--good)}.v05 .verdict{color:var(--half)}.v0 .verdict{color:var(--bad)}
+.src{font-size:14px;color:var(--muted)}
+
+.score{display:flex;gap:24px;flex-wrap:wrap;align-items:baseline}
+.score .big{font:800 56px/1 var(--display);font-variant-numeric:tabular-nums}
+.score .lab{color:var(--muted);font-size:14px}
+.share{font:14px/1.6 var(--mono);background:var(--code-bg);border:1px solid var(--line);border-radius:10px;padding:12px 14px;white-space:pre-wrap;margin:0;user-select:all}
+.recap{list-style:none;margin:0;padding:0;display:grid;gap:0;border-top:1px solid var(--line)}
+.recap li{display:grid;grid-template-columns:12px 1fr;gap:12px;align-items:baseline;padding:10px 0;border-bottom:1px solid var(--line)}
+.recap .sq1{width:12px;height:12px;border-radius:3px;background:var(--line);transform:translateY(1px)}
+.recap .dk{color:var(--muted);font-size:13px}
+.foot{color:var(--muted);font-size:13px;text-align:center}
+.toast{color:var(--good);font-size:14px;font-weight:600}
+@media (prefers-reduced-motion: no-preference){.opt,.ln,.tile,.btn{transition:background-color .12s,border-color .12s}}
+</style>
+
+<div class="wrap" id="app"></div>
+
+<script>
+"use strict";
+const START = "2026-10-23";
+const DAYS = 14;
+const DECKS = {
+  spot:   { name: "Spot the bug",      desc: "Tap the worst line, say what's wrong" },
+  better: { name: "Could do better",   desc: "Working code, one weakness" },
+  fail:   { name: "What if it fails?", desc: "Twice, never, or five times" },
+  acr:    { name: "Acronym or tool",   desc: "The words engineers use" },
+  news:   { name: "AI this week",      desc: "Dated, with its source" }
+};
+
+/* ---------- Questions (answer = index in choices; spot questions also have lines) ---------- */
+const SPOT = [
+{ id:"spot01", lang:"python", lines:[4],
+  code:String.raw`orders = json.load(open("orders.json"))
+for order in orders:
+    try:
+        requests.post(URL, json=order)
+        print("ok", order["id"])
+    except Exception as e:
+        print("failed", e)
+print("All orders sent")`,
+  choices:["requests doesn't raise on 4xx/5xx, so a 500 still prints \"ok\"","json.load can't read a top-level list","print() isn't safe inside a try block","The loop should use enumerate()"], answer:0,
+  explain:"The worst defect is the one that lies: a rejected order counts as sent. Check the response (raise_for_status), add a timeout, an Idempotency-Key so a rerun doesn't duplicate orders, collect the failures and exit non-zero. Line 8 also says \"All orders sent\" whatever happened." },
+{ id:"spot02", lang:"python", lines:[2,3],
+  code:String.raw`def find_user(cur, email):
+    sql = f"SELECT id, name FROM users WHERE email = '{email}'"
+    cur.execute(sql)
+    return cur.fetchone()`,
+  choices:["fetchone() returns a list, not a row","SQL injection: the e-mail is pasted into the query text","f-strings are too slow for SQL","The e-mail should be lower-cased first"], answer:1,
+  explain:"An e-mail like x' OR '1'='1 changes the query. Pass values as parameters: cur.execute(\"... WHERE email = %s\", (email,)). The driver escapes them, and the query plan can be reused." },
+{ id:"spot03", lang:"python", lines:[2,4,5],
+  code:String.raw`def total_with_vat(items):
+    total = 0.0
+    for it in items:
+        total += it["price"] * it["qty"]
+    return round(total * 1.081, 2)`,
+  choices:["Swiss VAT is 7.7%, not 8.1%","round() needs 3 digits for francs","Money is held in binary floats, so amounts drift by fractions of a centime","items could be a tuple"], answer:2,
+  explain:"0.1 + 0.2 != 0.3 in binary floats. Use Decimal (or integer centimes), round once with an explicit rule (ROUND_HALF_UP, 5 centimes in CHF), and keep the currency with every amount. Swiss standard VAT has been 8.1% since 2024." },
+{ id:"spot04", lang:"python", lines:[5,6],
+  code:String.raw`def handler(event, context):
+    for record in event["Records"]:
+        try:
+            process(json.loads(record["body"]))
+        except Exception:
+            logger.exception("failed")
+    return {"statusCode": 200}`,
+  choices:["Failures are logged and swallowed: the batch counts as a success, SQS deletes it, failed messages never reach the DLQ","An SQS handler must return statusCode 202","json.loads should be json.load","logger.exception doesn't record the stack trace"], answer:0,
+  explain:"A logged error isn't a handled error. Collect the failed messageIds and return {\"batchItemFailures\": [...]} (ReportBatchItemFailures), so only those return to the queue and, after maxReceiveCount, land in the DLQ with an alarm." },
+{ id:"spot05", lang:"php", lines:[2],
+  code:String.raw`$id = $db->insert('submissions', $data);
+mail($to, '[New request]', $body);
+http_response_code(200);
+echo json_encode(['status' => 'sent', 'id' => $id]);`,
+  choices:["http_response_code() must come before the insert","mail()'s return value is ignored, so the visitor sees \"sent\" even when no e-mail left","json_encode can't encode integers","mail() needs a fifth parameter"], answer:1,
+  explain:"Silent mail failures can last weeks. At minimum check the result and log it; better, write the e-mail to an outbox table in the same transaction as the submission and send it from a job that retries and alerts." },
+{ id:"spot06", lang:"python", lines:[2,6],
+  code:String.raw`def fetch(url):
+    while True:
+        try:
+            return requests.get(url, timeout=5).json()
+        except requests.RequestException:
+            continue`,
+  choices:["timeout=5 is too long","It retries forever, instantly, with no limit and no backoff","You can't return .json() directly","requests.RequestException doesn't exist"], answer:1,
+  explain:"During an outage this hammers the server and never gives up. Cap the attempts, use exponential backoff with jitter, retry only temporary errors (timeouts, 429, 5xx), then raise so the caller or the DLQ takes over." },
+{ id:"spot07", lang:"typescript", lines:[2],
+  code:String.raw`export const handler = async (event) => {
+  console.log("event", JSON.stringify(event));
+  const input = JSON.parse(event.body);
+  const user = await createUser(input.email, input.password);
+  return { statusCode: 201, body: JSON.stringify({ id: user.id }) };
+};`,
+  choices:["201 is the wrong status for a creation","JSON.parse must be awaited","It logs the whole request, password and personal data included, into CloudWatch","An async handler can't return an object"], answer:2,
+  explain:"Logs are copied, exported and read by many people. Log ids and outcomes, never bodies, passwords, tokens or e-mails. Set a retention period on the log group too." },
+{ id:"spot08", lang:"python", lines:[2,3,4],
+  code:String.raw`def reserve_seat(db, event_id, user_id):
+    taken = db.scalar("SELECT COUNT(*) FROM seats WHERE event_id = %s", event_id)
+    if taken < 40:
+        db.execute("INSERT INTO seats (event_id, user_id) VALUES (%s, %s)", event_id, user_id)
+        return True
+    return False`,
+  choices:["The %s placeholders allow SQL injection","Two requests can both read 39 and both insert, so 41 seats get sold","COUNT(*) is slower than COUNT(id)","It should return the seat id"], answer:1,
+  explain:"Read-then-write without a lock is a race. Lock the event row (SELECT ... FOR UPDATE in a transaction), or use a conditional write: UPDATE events SET seats_left = seats_left - 1 WHERE id = %s AND seats_left > 0, and check the affected row count. The placeholders are fine: they're parameters." },
+{ id:"spot09", lang:"python", lines:[2,3],
+  code:String.raw`def is_expired(contract):
+    end = datetime.strptime(contract["end"], "%Y-%m-%d %H:%M")
+    return datetime.now() > end`,
+  choices:["strptime can't parse minutes","It should use >=","datetime.now() is deprecated","Naive datetimes: the server clock (often UTC) is compared with a Zurich local time, so contracts expire 1 to 2 hours off"], answer:3,
+  explain:"Attach the zone: parse with ZoneInfo(\"Europe/Zurich\"), compare with datetime.now(timezone.utc). Store instants in UTC, show them in local time. In energy, delivery periods and DST changeovers make this a real money bug." },
+{ id:"spot10", lang:"python", lines:[2],
+  code:String.raw`s3 = boto3.client("s3")
+resp = s3.list_objects_v2(Bucket="archive")
+for obj in resp["Contents"]:
+    backup(obj["Key"])`,
+  choices:["list_objects_v2 returns at most 1,000 keys per call, so without a paginator the rest are silently skipped","It should use boto3.resource","The key field is lower-case \"key\"","Bucket names must be upper-case"], answer:0,
+  explain:"Use s3.get_paginator(\"list_objects_v2\") and loop over the pages. Also: \"Contents\" is missing when the bucket is empty, so resp[\"Contents\"] raises KeyError." },
+{ id:"spot11", lang:"php", lines:[2],
+  code:String.raw`$expected = hash_hmac('sha256', $formId . $ts, $appKey);
+if ($_POST['token'] == $expected) {
+    accept_submission($_POST);
+}`,
+  choices:["SHA-256 is too weak for an HMAC","hash_hmac's arguments are in the wrong order","Compare with hash_equals(): == is loose and not constant-time","$_POST can't carry tokens"], answer:2,
+  explain:"hash_equals() compares in constant time and without PHP's type juggling. Also check that $ts is recent and that the token is used once, or it can be replayed." },
+{ id:"spot12", lang:"python", lines:[2],
+  code:String.raw`def chunks(items, size):
+    return [items[i:i + size] for i in range(0, len(items) - size, size)]`,
+  choices:["Slicing copies the list, too slow","size must be a power of two","The range stops too early: 25 items in chunks of 10 gives 2 chunks and drops the last 5","A list comprehension can't return lists"], answer:2,
+  explain:"range(0, 15, 10) yields 0 and 10 only. It should be range(0, len(items), size). The test that catches it: a length that isn't a multiple of size, and an exact multiple." },
+{ id:"spot13", lang:"python", lines:[1],
+  code:String.raw`def add_tag(tag, tags=[]):
+    tags.append(tag)
+    return tags`,
+  choices:["The default list is created once and shared between calls, so tags leak from one call into the next","append returns None, so tags becomes None","tag must be a string","Lists aren't allowed as default arguments"], answer:0,
+  explain:"Default values are evaluated once, when the function is defined. Use tags=None, then tags = [] if tags is None else tags." },
+{ id:"spot14", lang:"python", lines:[3],
+  code:String.raw`def handle_payment(msg):
+    order = db.get_order(msg["order_id"])
+    db.execute("UPDATE orders SET paid = paid + %s WHERE id = %s", msg["amount"], order.id)
+    send_receipt(order.email)`,
+  choices:["%s should be ?","send_receipt should run first","get_order should be in a try block","Not idempotent: if SQS delivers the message twice, the amount is added twice and two receipts go out"], answer:3,
+  explain:"SQS is at-least-once. Record the payment by its payment id with a unique key (or a DynamoDB conditional write), add the amount only when that insert succeeds, and send the receipt from that same decision." }
+];
+
+const BETTER = [
+{ id:"bet01", lang:"python", prompt:"2,000 bookings means 2,001 queries. The best improvement?",
+  code:String.raw`bookings = db.query("SELECT * FROM bookings WHERE day = %s", day)
+for b in bookings:
+    hotel = db.query_one("SELECT name FROM hotels WHERE id = %s", b.hotel_id)
+    print(b.ref, hotel.name)`,
+  choices:["Fetch the hotels in one query: a JOIN, or WHERE id IN (...)","Put a cache in front of MySQL","Run the loop in 4 threads","Select only the name column"], answer:0,
+  explain:"The N+1 pattern: one query for the list, then one per row. A JOIN returns everything in one round trip. Threads and caches hide the cost without removing it." },
+{ id:"bet02", lang:"python", prompt:"It passes every test. What do you add first before production?",
+  code:String.raw`def get_rates(hotel_id):
+    r = requests.get(f"{SUPPLIER}/rates/{hotel_id}")
+    r.raise_for_status()
+    return r.json()`,
+  choices:["A User-Agent header","A timeout, for example timeout=(3, 10)","Switch to urllib","Keep the JSON in a global variable"], answer:1,
+  explain:"requests waits forever by default. One hung supplier blocks the worker, and the queue behind it piles up. Connect and read timeouts first, then retries with backoff." },
+{ id:"bet03", lang:"python", prompt:"Retries with backoff: a good start. The main weakness?",
+  code:String.raw`for attempt in range(5):
+    try:
+        return api.create_invoice(data)
+    except Exception:
+        time.sleep(2 ** attempt)`,
+  choices:["The delay grows too fast","5 attempts is too few","It retries everything, including a 400 \"invalid data\" that will never succeed, then returns None silently","time.sleep wastes CPU"], answer:2,
+  explain:"Retry only temporary failures (timeouts, 429, 5xx), add jitter, raise after the last attempt. And send an idempotency key: create_invoice may have succeeded just before the timeout." },
+{ id:"bet04", lang:"python", prompt:"The error is re-raised: good. What makes the next incident faster to solve?",
+  code:String.raw`def handle(msg):
+    try:
+        save(msg)
+    except DbError as e:
+        print("save failed", e)
+        raise`,
+  choices:["Print the whole message body","Log at DEBUG level","Remove the print, the stack trace is enough","A structured log with the message id and booking reference, and no personal data"], answer:3,
+  explain:"At 2 a.m. you search logs by id. JSON logs with a correlation id (message id, booking ref) let you follow one item through every service. Ids, not content." },
+{ id:"bet05", lang:"python", prompt:"This Lambda handles 50 requests a second. An easy improvement?",
+  code:String.raw`def handler(event, context):
+    s3 = boto3.client("s3")
+    table = boto3.resource("dynamodb").Table("Bookings")
+    ...`,
+  choices:["Create the clients once, outside the handler, so warm invocations reuse them","Raise memory to 10 GB","Put the function in a VPC","Call S3 through API Gateway"], answer:0,
+  explain:"Code outside the handler runs once per execution environment and is reused by warm invocations. Creating clients on every call adds latency and new connections." },
+{ id:"bet06", lang:"python", prompt:"The contracts table has 3 million rows.",
+  code:String.raw`rows = db.query("SELECT * FROM contracts")
+active = [r for r in rows if r.status == "active" and r.customer_id == cid]`,
+  choices:["Use a generator instead of a list","Filter in SQL (WHERE customer_id = %s AND status = 'active') with an index on customer_id","Sort the rows first","Dump the table to a file once a day"], answer:1,
+  explain:"Let the database do what it's built for: filter with an index, return only what you need. Moving 3 million rows to Python for a handful is slow and memory-hungry." },
+{ id:"bet07", lang:"python", prompt:"This is in a repository the whole team uses.",
+  code:String.raw`client = anthropic.Anthropic(api_key="sk-ant-api03-...")`,
+  choices:["Move the key to a .env file committed with the code","Base64-encode it","Rotate the key now, then read it at runtime from Secrets Manager or a deploy-time environment variable","Make the repository private"], answer:2,
+  explain:"Once committed, a key lives in git history: rotate it first. On AWS, Bedrock needs no key at all: the function's IAM role grants access." },
+{ id:"bet08", lang:"sql", prompt:"This runs for every incoming e-mail.",
+  code:String.raw`SELECT id, status FROM bookings WHERE supplier_ref = 'NS-88412';
+-- 2.8 million rows, 1.9 s`,
+  choices:["Add LIMIT 1","Move to a bigger instance","Add an index on supplier_ref, ideally UNIQUE","Use SELECT * to warm the cache"], answer:2,
+  explain:"Without an index MySQL scans every row. A unique index turns it into a lookup of a few milliseconds and also blocks duplicate references at the database." },
+{ id:"bet09", lang:"python", prompt:"export.csv is 6 GB. The container has 2 GB of memory.",
+  code:String.raw`with open("export.csv") as f:
+    lines = f.read().splitlines()
+for line in lines:
+    load(line)`,
+  choices:["Use f.readlines() instead","Iterate over the file object (or csv.reader on it) so only one line is in memory at a time","Compress the file","Add swap space"], answer:1,
+  explain:"Stream it: for row in csv.reader(f). Memory stays flat whatever the file size. Then batch the loads (e.g. 1,000 rows per insert) for speed." },
+{ id:"bet10", lang:"python", prompt:"40 suppliers, about 800 ms each: a search takes 32 seconds.",
+  code:String.raw`results = []
+for s in suppliers:
+    results.append(s.search(query))`,
+  choices:["Drop the 20 slowest suppliers","Cache every result forever","Use a faster CPU","Call them concurrently, with a concurrency limit and a timeout per call, and return what arrived in time"], answer:3,
+  explain:"The calls wait on the network, not the CPU. Concurrent calls take about as long as the slowest one; the per-call timeout caps that; the limit protects small suppliers from being flooded." },
+{ id:"bet11", lang:"python", prompt:"Two copies of this worker run, for availability.",
+  code:String.raw`while True:
+    jobs = db.query("SELECT * FROM jobs WHERE status = 'new'")
+    for j in jobs:
+        run(j)
+    time.sleep(1)`,
+  choices:["Sleep 5 seconds instead of 1","Run only one worker","Claim each job atomically before running it (SELECT ... FOR UPDATE SKIP LOCKED, or an UPDATE ... WHERE status = 'new'), or use a queue","Add an index on status"], answer:2,
+  explain:"Both workers read the same new jobs and run them twice. Claim first, then run; or use SQS, which hides a message from other consumers while one works on it." },
+{ id:"bet12", lang:"python", prompt:"An agent reads customer e-mails and moves bookings.",
+  code:String.raw`resp = client.messages.create(model=MODEL, max_tokens=1024,
+    messages=[{"role": "user", "content": email_body}])
+data = json.loads(resp.content[0].text)
+update_booking(data["booking_ref"], data["new_date"])`,
+  choices:["Raise max_tokens","Use a bigger model","Ask the model to double-check","Validate the output against a schema, check the booking and date are real, treat the e-mail as untrusted, and have a person approve the change"], answer:3,
+  explain:"The model proposes, code verifies, a person decides. An e-mail can contain instructions (prompt injection), and a model can return a valid-looking but wrong reference." },
+{ id:"bet13", lang:"python", prompt:"What's wrong with this test?",
+  code:String.raw`def test_total(mocker):
+    mocker.patch("billing.compute_total", return_value=100)
+    assert billing.compute_total([50, 50]) == 100`,
+  choices:["It mocks the very function it tests, so it can never fail","It should use unittest","100 should be 100.0","It needs a fixture for the list"], answer:0,
+  explain:"Test the real function; mock only the boundaries (database, network, clock). Add the failure cases too: empty list, negative amounts, rounding." },
+{ id:"bet14", lang:"python", prompt:"Prices change several times a day.",
+  code:String.raw`_rates = {}
+def rate(hotel_id):
+    if hotel_id not in _rates:
+        _rates[hotel_id] = supplier.get_rate(hotel_id)
+    return _rates[hotel_id]`,
+  choices:["Give each entry an expiry (TTL) that matches how fast prices change, and confirm the live price before booking","Use a list instead of a dict","Clear the cache when memory is full","Write it to a file"], answer:0,
+  explain:"Never refreshed, never bounded: stale prices for as long as the process lives, and memory grows. A stale price that gets booked is a real loss." }
+];
+
+const FAIL = [
+{ id:"fail01", prompt:"The Lambda does the INSERT and sends the e-mail, then hits its timeout before returning. What happens next?",
+  code:"SQS ─► Lambda (timeout 30 s) ─► INSERT booking ─► send confirmation e-mail",
+  choices:["The message is lost","The message becomes visible again and runs a second time: a duplicate booking and a second e-mail, unless the consumer is idempotent","SQS detects the timeout and skips the message","Lambda retries only the e-mail"], answer:1,
+  explain:"SQS deletes a message only after a successful return. Assume every consumer may run twice: an idempotency key with a conditional write (Powertools idempotency), or a unique constraint." },
+{ id:"fail02", prompt:"A malformed message fails every time. What happens after the third failed receive?",
+  code:"SQS queue (maxReceiveCount = 3) ─► Lambda ─► fails\n          └─ redrive policy ─► DLQ",
+  choices:["SQS deletes it","It moves to the dead-letter queue, where it waits for a fix and a redrive","It's retried forever","Lambda disables the trigger"], answer:1,
+  explain:"The DLQ keeps poison messages out of the way so the rest flows. It only helps if someone looks: an alarm on its depth, and a documented redrive." },
+{ id:"fail03", prompt:"Record 7 of a batch of 10 raises an exception. The function doesn't use partial batch responses. What happens?",
+  code:"SQS batch of 10 ─► Lambda ─► record 7 raises",
+  choices:["Only record 7 is retried","Record 7 is dropped","All 10 come back, so the 9 successful records run again","The batch is split in two automatically"], answer:2,
+  explain:"With ReportBatchItemFailures the function returns the ids that failed and only those return. Either way, consumers must be idempotent." },
+{ id:"fail04", prompt:"The supplier stops answering but keeps the connection open. The client sets no timeout.",
+  code:"queue ─► worker ─► supplier API ─► (no answer)",
+  choices:["The worker waits indefinitely, and everything behind it in the queue waits too","The worker gets an error after 30 seconds","The OS cancels the request after a minute","The queue skips to the next job"], answer:0,
+  explain:"One hung call can block a whole queue for hours. Every external call needs a timeout, and every job a time limit." },
+{ id:"fail05", prompt:"The commit succeeds, then the publish fails. What's the state, and the standard fix?",
+  code:"1. INSERT order   (committed)\n2. publish \"OrderCreated\" to the queue   ✗ fails",
+  choices:["Both are rolled back automatically","The queue retries the publish by itself","The order exists but nothing downstream hears about it; fix it with a transactional outbox","MySQL undoes the INSERT"], answer:2,
+  explain:"Write the event to an outbox table in the same transaction as the order; a relay publishes it and marks it sent. The relay may publish twice, so consumers stay idempotent." },
+{ id:"fail06", prompt:"The new version has a parsing bug. It catches it and reports batch item failures. What does the canary do?",
+  code:"CodeDeploy: 10% of traffic ─► new Lambda version, 5 minutes\ncanary alarm ─► Lambda \"Errors\" metric",
+  choices:["Catches it and rolls back","Passes it; the bug shows only later, as the DLQ fills","Blocks the deploy","Doubles the Errors metric"], answer:1,
+  explain:"Errors counts exceptions that escape the handler. Gate the canary on the business signal too: failed records, age of the oldest message, DLQ depth." },
+{ id:"fail07", prompt:"An API comes back after 2 minutes down. 5,000 clients retry exactly every second.",
+  code:"5,000 clients ─► retry every 1.0 s ─► API (just restarted)",
+  choices:["Fine, it's back up","Retry every 0.5 s to catch up faster","Turn retries off","They hit it all at once and can knock it down again; use exponential backoff with jitter"], answer:3,
+  explain:"Synchronised retries make a thundering herd. Backoff spreads them over time; jitter (randomness) stops clients from lining up." },
+{ id:"fail08", prompt:"You deduplicate on the e-mail Message-ID. The client resends \"cancel booking 4521\" an hour later.",
+  code:"e-mail 1: cancel 4521   Message-ID <a1@...>\ne-mail 2: cancel 4521   Message-ID <b7@...>",
+  choices:["The second e-mail is skipped","It's a new e-mail with a new Message-ID, so it's processed again; deduplicate on a business key (sender, booking, request type) and make the cancellation idempotent","SQS catches it","The mail server rejects it"], answer:1,
+  explain:"Two kinds of duplicate: the same message delivered twice (key: Message-ID) and the same request sent twice (key: what it asks for). Attach the second to the existing case; never confirm twice." },
+{ id:"fail09", prompt:"Your DLQ has held 214 messages for 9 days. Nobody knew. What was missing?",
+  code:"DLQ ─► 214 messages ─► (silence)",
+  choices:["A bigger DLQ","More retries before the DLQ","An alarm on DLQ depth above 0, a redrive procedure, and retention set to the 14-day maximum","A shorter retention period"], answer:2,
+  explain:"Messages expire (4 days by default, 14 at most), and the clock keeps the original enqueue time. Without an alarm, a DLQ is where data goes to die quietly." },
+{ id:"fail10", prompt:"The API answers 429 Too Many Requests with a Retry-After: 30 header.",
+  code:"worker ─► partner API ─► 429, Retry-After: 30",
+  choices:["Retry immediately","Wait at least as long as Retry-After, slow the whole worker down, and leave the message in the queue","Treat it as a permanent failure and drop it","Open more connections"], answer:1,
+  explain:"A 429 is temporary and polite: the partner tells you when to come back. Slow the shared rate (one governor for all workers), don't just delay one request." },
+{ id:"fail11", prompt:"One worker on Fargate reads the queue and calls the supplier at a fixed rate. It crashes mid-message.",
+  code:"SQS ─► 1 Go worker (ECS service, desired count 1) ─► supplier",
+  choices:["The message is lost","The queue is emptied","SQS stops accepting messages","The message reappears after its visibility timeout and ECS starts a new task: no loss, but the message may run twice"], answer:3,
+  explain:"The queue holds the work, the service restarts the worker. The single worker is a deliberate rate limiter; its weakness is a pause, not data loss, as long as processing is idempotent." },
+{ id:"fail12", prompt:"Your RDS MySQL is Single-AZ. Its Availability Zone has an outage.",
+  code:"app ─► RDS MySQL (Single-AZ, eu-central-2a)",
+  choices:["Downtime until the zone recovers or you restore a snapshot elsewhere; Multi-AZ adds a standby with automatic failover","Automatic failover in about a minute","A read replica takes over writes on its own","Nothing: RDS is serverless"], answer:0,
+  explain:"Multi-AZ keeps a synchronous standby in another zone and fails over automatically. Read replicas need a manual (or scripted) promotion." },
+{ id:"fail13", prompt:"Product pages read prices from Redis and fall back to MySQL. Redis restarts empty at peak time.",
+  code:"page ─► Redis (empty) ─► miss ─► MySQL",
+  choices:["Nothing changes","Every request hits MySQL at once, a cache stampede that can take the database down","Redis reloads everything from disk instantly","Pages show yesterday's prices"], answer:1,
+  explain:"Protect the database: one request rebuilds a key while others wait (request coalescing), limits on the fallback path, and a warm-up before taking traffic." },
+{ id:"fail14", prompt:"The new code reads a new column. The migration that adds it runs after the switch.",
+  code:"deploy code v2 (reads bookings.channel) ─► then run migration",
+  choices:["MySQL creates the column on first read","The ORM retries until it exists","Errors until the migration runs; run backward-compatible migrations first, then the code (expand, then contract)","Only writes fail"], answer:2,
+  explain:"Expand (add the column, nullable), deploy code that uses it, then contract (remove the old one) later. Each step must work with the previous version, so rollback stays possible." }
+];
+
+const ACR = [
+{ id:"acr01", prompt:"What does a DLQ hold?", choices:["Messages that failed processing too many times","Messages scheduled for later delivery","Duplicate messages","Messages from a deleted queue"], answer:0,
+  explain:"Dead-letter queue: after maxReceiveCount failed receives, SQS moves the message there instead of retrying forever." },
+{ id:"acr02", prompt:"HNSW is…", choices:["A hashing scheme for passwords","A graph index for fast approximate nearest-neighbour search on vectors","A network protocol","A tokenizer"], answer:1,
+  explain:"Hierarchical Navigable Small World. Used by pgvector, OpenSearch and most vector databases. It trades a little recall for a lot of speed." },
+{ id:"acr03", prompt:"In hybrid search, RRF is used to…", choices:["Compress embeddings","Re-train the model","Merge the rankings of keyword search (BM25) and vector search into one list","Remove duplicate documents"], answer:2,
+  explain:"Reciprocal Rank Fusion scores each document by 1 / (k + rank) in each list and adds them up. Simple, and needs no score calibration." },
+{ id:"acr04", prompt:"MCP lets an AI application…", choices:["Compress model weights","Fine-tune on private data","Monitor GPU usage","Connect to tools and data sources through one standard protocol"], answer:3,
+  explain:"Model Context Protocol: JSON-RPC between a client (the AI app) and servers that expose tools, resources and prompts. One protocol instead of one connector per API." },
+{ id:"acr05", prompt:"What does cdk synth produce?", choices:["A CloudFormation template","A Terraform plan","A Docker image","A running stack"], answer:0,
+  explain:"CDK is code (TypeScript, Python...) that generates CloudFormation. cdk deploy then hands the template to CloudFormation, which creates the resources." },
+{ id:"acr06", prompt:"SLO vs SLA: which is true?", choices:["They're the same thing","An SLA is internal, an SLO is contractual","An SLO is your internal target; an SLA is a commitment to a customer, with consequences if missed","An SLO measures latency only"], answer:2,
+  explain:"SLI = what you measure (e.g. % of successful requests). SLO = the target (99.9%). SLA = the contract (credits if under 99.5%). The SLO is stricter than the SLA, to give you a margin." },
+{ id:"acr07", prompt:"Backups run every 24 hours; a restore takes 2 hours. Your RPO and RTO?", choices:["RPO 2 h, RTO 24 h","RPO up to 24 h, RTO about 2 h","Both 26 h","RPO 0, RTO 2 h"], answer:1,
+  explain:"RPO = how much data you can lose (time since the last backup). RTO = how long until you're back. Point-in-time recovery shrinks the RPO to minutes." },
+{ id:"acr08", prompt:"An operation is idempotent when…", choices:["It never fails","It runs in a single transaction","It can't be called concurrently","Running it several times has the same effect as running it once"], answer:3,
+  explain:"SET status = 'paid' is idempotent; paid = paid + 10 isn't. With at-least-once delivery, idempotency is what makes the result exactly-once." },
+{ id:"acr09", prompt:"A JWT's payload is…", choices:["Signed but readable by anyone: it's base64url, not encryption","Encrypted with the server's key","Hashed and unreadable","Stored only on the server"], answer:0,
+  explain:"Anyone can decode it; the signature only proves it wasn't changed. Never put secrets or personal data in it (unless you use an encrypted JWE)." },
+{ id:"acr10", prompt:"BM25 is…", choices:["An embedding model","A vector index","A keyword ranking function used by search engines","A compression format"], answer:2,
+  explain:"It scores documents by term frequency and rarity, adjusted for length. Still hard to beat for exact names, codes and references, which is why hybrid search keeps it." },
+{ id:"acr11", prompt:"Which of these is an OLAP workload?", choices:["Inserting a new booking","A monthly revenue report scanning 3 years of bookings","Updating a customer's e-mail","Fetching a booking by reference"], answer:1,
+  explain:"OLTP = many small reads and writes (the app). OLAP = big scans and aggregates (reporting). Separate stores keep reports from slowing down the app." },
+{ id:"acr12", prompt:"Apache Iceberg is…", choices:["A Kafka replacement","A columnar file format like Parquet","A data warehouse service","An open table format for data lakes: schema evolution, time travel and ACID commits on files in S3"], answer:3,
+  explain:"Iceberg sits on top of Parquet files and tracks them as one table. Athena, Spark, Snowflake and others can read the same table." },
+{ id:"acr13", prompt:"You set a DynamoDB TTL on items to expire at midnight. When are they deleted?", choices:["Within a background window, typically a few days after expiry, so filter expired items in your reads","Exactly at midnight","Within one second","Only when you call DeleteItem"], answer:0,
+  explain:"TTL deletion is free but not instant. Until then the item can still appear in reads, so queries should check the expiry attribute." },
+{ id:"acr14", prompt:"In ACID, the I (isolation) means…", choices:["Data is replicated to other zones","Each table lives on its own disk","Concurrent transactions don't see each other's unfinished work","Transactions can't fail"], answer:2,
+  explain:"Isolation levels (READ COMMITTED, REPEATABLE READ, SERIALIZABLE) trade strictness for speed. MySQL InnoDB defaults to REPEATABLE READ." }
+];
+
+const NEWS = [
+{
+"id": "news01",
+"prompt": "Anthropic released Claude Opus 5.5 on 22 September 2026. What is its standard API price per million input / output tokens?",
+"choices": [
+"$5 / $25",
+"$4 / $20",
+"$10 / $50",
+"$2 / $10"
+],
+"answer": 1,
+"explain": "Opus 5.5 costs $4/$20 per million tokens, 20% less than Opus 5. When you budget agent workloads, a cheaper frontier tier changes which model is worth routing to.",
+"src": {
+"title": "Introducing Claude Opus 5.5 (Anthropic)",
+"url": "https://www.anthropic.com/claude-opus-5-5",
+"date": "2026-09-22"
+}
+},
+{
+"id": "news02",
+"prompt": "Claude Sonnet 5.5 (28 September 2026) kept Sonnet 5's base token prices. Which price did Anthropic cut in half?",
+"choices": [
+"Output tokens",
+"Input tokens",
+"Batch API requests",
+"Cache reads"
+],
+"answer": 3,
+"explain": "Cache reads dropped to $0.10 per million tokens from $0.20. Agent loops re-read long cached prefixes on every turn, so this price drives much of their real cost.",
+"src": {
+"title": "Introducing Claude Sonnet 5.5 (Anthropic)",
+"url": "https://www.anthropic.com/claude-sonnet-5-5",
+"date": "2026-09-28"
+}
+},
+{
+"id": "news03",
+"prompt": "What did Claude Haiku 5.5 (7 October 2026) bring that no previous Haiku-class model had?",
+"choices": [
+"An adjustable effort setting",
+"A 10M-token context window",
+"Open weights",
+"Native image generation"
+],
+"answer": 0,
+"explain": "Haiku 5.5 is the first Haiku-class model with an adjustable effort setting. You can trade cost and latency against intelligence for each call, which suits high-volume subagent work.",
+"src": {
+"title": "Introducing Claude Haiku 5.5 (Anthropic)",
+"url": "https://www.anthropic.com/claude-haiku-5-5",
+"date": "2026-10-07"
+}
+},
+{
+"id": "news04",
+"prompt": "OpenAI launched GPT-6 Astra in early September 2026. What did it reach under OpenAI's Preparedness Framework?",
+"choices": [
+"It was the first model rated 'Low' risk in every category",
+"It was the first OpenAI model to reach 'High' for biology",
+"It crossed the 'Critical' threshold for cybersecurity risk",
+"It was exempted from the framework as a research preview"
+],
+"answer": 2,
+"explain": "OpenAI rated Astra 'Critical' for cybersecurity, which triggered extra deployment restrictions such as a staged rollout and trust-gated cyber access. Expect gated features and admin opt-in when you adopt it.",
+"src": {
+"title": "OpenAI launches GPT-6 Astra (InfoWorld)",
+"url": "https://www.infoworld.com/article/4218686/openai-launches-gpt-6-astra.html",
+"date": "2026-09-04"
+}
+},
+{
+"id": "news05",
+"prompt": "Google made Gemini 3.8 Flash generally available in September 2026. What happens to its pricing on 1 January 2027?",
+"choices": [
+"It becomes free in AI Studio",
+"The introductory price ends and standard pricing ($1.50 / $7.50 per 1M tokens) applies",
+"Its price drops by 50%",
+"It moves to per-request billing"
+],
+"answer": 1,
+"explain": "The $0.75/$3.75 rate is introductory and ends on 31 December 2026. Cost models built on the launch price will double in 2027.",
+"src": {
+"title": "What's new in Gemini 3.8 (Gemini API docs)",
+"url": "https://ai.google.dev/gemini-api/docs/whats-new-gemini-3.8",
+"date": "2026-09-02"
+}
+},
+{
+"id": "news06",
+"prompt": "In October 2026, Anthropic donated the Agent Skills open standard to which organization?",
+"choices": [
+"The Agentic AI Foundation (AAIF) under the Linux Foundation",
+"The Apache Software Foundation",
+"The W3C",
+"The Cloud Native Computing Foundation"
+],
+"answer": 0,
+"explain": "Agent Skills went to AAIF, the same neutral home that already holds MCP. Both core agent standards are now vendor-neutral.",
+"src": {
+"title": "Donating Agent Skills to the Agentic AI Foundation (Anthropic)",
+"url": "https://www.anthropic.com/news/donating-agent-skills-to-the-agentic-ai-foundation",
+"date": "2026-10-22"
+}
+},
+{
+"id": "news07",
+"prompt": "OpenAI's Agents API entered public beta in September 2026. What does it expose to developers?",
+"choices": [
+"A fine-tuning endpoint for GPT-6",
+"A browser extension SDK",
+"The managed Codex harness (sessions, orchestration, context compaction, recovery)",
+"A self-hosted open-weights agent model"
+],
+"answer": 2,
+"explain": "The API hosts the Codex agent harness, with MCP connections and multi-agent delegation built in. Developers bring tools and choose the execution environment instead of writing their own agent loop.",
+"src": {
+"title": "OpenAI Ships Agents API in Public Beta (AI Weekly)",
+"url": "https://aiweekly.co/alerts/openai-ships-agents-api-in-public-beta-exposing-managed-codex-harness-with",
+"date": "2026-09-10"
+}
+},
+{
+"id": "news08",
+"prompt": "AWS's coding agent Kiro introduced 'workflows' on 30 September 2026. How are they described?",
+"choices": [
+"Single-prompt macros saved in the IDE",
+"Graphs of agent steps, sequences, loops and parallel branches",
+"GitHub Actions templates generated by Kiro",
+"A visual no-code app builder"
+],
+"answer": 1,
+"explain": "Kiro workflows orchestrate several agents as a graph so long tasks need less supervision. They are opt-in in the IDE, CLI and Web.",
+"src": {
+"title": "Introducing Kiro workflows (Kiro blog)",
+"url": "https://kiro.dev/blog/introducing-workflows/",
+"date": "2026-09-30"
+}
+},
+{
+"id": "news09",
+"prompt": "What does Amazon Bedrock Managed Agents powered by OpenAI (public preview, October 2026) let you do?",
+"choices": [
+"Run OpenAI's ChatGPT app on EC2",
+"Fine-tune GPT-6 on SageMaker",
+"Migrate Bedrock Agents Classic to Azure",
+"Build agents optimized for OpenAI models that run entirely inside AWS"
+],
+"answer": 3,
+"explain": "You can build agents on OpenAI models without data or governance leaving your AWS account. This matters for teams with data-residency or IAM-centric compliance needs.",
+"src": {
+"title": "AWS Weekly Roundup, October 5, 2026 (AWS News Blog)",
+"url": "https://aws.amazon.com/blogs/aws/aws-weekly-roundup-amazon-bedrock-managed-agents-powered-by-openai-q3-service-availability-updates-kiro-workflows-and-more-october-5-2026/",
+"date": "2026-10-05"
+}
+},
+{
+"id": "news10",
+"prompt": "In September 2026, Amazon Bedrock replaced the per-model 'tokens per day' quota on the bedrock-runtime endpoint. What is the new quota's scope?",
+"choices": [
+"Per account, per Region, across all supported models",
+"Per model, global across all Regions",
+"Per IAM role, per model",
+"Per inference profile only"
+],
+"answer": 0,
+"explain": "The daily token cap, 'Cross-Model Max Tokens Per Day', is now shared across every model in an account and Region. Heavy use of one model can now exhaust the daily budget for all the others.",
+"src": {
+"title": "Quotas for the bedrock-runtime endpoint (Amazon Bedrock User Guide)",
+"url": "https://docs.aws.amazon.com/bedrock/latest/userguide/quotas-runtime.html",
+"date": "2026-09-21"
+}
+},
+{
+"id": "news11",
+"prompt": "Under the EU AI Act as amended by the Digital Omnibus on AI, when do the rules for stand-alone high-risk AI systems (Annex III) apply?",
+"choices": [
+"2 August 2026",
+"2 February 2027",
+"2 December 2027",
+"2 August 2030"
+],
+"answer": 2,
+"explain": "The Omnibus moved Annex III high-risk obligations, such as employment and credit scoring, from August 2026 to 2 December 2027. Compliance roadmaps built on the original date need updating.",
+"src": {
+"title": "Timeline for the implementation of the EU AI Act (European Commission)",
+"url": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/timeline/timeline-implementation-eu-ai-act",
+"date": "2026-08-02"
+}
+},
+{
+"id": "news12",
+"prompt": "According to the European Commission's AI Act timeline, what happened on 2 August 2026?",
+"choices": [
+"The AI Act was repealed by the Digital Omnibus",
+"The majority of the AI Act's rules came into force and enforcement started for applicable rules",
+"Only the bans on prohibited practices started to apply",
+"Member States had to open their first regulatory sandboxes"
+],
+"answer": 1,
+"explain": "Most rules, including the Article 50 transparency duties and enforcement over general-purpose AI models, became enforceable on 2 August 2026. If you ship GenAI features in the EU, those duties already apply.",
+"src": {
+"title": "Timeline for the implementation of the EU AI Act (European Commission)",
+"url": "https://ai-act-service-desk.ec.europa.eu/en/ai-act/timeline/timeline-implementation-eu-ai-act",
+"date": "2026-08-02"
+}
+},
+{
+"id": "news13",
+"prompt": "Mistral announced Mistral Large 4 as a public preview on 6 October 2026. How does Mistral describe its size?",
+"choices": [
+"1 trillion parameters with 52 billion active",
+"405 billion dense parameters",
+"123 billion dense parameters",
+"2.4 trillion parameters, API only"
+],
+"answer": 0,
+"explain": "Large 4 is a 1T-parameter Mixture-of-Experts model with 52B active parameters, and Mistral says the weights come by the end of October. That makes it one of the largest open-weight European models to self-host.",
+"src": {
+"title": "Introducing Mistral Large 4 (Mistral AI)",
+"url": "https://mistral.ai/news/mistral-large-4/",
+"date": "2026-10-06"
+}
+},
+{
+"id": "news14",
+"prompt": "DeepSeek released V4.1 Flash, a 552B-parameter multimodal MoE model, in September 2026. Under which license are its weights published?",
+"choices": [
+"Apache 2.0",
+"Llama-style community license",
+"API-only, no weights",
+"MIT"
+],
+"answer": 3,
+"explain": "The weights are MIT-licensed, one of the most permissive licenses, so you can use them commercially and self-host with almost no restrictions. The model supports contexts of up to 1M tokens.",
+"src": {
+"title": "deepseek-ai/DeepSeek-V4.1-Flash (Hugging Face)",
+"url": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash",
+"date": "2026-09-10"
+}
+}
+];
+
+/* ---------- helpers ---------- */
+const ALL = {};
+[...SPOT.map(q=>({...q,deck:"spot"})), ...BETTER.map(q=>({...q,deck:"better"})), ...FAIL.map(q=>({...q,deck:"fail",lang:"flow"})), ...ACR.map(q=>({...q,deck:"acr"})), ...NEWS.map(q=>({...q,deck:"news"}))]
+  .forEach(q => { ALL[q.id] = prep(q); });
+
+function hash(s){ let h=2166136261; for(const c of s){ h^=c.charCodeAt(0); h=Math.imul(h,16777619); } return h>>>0; }
+function prep(q){
+  // deterministic shuffle so the right answer isn't always in the same place
+  let seed = hash(q.id);
+  const rnd = () => { seed = (Math.imul(seed,1103515245)+12345)>>>0; return seed/4294967296; };
+  const opts = q.choices.map((t,i)=>({t, ok:i===q.answer}));
+  for(let i=opts.length-1;i>0;i--){ const j=Math.floor(rnd()*(i+1)); [opts[i],opts[j]]=[opts[j],opts[i]]; }
+  return {...q, opts};
+}
+const esc = s => String(s).replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+function todayISO(){
+  try { return new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Zurich",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date()); }
+  catch(e){ return new Date().toISOString().slice(0,10); }
+}
+function addDays(iso,n){ const t=new Date(iso+"T12:00:00Z"); t.setUTCDate(t.getUTCDate()+n); return t.toISOString().slice(0,10); }
+function dayNumber(iso){ const d=Math.round((Date.parse(iso+"T12:00:00Z")-Date.parse(START+"T12:00:00Z"))/864e5); return ((d%DAYS)+DAYS)%DAYS+1; }
+function dayLabel(n){ const t=new Date(addDays(START,n-1)+"T12:00:00Z"); return t.toLocaleDateString("en-GB",{weekday:"short",day:"numeric",month:"short",timeZone:"UTC"}); }
+function daySet(n){ return [SPOT,BETTER,FAIL,ACR,NEWS].map(arr=>arr[n-1]).filter(Boolean).map(q=>ALL[q.id]); }
+const cls = s => s===1?"s1":s===0.5?"s05":"s0";
+const emoji = s => s===1?"🟩":s===0.5?"🟨":"🟥";
+const fmtTime = secs => `${Math.floor(secs/60)}m${String(secs%60).padStart(2,"0")}s`;
+
+/* ---------- storage (this browser only, prototype) ---------- */
+const KEY = "staysharp.m0";
+function load(){ try { const v=JSON.parse(localStorage.getItem(KEY)); if(v&&v.results) return v; } catch(e){} return {results:{}, missed:[]}; }
+function save(){ try { localStorage.setItem(KEY, JSON.stringify(store)); } catch(e){} }
+let store = load();
+function streak(){
+  const dates = new Set(Object.values(store.results).map(r=>r.playedOn));
+  let d = todayISO(); if(!dates.has(d)) d = addDays(d,-1);
+  let n=0; while(dates.has(d)){ n++; d=addDays(d,-1); }
+  return n;
+}
+
+/* ---------- state ---------- */
+const app = document.getElementById("app");
+let view = "home";
+let run = null;     // {mode, day, qs, i, scores, start, pick:{line,choice}, checked}
+let copied = false;
+
+function startRun(mode, day, qs){
+  run = {mode, day, qs, i:0, scores:[], start:Date.now(), pick:{line:null, choice:null}, checked:false};
+  view = "play"; copied=false; render(); window.scrollTo(0,0);
+}
+
+/* ---------- views ---------- */
+function header(){
+  return `<div class="top">
+    <button class="mark" data-act="home" aria-label="Stay Sharp, home"><i></i>Stay Sharp</button>
+    <span class="chip">Streak <b>${streak()}</b> day${streak()===1?"":"s"}</span>
+  </div>`;
+}
+
+function renderHome(){
+  const today = dayNumber(todayISO());
+  const res = store.results[today];
+  const set = daySet(today);
+  const decks = set.map((q,k)=>`<li><span class="n">${k+1}</span><span>${DECKS[q.deck].name}</span><span class="d">${DECKS[q.deck].desc}</span></li>`).join("");
+  const done = res ? `
+      <div class="row"><div class="sq" aria-label="Your result">${res.scores.map(s=>`<span class="${cls(s)}"></span>`).join("")}</div>
+      <span class="hint">${res.score}/${res.scores.length} · ${fmtTime(res.secs)}</span></div>
+      <div class="row"><button class="btn" data-act="result" data-day="${today}">See result and share</button>
+      <button class="btn ghost" data-act="daily" data-day="${today}">Replay (not scored)</button></div>`
+    : `<div class="row"><button class="btn" data-act="daily" data-day="${today}">Start today's set</button><span class="hint">${set.length} questions · about 5 minutes</span></div>`;
+  const tiles = Array.from({length:DAYS},(_,k)=>{
+    const n=k+1, r=store.results[n];
+    return `<button class="tile${n===today?" today":""}" data-act="${r?"result":"daily"}" data-day="${n}">
+      <span class="t1">#${n}</span><span class="t2">${dayLabel(n)}${n===today?" · today":""}</span>
+      <span class="sq">${r?r.scores.map(s=>`<span class="${cls(s)}"></span>`).join(""):""}</span></button>`;
+  }).join("");
+  const missed = store.missed.filter(id=>ALL[id]);
+  return `${header()}
+  <section class="card hero">
+    <span class="eyebrow">Daily #${today} · ${dayLabel(today)} · Senior</span>
+    <h1>Agents write the code.</h1>
+    <p class="tagline">Don't lose your touch.</p>
+    <ol class="decks">${decks}</ol>
+    ${done}
+  </section>
+  <section class="card">
+    <div class="qhead"><h2 style="font-size:20px">Weak spots</h2><span class="hint">${missed.length} question${missed.length===1?"":"s"} to revisit</span></div>
+    <p class="hint">Every question you miss or half-miss comes back here until you get it right.</p>
+    <div class="row"><button class="btn ghost" data-act="practice" ${missed.length?"":"disabled"}>Practise what I missed</button></div>
+  </section>
+  <section class="card">
+    <h2 style="font-size:20px">The first two weeks</h2>
+    <div class="grid14">${tiles}</div>
+  </section>
+  <p class="foot">Prototype M0 · Senior level · progress is saved in this browser only</p>`;
+}
+
+function renderPlay(){
+  const q = run.qs[run.i], p = run.pick, c = run.checked;
+  const pips = run.qs.map((_,k)=>`<span class="pip ${k<run.i?cls(run.scores[k]):k===run.i?(c?cls(run.scores[k]):"cur"):""}"></span>`).join("");
+  let code = "";
+  if(q.code){
+    if(q.deck==="spot"){
+      code = `<div class="code" role="group" aria-label="Code, tap the worst line"><div class="in">${q.code.split("\n").map((l,k)=>{
+        const n=k+1; let st="";
+        if(c){ if(q.lines.includes(n)) st="ok"; else if(p.line===n) st="ko"; }
+        return `<button class="ln ${st}" data-act="line" data-n="${n}" aria-pressed="${p.line===n}" ${c?"disabled":""}><span class="g">${n}</span>${esc(l)||" "}</button>`;
+      }).join("")}</div></div>`;
+    } else {
+      code = `<div class="code"><pre class="flow">${esc(q.code)}</pre></div>`;
+    }
+  }
+  const prompt = q.deck==="spot" ? "Tap the line with the worst defect, then say what's wrong." : q.prompt;
+  const opts = q.opts.map((o,k)=>{
+    let st=""; if(c){ if(o.ok) st="ok"; else if(p.choice===k) st="ko"; }
+    return `<button class="opt ${st}" data-act="choice" data-n="${k}" aria-pressed="${p.choice===k}" ${c?"disabled":""}><span class="k">${"ABCD"[k]}</span><span>${esc(o.t)}</span></button>`;
+  }).join("");
+  const ready = p.choice!==null && (q.deck!=="spot" || p.line!==null);
+  let foot;
+  if(!c){
+    foot = `<div class="row"><button class="btn" data-act="check" ${ready?"":"disabled"}>Check</button>${q.deck==="spot"&&p.line===null?'<span class="hint">Pick a line first</span>':""}</div>`;
+  } else {
+    const s = run.scores[run.i];
+    let verdict = s===1?"Correct":s===0?"Not this time":(q.lines.includes(p.line)?"Right line, wrong reason":"Right reason, wrong line");
+    const src = q.src ? `<p class="src">Source: <a href="${esc(q.src.url)}" target="_blank" rel="noopener">${esc(q.src.title)}</a> · ${esc(q.src.date)}</p>` : "";
+    const last = run.i===run.qs.length-1;
+    foot = `<div class="fb v${s===0.5?"05":s}" role="status"><span class="verdict">${verdict}</span><p>${esc(q.explain)}</p>${src}</div>
+      <div class="row"><button class="btn" data-act="next">${last?"See my result":"Next question"}</button></div>`;
+  }
+  const label = run.mode==="daily" ? `Daily #${run.day}` : "Weak spots";
+  return `${header()}
+  <div class="pips" aria-label="Question ${run.i+1} of ${run.qs.length}">${pips}</div>
+  <section class="card">
+    <div class="qhead"><span class="eyebrow">${DECKS[q.deck].name}${q.lang&&q.lang!=="flow"?" · "+q.lang:""}</span><span class="hint">${label} · ${run.i+1}/${run.qs.length}</span></div>
+    <p class="qtitle">${esc(prompt)}</p>
+    ${code}
+    <div class="opts">${opts}</div>
+    ${foot}
+  </section>`;
+}
+
+function shareText(n,res){
+  return `Stay Sharp #${n} · Senior\n${res.scores.map(emoji).join("")}  ${res.score}/${res.scores.length} · ${fmtTime(res.secs)} · streak ${streak()}`;
+}
+
+function renderResult(n, res, qs, practice){
+  const recap = qs.map((q,k)=>`<li><span class="sq1 ${cls(res.scores[k])}"></span><span><span class="dk">${DECKS[q.deck].name}</span><br>${esc(q.deck==="spot"?q.opts.find(o=>o.ok).t:q.prompt)}</span></li>`).join("");
+  return `${header()}
+  <section class="card">
+    <span class="eyebrow">${practice?"Weak spots":"Daily #"+n+" · "+dayLabel(n)}</span>
+    <div class="score"><div><div class="big">${res.score}/${res.scores.length}</div><div class="lab">score</div></div>
+      <div><div class="big">${fmtTime(res.secs)}</div><div class="lab">time</div></div>
+      ${practice?"":`<div><div class="big">${streak()}</div><div class="lab">day streak</div></div>`}</div>
+    ${practice?"":`<pre class="share" id="share">${esc(shareText(n,res))}</pre>
+    <div class="row"><button class="btn" data-act="copy">Copy result</button>${copied?'<span class="toast">Copied</span>':""}</div>`}
+    <ol class="recap">${recap}</ol>
+    <div class="row"><button class="btn ghost" data-act="home">Back to today</button></div>
+  </section>`;
+}
+
+function render(){
+  if(view==="home") app.innerHTML = renderHome();
+  else if(view==="play") app.innerHTML = renderPlay();
+  else if(view==="result"){
+    if(run && run.mode==="practice") app.innerHTML = renderResult(0, run.res, run.qs, true);
+    else { const n=run.day; app.innerHTML = renderResult(n, store.results[n], daySet(n), false); }
+  }
+}
+
+/* ---------- actions ---------- */
+function check(){
+  const q=run.qs[run.i], p=run.pick;
+  const choiceOk = q.opts[p.choice].ok;
+  let s;
+  if(q.deck==="spot"){ const lineOk=q.lines.includes(p.line); s = lineOk&&choiceOk?1:(lineOk||choiceOk?0.5:0); }
+  else s = choiceOk?1:0;
+  run.scores[run.i]=s; run.checked=true;
+  const m = new Set(store.missed);
+  if(s<1) m.add(q.id); else if(run.mode==="practice") m.delete(q.id);
+  store.missed=[...m]; save();
+  render();
+}
+function next(){
+  if(run.i<run.qs.length-1){ run.i++; run.pick={line:null,choice:null}; run.checked=false; render(); window.scrollTo(0,0); return; }
+  const secs = Math.round((Date.now()-run.start)/1000);
+  const score = run.scores.reduce((a,b)=>a+b,0);
+  const res = {scores:run.scores, score, secs, playedOn:todayISO()};
+  if(run.mode==="daily" && !run.replay){ store.results[run.day]=res; save(); }
+  run.res = res;
+  if(run.mode==="daily" && run.replay){ run.mode="practice"; }
+  view="result"; render(); window.scrollTo(0,0);
+}
+
+app.addEventListener("click", e=>{
+  const b = e.target.closest("[data-act]"); if(!b || b.disabled) return;
+  const act=b.dataset.act, n=Number(b.dataset.n), day=Number(b.dataset.day);
+  if(act==="home"){ view="home"; run=null; render(); }
+  else if(act==="daily"){ startRun("daily", day, daySet(day)); run.replay = !!store.results[day]; }
+  else if(act==="result"){ run={mode:"daily", day}; view="result"; copied=false; render(); window.scrollTo(0,0); }
+  else if(act==="practice"){ const qs=store.missed.filter(id=>ALL[id]).slice(0,10).map(id=>ALL[id]); if(qs.length) startRun("practice", 0, qs); }
+  else if(act==="line"){ run.pick.line=n; render(); }
+  else if(act==="choice"){ run.pick.choice=n; render(); }
+  else if(act==="check"){ check(); }
+  else if(act==="next"){ next(); }
+  else if(act==="copy"){
+    const text = document.getElementById("share").textContent;
+    const done = ()=>{ copied=true; render(); };
+    const fallback = ()=>{ const r=document.createRange(); r.selectNodeContents(document.getElementById("share")); const s=getSelection(); s.removeAllRanges(); s.addRange(r); };
+    try { navigator.clipboard.writeText(text).then(done, fallback); } catch(err){ fallback(); }
+  }
+});
+
+document.addEventListener("keydown", e=>{
+  if(view!=="play" || e.metaKey || e.ctrlKey || e.altKey) return;
+  const k = e.key.toUpperCase();
+  if(!run.checked && "ABCD".includes(k) && k.length===1 && "ABCD".indexOf(k) < run.qs[run.i].opts.length){ run.pick.choice="ABCD".indexOf(k); render(); }
+  else if(e.key==="Enter" && !e.target.closest("button")){
+    if(run.checked) next();
+    else { const q=run.qs[run.i]; if(run.pick.choice!==null && (q.deck!=="spot"||run.pick.line!==null)) check(); }
+  }
+});
+
+render();
+</script>
