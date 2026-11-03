@@ -7,6 +7,7 @@ dependencies = [
     "aws-lambda-powertools[parser]>=3.38.0",
     "boto3>=1.43.123",
     "pydantic>=2",
+    "tzdata>=2025.2",
 ]
 
 [build-system]
@@ -30,6 +31,9 @@ src = ["src", "tests", "scripts"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "S", "SIM"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["staysharp"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101"]
