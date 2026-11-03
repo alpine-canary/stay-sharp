@@ -1,0 +1,40 @@
+# OS and editors
+.DS_Store
+Thumbs.db
+*.tmp
+*.swp
+.vscode/
+.idea/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node
+node_modules/
+dist/
+build/
+coverage/
+*.log
+.env*
+
+# CDK
+cdk.out/
+
+# Front end tooling output
+front/test-results/
+front/playwright-report/
+front/.lighthouseci/
+
+# Local only, never committed
+*.bundle
+.specify/feature.json
+var/
