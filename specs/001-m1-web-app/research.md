@@ -280,6 +280,9 @@ deploy** are facts not confirmed from an AWS primary source on 2026-11-03. Audit
   listed there, as expected: the CloudFront web ACL lives in `us-east-1` (already planned) and
   Budgets is a global service. Still to confirm at the first deploy: the `python3.13` arm64
   runtime and HTTP API specifically (the catalogue lists services, not runtimes or API types).
+- **Opt-in region**: `eu-central-2` is disabled by default in a new account (calls fail with
+  `InvalidClientTokenId`). It was enabled on 2026-11-03 with `aws account enable-region`; the
+  account set-up runbook (delivery step 1) must list it first, before CDK bootstrap.
 - **Account set-up done 2026-11-03**: `stay-sharp` member account in the existing Organization;
   access through the existing IAM Identity Center instance (`us-east-1`; it holds only the
   maintainers' sign-in identities, no game data) with a 4-hour admin permission set assigned to
