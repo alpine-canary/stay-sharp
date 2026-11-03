@@ -48,11 +48,13 @@ plugins = ["pydantic.mypy"]
 [dependency-groups]
 dev = [
     "boto3-stubs[cloudwatch,codedeploy,dynamodb,lambda,secretsmanager,ssm]>=1.43.123",
+    "jsonschema>=4.26.0",
     "mypy>=2.4.1",
     "openapi-core>=0.23.1",
     "pytest>=9.2.0",
     "pytest-cov>=7.1.0",
     "pyyaml>=6.0.3",
     "ruff>=0.17.3",
+    "types-jsonschema>=4.26.0.20261006",
     "types-pyyaml>=6.0.12.20261103",
 ]
