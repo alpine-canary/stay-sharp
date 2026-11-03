@@ -11,7 +11,7 @@ deploy** are facts not confirmed from an AWS primary source on 2026-11-03. Audit
 
 - **Decision**: Questions are sent one at a time (`POST /plays` returns question 0, then
   `POST .../questions/{n}/open`). The view is built by one function from an explicit field
-  allowlist (`id, deck, prompt, code, language, choices, targetSeconds, servedAt`); a unit test
+  allowlist (`index, deck, prompt, code, language, choices, targetSeconds, servedAt`, as in the contract `QuestionView`); a unit test
   passes a full question item, answer fields included, and asserts they cannot appear (S2). The
   response schema is also strict (`additionalProperties: false`). Choice ids are random tokens and
   the choice order is shuffled once at publish; publish checks that the correct position is
