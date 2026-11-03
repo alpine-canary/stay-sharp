@@ -105,7 +105,7 @@ dev. No user story can start before this phase ends.
 
 ### Thin edge in dev (W16) and front-end shell
 
-- [ ] T043 Implement `infra/stacks/api_stack.py` (first version): API Lambda Python 3.13 arm64, 512 MB, timeout 10 s, reserved concurrency 20, one role with least privilege on the stage table and secret; alias `live`; HTTP API with throttling burst 50, rate 20/s; access logs without `sourceIp`; log retention 30 days
+- [x] T043 Implement `infra/stacks/api_stack.py` (first version): API Lambda Python 3.13 arm64, 512 MB, timeout 10 s, reserved concurrency 20, one role with least privilege on the stage table and secret; alias `live`; HTTP API with throttling burst 50, rate 20/s; access logs without `sourceIp`; log retention 30 days
 - [ ] T044 Implement `infra/stacks/web_stack.py` (first version): S3 bucket private with OAC, site under `site/<commit>/` with the distribution origin path pointing to it; behaviour `/api/*` with `CachePolicy.CACHING_DISABLED` and an origin request policy forwarding only `X-Player-Id` and `Content-Type`; strict CSP and security headers response policy; CloudFront Function rewriting `/c/<id>` to `/c/index.html`, real 404 page otherwise (R8, R12, W18)
 - [ ] T045 Implement `infra/app.py`: stages `dev` and `prod` in one account with `staysharp-<stage>-*` names, edge stack in `us-east-1` deployed first, `cross_region_references=True`
 - [ ] T046 [P] CDK assertion tests in `infra/tests/test_web_stack.py` and `infra/tests/test_api_stack.py`: `/api/*` caching disabled and only the two headers forwarded, no public bucket, log retention 30 days, `POWERTOOLS_LOGGER_LOG_EVENT=false`, one role per function, no `sourceIp` in access logs (V11)
