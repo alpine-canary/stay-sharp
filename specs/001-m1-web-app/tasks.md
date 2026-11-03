@@ -80,7 +80,7 @@ dev. No user story can start before this phase ends.
 - [x] T024 [P] Unit tests for `cancellation` in `api/tests/unit/test_cancellation.py`: every row of the R2 table (duplicate, conflict 409 with stored result, not opened 400, challenge full, temporary/unknown -> retry then 503) and that a temporary error is never classified as a duplicate
 - [x] T025 [P] Implement strict Pydantic models in `api/src/staysharp/domain/models.py` (`extra="forbid"`): `Level` (`senior`, `starter`), `Deck` (senior `spot`, `better`, `fail`, `acronym`, `news`; starter `logic`, `readcode`, `whatif`, `words`, `aisense`), `Question` with `qid` matching `^[a-z0-9_]{3,64}$`, `version` int from 1, exactly 4 `choices` `{id, text}` with 8-character base32 ids, `DailySet` with `items[5]` `{index, deck, qid, version, targetSeconds}`, request bodies with `X-Player-Id` UUIDv4, and response models matching `contracts/openapi.yaml`
 - [x] T026 [P] Implement `api/src/staysharp/domain/calendar.py` to pass T021
-- [ ] T027 [P] Implement `api/src/staysharp/domain/grading.py` to pass T022; `SuspiciouslyFast` threshold 3 s, 5 s for `spot` and `logic` (FR-005d), returned as a flag, not applied to the grade
+- [x] T027 [P] Implement `api/src/staysharp/domain/grading.py` to pass T022; `SuspiciouslyFast` threshold 3 s, 5 s for `spot` and `logic` (FR-005d), returned as a flag, not applied to the grade
 - [ ] T028 [P] Implement `api/src/staysharp/domain/views.py` (the only way a question leaves the server) to pass T023
 - [ ] T029 [P] Implement `api/src/staysharp/domain/cancellation.py` to pass T024
 

@@ -11,6 +11,13 @@ RIGHT = "AAAAAAAA"
 WRONG = "BBBBBBBB"
 SPOT_KEY = AnswerKey(choice_id=RIGHT, lines=frozenset({4, 5}))
 PLAIN_KEY = AnswerKey(choice_id=RIGHT, lines=frozenset())
+DAY: list[tuple[grading.Deck, AnswerKey]] = [
+    ("spot", SPOT_KEY),
+    ("better", PLAIN_KEY),
+    ("fail", PLAIN_KEY),
+    ("acronym", PLAIN_KEY),
+    ("news", PLAIN_KEY),
+]
 
 
 @pytest.mark.parametrize(
@@ -97,13 +104,7 @@ def test_best_day_totals_exactly_six() -> None:
         grading.score(
             deck, key, Submission(RIGHT, 4), relaxed=False, elapsed_ms=10_000, target_seconds=20
         )
-        for deck, key in [
-            ("spot", SPOT_KEY),
-            ("better", PLAIN_KEY),
-            ("fail", PLAIN_KEY),
-            ("acronym", PLAIN_KEY),
-            ("news", PLAIN_KEY),
-        ]
+        for deck, key in DAY
     ]
     total = grading.day_total(results)
     assert total == Decimal("6.0")
