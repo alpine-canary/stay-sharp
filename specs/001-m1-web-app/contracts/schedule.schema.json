@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": ["level", "days"],
   "properties": {
-    "level": { "enum": ["senior", "starter", "selftest"] },
+    "level": { "enum": ["senior", "starter"] },
     "targets": {
       "type": "object",
       "description": "Target seconds per deck; copied into each daily set at publish.",
@@ -15,7 +15,7 @@
     "days": {
       "type": "object",
       "propertyNames": { "pattern": "^\\d{4}-\\d{2}-\\d{2}$" },
-      "additionalProperties": { "type": "array", "minItems": 5, "maxItems": 5, "items": { "type": "string" } }
+      "additionalProperties": { "type": "array", "minItems": 5, "maxItems": 5, "uniqueItems": true, "items": { "type": "string", "pattern": "^[a-z0-9_]{3,64}$" }, "description": "Five qids in FR-001 deck order; deck, level and single-use checks are done by publish." }
     }
   }
 }

@@ -66,7 +66,7 @@ components:
       required: [choiceId]
       properties:
         choiceId: { type: string, pattern: '^[A-Z2-7]{8}$' }
-        line: { type: integer, minimum: 1, maximum: 30, description: Required for spot. }
+        line: { type: integer, minimum: 1, maximum: 30, description: 'Required for spot; the server also checks it is within the served code.' }
     AnswerResult:
       type: object
       additionalProperties: false
@@ -98,6 +98,7 @@ components:
         elapsedMs: { type: integer }
         finished: { type: boolean }
         challengeId: { type: string }
+        question: { $ref: '#/components/schemas/QuestionView', description: 'Next unanswered question, included by POST /plays so the first question needs no extra round trip.' }
     ResultSnapshot:
       type: object
       additionalProperties: false
@@ -150,12 +151,19 @@ paths:
         '201': { description: New play, content: { application/json: { schema: { $ref: '#/components/schemas/PlayState' } } } }
         '400': { content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: No set for that date and level (code not_ready). }
+        '409': { description: 'mode=replay for today while the daily play of that date and level is not finished (code conflict).' }
   /plays/{playId}:
     get:
       parameters: [ { $ref: '#/components/parameters/PlayerId' }, { $ref: '#/components/parameters/PlayId' } ]
       responses:
         '200': { content: { application/json: { schema: { $ref: '#/components/schemas/PlayState' } } } }
         '404': { content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+  /plays/{playId}/relaxed:
+    post:
+      summary: Switch the play to relaxed from the next answer on. One-way; calling it again is a no-op.
+      parameters: [ { $ref: '#/components/parameters/PlayerId' }, { $ref: '#/components/parameters/PlayId' } ]
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/PlayState' } } } }
   /plays/{playId}/questions/{index}/open:
     post:
       summary: Return question index without its answer; records servedAt the first time only.
@@ -170,8 +178,11 @@ paths:
       requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/AnswerRequest' } } } }
       responses:
         '200': { content: { application/json: { schema: { $ref: '#/components/schemas/AnswerResult' } } } }
-        '400': { description: Unknown choice, missing or out-of-range line, question not opened. }
-        '409': { description: A different answer was already recorded. }
+        '400': { description: 'Unknown choice, line missing or outside the served code, question not opened.' }
+        '409':
+          description: A different answer was already recorded; the stored result is returned so the UI can show it.
+          content: { application/json: { schema: { type: object, additionalProperties: false, required: [code, recorded], properties: { code: { const: conflict }, recorded: { $ref: '#/components/schemas/AnswerResult' } } } } }
+        '503': { description: Temporary storage failure after retries; counted as a scoring failure. Safe to retry. }
   /practice/next:
     post:
       parameters: [ { $ref: '#/components/parameters/PlayerId' } ]
@@ -185,7 +196,7 @@ paths:
               properties:
                 level: { $ref: '#/components/schemas/Level' }
                 deck: { type: string }
-                prefer: { type: array, maxItems: 5, items: { type: string } }
+                prefer: { type: array, maxItems: 5, items: { type: string, pattern: '^[a-z0-9_]{3,64}$' }, description: 'Only honoured for questions in the past practice pool of this level and deck.' }
       responses:
         '200':
           content:

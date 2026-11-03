@@ -1,137 +1,122 @@
 # Data model: M1 - public daily game without accounts
 
-**Date**: 2026-11-03 | **Spec**: [spec.md](./spec.md) | **Research**: [research.md](./research.md)
+**Date**: 2026-11-03 (revised after the plan audit) | **Spec**: [spec.md](./spec.md) |
+**Research**: [research.md](./research.md)
 
-One DynamoDB table `stay-sharp-<env>` (on-demand, point-in-time recovery on, deletion protection
-on in prod, TTL attribute `expiresAt`). Keys are strings. Dates are `YYYY-MM-DD` in
-Europe/Zurich; timestamps are UTC ISO 8601 with milliseconds.
+One DynamoDB table per stage, `staysharp-<stage>` (on-demand, PITR on, deletion protection on in
+prod, TTL attribute `expiresAt`). Keys are strings. Dates are `YYYY-MM-DD` in Europe/Zurich;
+timestamps are UTC ISO 8601 with milliseconds. TTL deletion can lag up to about two days, so every
+read that depends on expiry compares `expiresAt` with now.
 
 ## Access patterns
 
 | # | Pattern | Key | Used by |
 |---|---|---|---|
-| A1 | Daily set for a date and level | `PK=DAILY#<date>#<level>`, `SK=SET` | open, pre-traffic check |
-| A2 | A question, current version | `PK=Q#<qid>`, `SK=V#CURRENT` | open, answer |
-| A3 | A question, given version | `PK=Q#<qid>`, `SK=V#<n>` | answer (grades against the version that was served) |
-| A4 | A player's play | `PK=P#<playerId>`, `SK=PLAY#<playId>` | start, resume, result |
-| A5 | A player's answer to one question of a play | `PK=P#<playerId>`, `SK=ANS#<playId>#<index>` | open, answer |
-| A6 | A practice attempt | `PK=P#<playerId>`, `SK=PRA#<attemptId>` | practice open, answer |
-| A7 | A challenge and its results | `PK=CH#<challengeId>`, `SK=META` and `SK=R#<playerHash>` | challenge create, view |
-| A8 | Past published days of a deck (practice pool) | `PK=POOL#<level>#<deck>`, `SK=<date>#<qid>` | practice next |
-| A9 | Days with a complete set ahead | Query `PK=STOCK#<level>`, `SK >= today` | stock check |
+| A1 | Daily set for a date and level | `PK=DAILY#<date>#<level>`, `SK=SET` | start, open |
+| A2 | A question at a given version | `PK=Q#<qid>`, `SK=V#<n>` | open, answer, practice |
+| A3 | A player's play | `PK=P#<playerId>`, `SK=PLAY#<playId>` | start, resume, result |
+| A4 | A player's answer to one question of a play | `PK=P#<playerId>`, `SK=ANS#<playId>#<index>` | open, answer |
+| A5 | A practice attempt | `PK=P#<playerId>`, `SK=PRA#<attemptId>` | practice |
+| A6 | A challenge and its results | `PK=CH#<challengeId>`, `SK=META` / `SK=R#<playerHash>` | challenge |
+| A7 | Past published questions of a deck (practice pool) | Query `PK=POOL#<level>#<deck>`, `SK < <today>` | practice next |
+| A8 | Future days with a complete set | Query `PK=STOCK#<level>`, `SK > <today>` | stock check |
+| A9 | Return rate (SC-010), monthly | Read-only scan of `PLAY#` items, counted offline by player hash | report script |
 
-`playId` = `<date>.<level>.<mode>` (`mode` = `daily` or `replay`; scoped by the player key, so it
-needs no randomness). A challenge played on a past date uses mode `replay` with
-`challengeId` stored on the play.
+`playId` = `<date>.<level>.<mode>`, mode `daily` or `replay`, scoped by the player key.
 
 ## Entities
 
-### Question (`Q#<qid>` / `V#<n>` and `V#CURRENT`)
+### Question (`Q#<qid>` / `V#<n>`)
 
 | Field | Type | Rules |
 |---|---|---|
-| qid | string | `^[a-z0-9_]{3,64}$`, unique |
-| version | int | starts at 1; each edit writes a new version |
-| level | enum | `senior`, `starter` (later `mid`, `lead`); `selftest` for the hidden self-test set |
+| qid | string | `^[a-z0-9_]{3,64}$`, unique, no date-like pattern |
+| version | int | 1, 2, ...; each edit is a new item (no `V#CURRENT`, S11) |
+| level | enum | `senior`, `starter` (later `mid`, `lead`) |
 | deck | enum | senior: `spot`, `better`, `fail`, `acronym`, `news`; starter: `logic`, `readcode`, `whatif`, `words`, `aisense` |
-| prompt | string | 1-400 chars |
-| code | string? | up to 30 lines, 100 chars per line; required for `spot`, `better`, `readcode` |
-| language | enum? | `python`, `typescript`, `php`, `sql`, `cdk`, `text` |
-| choices | list | exactly 4, each `{id, text}`; `id` = 8 random base32 chars assigned at publish; order shuffled at publish |
-| answerChoiceId | string | one of `choices[].id` |
-| answerLines | list[int]? | required for `spot`, each within `1..lines(code)` |
-| explanation | string | 1-1200 chars |
-| sourceUrl, sourceDate | string? | required for `news` and `aisense` when they cite a fact; `https` only |
-| status | enum | only `approved` is publishable |
-| approvedBy, approvedAt | string | from the content repository commit |
-| changeLog | list | `{version, at, reason}` |
+| prompt, code, language | | as in `contracts/question.schema.json` |
+| choices | list[4] | `{id, text}`; `id` = 8 random base32 characters assigned at the first publish and kept across versions; order shuffled at the first publish |
+| answerChoiceId, answerLines | | lines within `1..lines(code)` |
+| explanation | string | |
+| sourceUrl, sourceDate | | required for `news`, and for `aisense` when citing a fact |
+| dailyEligible | bool | false for samples and prototype questions |
+| approvedBy, approvedAt, secondReader | | `secondReader` required for Starter |
+| changeReason | string? | required from version 2 |
 
-Never returned by `open`: `answerChoiceId`, `answerLines`, `explanation`, `sourceUrl`,
-`sourceDate`, `status`, `approvedBy`, `changeLog`.
+Never returned before an answer: `answerChoiceId`, `answerLines`, `explanation`, `sourceUrl`,
+`sourceDate`, and none of the authoring fields (R1 allowlist).
 
 ### Daily set (`DAILY#<date>#<level>` / `SET`)
 
-| Field | Type | Rules |
-|---|---|---|
-| date, level | | |
-| gameNumber | int | days since launch day + 1, same at every level |
-| items | list[5] | `{index, deck, qid, version, targetSeconds}`, decks in the fixed order of FR-001 |
-| publishedAt | timestamp | |
-
-Written only by the publish step. Immutable once its date has started (publish refuses changes
-to today or past days).
+`gameNumber`; `items[5]` = `{index, deck, qid, version, targetSeconds}` in FR-001 order;
+`publishedAt`. Written only by publish; publish refuses changes to today or past days.
 
 ### Play (`P#<playerId>` / `PLAY#<playId>`)
 
 | Field | Type | Rules |
 |---|---|---|
-| date, level, mode | | mode `daily` or `replay` |
-| relaxed | bool | fixed at start |
+| date, level, mode | | |
+| relaxed | bool | false at start unless asked; can go false -> true at any time, never back |
+| relaxedFrom | int? | index of the first question played relaxed |
 | challengeId | string? | set when started from a challenge link |
 | startedAt | timestamp | |
-| answeredMask | int | bit i set when question i is graded |
+| answered | string set | indexes graded so far, added with `ADD` (C1) |
 | grades | map | index -> 0, 0.5 or 1 |
-| score | number | sum of grades, 0-5, half steps |
-| bonus | number | sum of bonuses, 0-1.0, steps of 0.2 |
-| elapsedMs | int | sum over answered questions |
-| finishedAt | timestamp? | set by the transaction that sets the last bit |
+| score, bonus, elapsedMs | number | added with `ADD` |
 | expiresAt | epoch s | startedAt + 90 days |
 
-State: `started` -> `in_progress` (1-4 bits) -> `finished` (5 bits). No transition back.
+`finished` = `size(answered) = 5`, derived. States: `started` -> `in_progress` -> `finished`.
+A `replay` play for today is refused until the `daily` play of that date and level is finished
+(C3).
 
 ### Answer (`P#<playerId>` / `ANS#<playId>#<index>`)
 
-| Field | Type | Rules |
-|---|---|---|
-| qid, version | | copied from the daily set at open |
-| servedAt | timestamp | written once by open (`if_not_exists`) |
-| choiceId, line | | written once by answer |
-| grade | number | condition `attribute_not_exists(grade)` |
-| bonus | number | 0 or 0.2 |
-| answeredAt, elapsedMs | | |
-| expiresAt | epoch s | 90 days |
-
-State: `served` -> `graded`. A second answer with the same `choiceId` and `line` returns the
-stored grade; a different one is refused (`409`).
+`qid`, `version` (copied from the daily set at open), `servedAt` (written once), `choiceId`,
+`line`, `grade`, `bonus`, `answeredAt`, `elapsedMs`, `expiresAt` = the play's `expiresAt` (same
+base time as the play, W1). States `served` -> `graded`. Transaction and cancellation table:
+research R2.
 
 ### Practice attempt (`P#<playerId>` / `PRA#<attemptId>`)
 
-Same fields as Answer, plus `deck`. `attemptId` is a random id issued by `practice/next`.
-Expires after 90 days. Never touches a Play.
+Same fields as Answer plus `deck`. `attemptId` = random id from `practice/next`. At most 200
+attempts per player per day (counter item `PRACOUNT#<date>`, conditional `ADD`). `expiresAt` = 14
+days (S5).
 
 ### Challenge (`CH#<challengeId>`)
 
 | Item | Fields |
 |---|---|
-| `META` | `date`, `level`, `ownerHash` (SHA-256 of the challenger's player id with a per-environment pepper), `owner` result snapshot `{grades[5], score, bonus, elapsedMs, relaxed}`, `createdAt`, `expiresAt` (30 days) |
-| `R#<playerHash>` | result snapshot of a colleague who finished the set, written when their play finishes; at most 50 per challenge |
+| `META` | `date`, `level`, `ownerHash` = HMAC(pepper, playerId), `owner` snapshot `{grades[5], score, bonus, elapsedMs, relaxed}`, `results` (count), `createdAt`, `expiresAt` (30 days) |
+| `R#<playerHash>` | colleague snapshot, written in the same transaction as their fifth answer (R2), `attribute_not_exists`; `META.results < 50` checked in the same transaction |
 
-`challengeId` = 12 random base32 characters. Creating a challenge twice for the same play
-returns the same id (stored on the play).
+`challengeId` = 12 random base32 characters, stored on the owner's play; creating it twice
+returns the same id. `GET` compares `expiresAt` with now and answers `expired` (W4). A colleague
+who already finished that set gets their snapshot written from their existing play on first
+view (spec Story 4, 3a).
 
 ### Practice pool (`POOL#<level>#<deck>` / `<date>#<qid>`)
 
-Written by the publish step for every question of a published day, readable by practice only
-when `date < today`. Prototype questions are written here with date `2026-10-23` to
-`2026-11-05` and never appear in a daily set (FR-024c).
+Payload: `version`. Written by publish for every question of a published day; read only with
+`SK < today`. Prototype questions are written with their original dates (2026-10-23 to
+2026-11-05) and `dailyEligible = false`.
 
 ### Stock (`STOCK#<level>` / `<date>`)
 
-One marker item per published complete daily set; `stock_check` counts markers from today and
-publishes `StockDaysAhead`.
+One marker per published complete set.
 
-### Local progress (browser only, `localStorage` key `staysharp.v1`)
+### Local progress (browser, `localStorage` key `staysharp.v1`)
 
-`{ playerId, level, relaxed, days: { "<level>": { "<date>": {score, bonus, finished: true} } },
-freeze: { "<level>": {held: bool, earnedWeek, usedOn[]} }, longest: {"<level>": n},
-deckStats: {"<level>": {"<deck>": {answered, correct}}}, boxes: {"<qid>": 1..5} }`.
-Versioned; unknown or broken data is reset with a message, never a crash.
+`{ playerId, level, relaxed, days: {<level>: {<playDate>: {score, bonus, relaxed}}},
+freeze: {<level>: {held, earnedWeek, usedOn[]}}, longest: {<level>: n},
+deckStats: {<level>: {<deck>: {answered, correct}}}, boxes: {<qid>: 1..5} }`. Answers marked
+`duplicate` are never counted. Versioned; broken data is reset with a message, never a crash.
 
 ## Validation summary
 
-- Every request body is validated by Pydantic models matching `contracts/openapi.yaml`; unknown
-  fields are rejected; body size limit 2 KB.
+- Pydantic models match `contracts/openapi.yaml`; unknown fields rejected; body over 2 KB refused
+  at the edge (WAF) and again in the Lambda.
 - `X-Player-Id` must be a UUIDv4.
-- `open` and `answer` for mode `daily` accept `date` = today, or yesterday when the play was
-  started yesterday (R6). Future dates are always refused.
-- Question files are validated against `contracts/question.schema.json` before publish.
+- `line` must be within the line count of the served question version (not only <= 30).
+- Dates: research R6.
+- Content: `contracts/question.schema.json`, `contracts/schedule.schema.json`, plus the publish
+  checks in research R4.

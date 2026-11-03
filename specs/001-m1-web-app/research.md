@@ -1,201 +1,307 @@
 # Research: M1 - public daily game without accounts
 
-**Date**: 2026-11-03 | **Spec**: [spec.md](./spec.md) | **Plan**: [plan.md](./plan.md)
+**Date**: 2026-11-03 (revised after the plan audit, same day) | **Spec**: [spec.md](./spec.md) |
+**Plan**: [plan.md](./plan.md)
 
 Each entry: Decision, Rationale, Alternatives considered. Items marked **Verify before first
-deploy** are facts I could not confirm from an AWS primary source on 2026-11-03.
+deploy** are facts not confirmed from an AWS primary source on 2026-11-03. Audit finding ids
+(C1-C7, W1-W18, S1-S11) show where a decision changed after the audit.
 
 ## R1. How answers stay out of the browser
 
-- **Decision**: Questions are sent one at a time through `POST .../questions/{n}/open`. The
-  response schema is strict (`additionalProperties: false`) and has no answer, explanation or
-  source fields. Choice ids are random tokens and the choice order is shuffled once at publish
-  time, so neither the id nor the position says which choice is right. The static site contains
-  no question content. Source maps are not uploaded. API responses carry `Cache-Control: no-store`.
-- **Rationale**: Principle II and FR-003. Sending one question at a time also gives the server a
-  real "first sent" time for the speed bonus (FR-005a) and stops a player from reading question 5
-  while the clock runs on question 1.
-- **Alternatives considered**: send the whole set at once (breaks per-question timing); encrypt
-  answers in the browser (the key would also be in the browser); shuffle at request time with a
-  hash of the question id, as in the prototype (the algorithm is public, so the order can be
-  recomputed).
+- **Decision**: Questions are sent one at a time (`POST /plays` returns question 0, then
+  `POST .../questions/{n}/open`). The view is built by one function from an explicit field
+  allowlist (`id, deck, prompt, code, language, choices, targetSeconds, servedAt`); a unit test
+  passes a full question item, answer fields included, and asserts they cannot appear (S2). The
+  response schema is also strict (`additionalProperties: false`). Choice ids are random tokens and
+  the choice order is shuffled once at publish; publish checks that the correct position is
+  roughly uniform across a batch (S7). The static site contains no question content; source maps
+  are not uploaded; API responses carry `Cache-Control: no-store` and CloudFront never caches
+  `/api/*` (R8, C2).
+- **Replay is not an answer key (C3)**: `POST /plays` refuses `mode=replay` for today unless the
+  player's daily play for that date and level is finished (`409`).
+- **Practice cannot reach future questions (C4)**: `practice/next` reads the pool
+  `POOL#<level>#<deck>` for `date < today` and resolves `prefer` ids only by membership in that
+  result, never as a direct `Q#` key. Question ids carry no date or schedule information; publish
+  refuses ids that contain a date-like pattern.
+- **Accepted residual (S1)**: the set and its choice ids are the same for everyone, so a finished
+  player can share the right ids. No leaderboard in M1, so only the cheater gains; per-player ids
+  are an M2 item.
+- **Alternatives considered**: whole set at once (breaks per-question timing); encrypting answers
+  in the browser (key would be in the browser); shuffle at request time with a public hash, as in
+  the prototype (order can be recomputed).
 
 ## R2. "Same answer twice counts once"
 
-- **Decision**: One DynamoDB item per (player, play, question), created by `open` with
-  `servedAt` (`if_not_exists`). `answer` runs a single `TransactWriteItems`:
-  1. update the answer item with the grade, condition `attribute_not_exists(grade)`;
-  2. update the play item (add grade and bonus, set the answered bit), condition that the bit is
-     not set yet.
-  If the transaction is cancelled because the grade already exists, the handler reads the stored
-  item: the same choice and line returns the stored grade with `200`; a different answer returns
-  `409`. Practice uses a server-issued `attemptId` as the key.
-- **Rationale**: Principle IV and FR-006. The business key itself is the idempotency key, so
-  double clicks, client retries, Lambda retries and two tabs all end in one stored grade.
-  The transaction keeps the score and the answers consistent.
-- **Alternatives considered**: Powertools idempotency utility alone (it caches responses for a
-  time window, but the business rule "once forever" needs the conditional write anyway; Powertools
-  stays available for M3 queue consumers, where it fits better); read-then-write (race between two
-  tabs).
+- **Decision**: One answer item per (player, play, question), created by `open` with `servedAt`
+  (`if_not_exists`). `answer` runs one `TransactWriteItems`:
+  1. update the answer item: set choice, line, grade, bonus, `answeredAt`; condition
+     `attribute_exists(servedAt) AND attribute_not_exists(grade)`;
+     `ReturnValuesOnConditionCheckFailure=ALL_OLD`;
+  2. update the play item, purely additive, no condition (C1): `ADD score :g, bonus :b,
+     elapsedMs :e, answered :idxSet` (a string set) and `SET grades.#i = :g`;
+  3. on the fifth answer only (known from the play read at the start of the request): put the
+     challenge result item `R#<playerHash>` with `attribute_not_exists`, and update the challenge
+     `META` counter with condition `results < 50` (W4).
+  `finished` is derived as `size(answered) = 5` at read time; no `finishedAt` condition.
+  Item 1 alone makes the transaction once-only.
+- **Cancellation handling (W1)**:
+
+  | Cancellation reasons | Meaning | Response |
+  |---|---|---|
+  | item 1 `ConditionalCheckFailed`, old item has `grade`, same choice and line | duplicate | `200`, stored result, `duplicate: true`; `DuplicateAnswers` +1 |
+  | item 1 `ConditionalCheckFailed`, old item has `grade`, different answer | conflict | `409` with the stored result in the body (W18) |
+  | item 1 `ConditionalCheckFailed`, old item missing or no `servedAt` | not opened (or expired) | `400 invalid_request` |
+  | item 3 `ConditionalCheckFailed` only (cap of 50 reached) | challenge full | retry the transaction without item 3; result still graded |
+  | `TransactionConflict`, throttling, any other reason | temporary or unknown | retry up to 3 times with backoff and jitter; then `503`, `ScoringFailures` +1; never classified as a duplicate |
+
+  Practice uses the same pattern on `PRA#<attemptId>` items, without a play.
+- **Rationale**: Principle IV, FR-006. The business key is the idempotency key, so double clicks,
+  retries and two tabs all end in one stored grade, and the old item comes back inside the
+  cancellation (no second read, no consistency question).
+- **Tests (W15)**: run on DynamoDB Local, not moto (cancellation reasons). An early spike checks
+  that DynamoDB Local returns `ALL_OLD` items in cancellation reasons; if not, that case is
+  covered by an integration test against the dev table.
+- **Alternatives considered**: Powertools idempotency utility (response cache for a time window;
+  the rule "once forever" needs the conditional write anyway; kept for M3 queue consumers);
+  read-then-write (race); bit mask with a condition (DynamoDB has no bitwise operators, C1).
 
 ## R3. Anonymous player id
 
 - **Decision**: The browser creates a UUIDv4 on first visit, keeps it in `localStorage`, and sends
-  it in the `X-Player-Id` header. The server checks the format only. All player items expire
-  after 90 days (DynamoDB TTL).
-- **Rationale**: FR-011. There is no leaderboard in M1, so a forged id only fools the forger. A
-  server-signed id would need a secret to manage, for no gain in M1. M2 accounts adopt the id.
-- **Alternatives considered**: signed server-issued id (more moving parts, revisit in M2 when the
-  leaderboard makes cheating matter); cookie (needs a consent analysis, not needed).
+  it in `X-Player-Id`. The server checks the format only. In logs and in challenge items it only
+  appears as `HMAC-SHA256(pepper, playerId)` (S4).
+- **Rationale**: FR-011. No leaderboard, so a forged id only fools the forger. M2 accounts adopt
+  the id.
+- **Alternatives considered**: signed server-issued id (revisit in M2); cookie (not needed).
 
-## R4. Where content lives and how it is published
+## R4. Content: private repository, publish, leak guard
 
-- **Decision**: A private repository `stay-sharp-content` holds questions as YAML, one file per
-  question, validated against the JSON Schema in this repository
-  (`contracts/question.schema.json`). Its CI runs `publish validate` on every push and
-  `publish apply --env dev|prod` on `main`, using a GitHub OIDC role allowed only to write
-  `Q#` and `DAILY#` items (IAM condition `dynamodb:LeadingKeys`). Publishing is all-or-nothing per
-  batch: validate everything, then write in transactions of at most 100 items; any failure stops
-  before writing. Published questions are immutable per version: an edit writes version n+1 and a
-  change log entry; grades already given are not touched (FR-027).
-- **Leak guard (FR-024b)**: the private repository's CI checks out the public repository with
-  full history and fails if any prompt, code block or explanation of a question scheduled for
-  today or later appears in it (normalised text fingerprints). It runs on every push to either
-  repository (a scheduled job covers pushes to the public one, daily). The public repository's
-  own CI only allows question files under `content/samples/`, each marked `sample: true`.
-- **Rationale**: clarification of 2026-11-03 and Principle II.
-- **Alternatives considered**: encrypted files in the public repo (key management, and one
-  mistake publishes everything); an admin screen (out of M1).
+- **Decision**: A private repository `stay-sharp-content` holds questions as YAML (one file per
+  question) and schedules, validated against `contracts/question.schema.json` and
+  `contracts/schedule.schema.json`. Its CI runs `publish validate` on every push and
+  `publish apply --stage prod` on `main`. The dev stage only ever receives fixture content from
+  this repository's `content/samples/` (C7): real future answers never touch dev, the public CI or
+  its logs.
+- **Publish checks in code (W14)**, all-or-nothing per batch: one question per deck in the FR-001
+  order; question level matches schedule level; a qid is scheduled on one date only; no sample or
+  `daily_eligible: false` qid in a schedule; `answer.lines` within the real line count of `code`;
+  every deck has a target time; Starter questions have `second_reader`; a new version of an
+  existing id has `change_reason`; no date-like pattern in ids; correct positions roughly uniform.
+  Writes use transactions of at most 100 items; any failure stops before writing. Each edit writes
+  version n+1 (`Q#<qid>/V#<n>`) and never changes stored grades (FR-027).
+- **Leak guard, two layers (C6)**:
+  1. Private CI, offline: runs the API's view builder (R1) over every question of today and the
+     next 7 days and fails if any answer, explanation or source text appears in the output
+     (SC-002). On success it writes `leak-guard/last-pass` (timestamp, commit) to SSM in the
+     project account through its OIDC role.
+  2. Public CI, every push and pull request from this repository: downloads a fingerprint file
+     (`HMAC-SHA256(K, normalised 12-word shingle)` for prompts, code lines, correct choices and
+     explanations of every question scheduled for today or later) from a private S3 object, and
+     fails if any shingle of any tracked file or of the full git history matches. `K` is an
+     Actions secret (not exposed to fork pull requests; those are checked again on merge). Only
+     match counts and file paths are printed, never text.
+  The prod deploy job refuses to run if `leak-guard/last-pass` is older than 24 hours or the
+  public fingerprint scan of the release commit failed (SC-002a gate).
+- **Alternatives considered**: encrypted files in the public repo (key handling, one mistake leaks
+  everything); a daily cron only (up to 24 hours of exposure, no release gate).
 
 ## R5. Speed bonus and time
 
 - **Decision**: `elapsedMs = answerReceivedAt - servedAt`, both from the Lambda clock. Bonus 0.2 if
-  grade is 1, the play is not relaxed and `elapsedMs <= target`. Targets are copied into the daily
-  set item at publish, so a later change never alters a past day. "Suspiciously fast" is an
-  aggregate metric per deck, no player id.
-- **Rationale**: FR-005a to FR-005d. Server time cannot be faked from the browser.
-- **Alternatives considered**: client timer (fakeable); hard limit (rejected in clarification,
-  WCAG 2.2.1).
+  grade is 1, the play is not relaxed at the time of the answer, and `elapsedMs <= target`.
+  Targets are copied into the daily set at publish. Relaxed can be switched on mid-play through
+  `POST /plays/{playId}/relaxed` (one-way, W3). `servedAt` is written before the response leaves,
+  so a lost response uses part of the window; accepted (S6). `SuspiciouslyFast` is an aggregate
+  metric with a `deck` dimension only.
+- **Alternatives considered**: client timer (fakeable); hard limit (rejected, WCAG 2.2.1).
 
 ## R6. Day boundary and dates
 
-- **Decision**: The server computes "today" in `Europe/Zurich` (`zoneinfo`) and returns it from
-  `GET /today`; the browser never uses its own date for game logic. A daily play started on day D
-  can still be answered on D+1 (until 23:59:59 D+1) so a set started before midnight can be
-  finished.
-- **Rationale**: spec edge cases (device clock, midnight).
+- **Decision**: The server computes "today" in `Europe/Zurich` and returns it from `GET /today`.
+  A play's own `date` is authoritative for streak, freeze week and share card (W2). A daily play
+  for D can be answered until 23:59:59 on D+1; the D+1 set is a separate play available at
+  00:00. Validation: `daily` plays accept `date = today` at start; `open` and `answer` accept the
+  play's date or the day after. Future dates are always refused.
 
 ## R7. Streak, freeze, skill view, practice boxes
 
-- **Decision**: Computed in the browser in one pure TypeScript module (`front/src/progress/`),
-  from a local log of finished days (dates from the server) and local answer counts. Exhaustively
-  unit-tested with a table of day sequences, including freeze earning (5 finished dailies in one
-  ISO week), freeze use (one missed day), two missed days, week boundaries and Zurich DST changes.
-  Practice "weak spots": five Leitner boxes per question id in the browser; the browser sends up
-  to 5 preferred question ids to `POST /practice/next`, and the server returns the first one that
-  belongs to a past published day, else a random past question of the chosen deck.
-- **Rationale**: FR-012 to FR-016, FR-022: progress is local in M1. Keeping it in one pure module
-  makes the M2 move to the server a port, not a rewrite.
+- **Decision**: Computed in the browser in one pure TypeScript module (`front/src/progress/`) from
+  a local log of finished plays keyed by the play's date, and local answer counts. Rules: answers
+  with `duplicate: true` are ignored for counts, boxes and the day log (W13). Table-driven unit
+  tests cover freeze earning (5 finished dailies in one ISO week), freeze use (one missed day),
+  two missed days, week boundaries, DST weeks and a play finished after midnight. Practice: five
+  Leitner boxes per qid in the browser; up to 5 preferred qids sent to `practice/next` (R1).
 
-## R8. API shape and Lambda layout
+## R8. API, edge and Lambda layout
 
-- **Decision**: One API Lambda (Python 3.13, arm64, 512 MB) with Powertools `APIGatewayHttpResolver`
-  and Pydantic v2 models, behind an API Gateway **HTTP API**, behind CloudFront on the same domain
-  (`/api/*`), so there is no CORS and one place for security headers and WAF.
-  Two more functions: `pre_traffic_check` (CodeDeploy hook, R10) and `stock_check` (daily
-  EventBridge schedule, FR-026). Every boto3 client has explicit `connect_timeout=2`,
-  `read_timeout=3`, standard retry mode with `max_attempts=3` (temporary errors only, with
-  backoff and jitter from botocore). Function timeout 10 s.
-- **Rationale**: one function means one canary and one alias to roll back; the routes share the
-  same data access and grading code.
-- **Alternatives considered**: one function per route (more aliases and deployment groups for no
-  gain at this size); REST API (supports WAF directly but costs more; WAF sits on CloudFront
-  instead).
+- **Decision**: One API Lambda (Python 3.13, arm64, 512 MB, timeout 10 s) with Powertools
+  `APIGatewayHttpResolver` and Pydantic v2, behind an API Gateway HTTP API, behind CloudFront on
+  the same domain:
+  - CloudFront behaviour `/api/*` (C2): `CachePolicy.CACHING_DISABLED`; origin request policy
+    forwarding `X-Player-Id` and `Content-Type` only (no cookies, no query strings beyond the
+    contract); all methods allowed. A CDK assertion test checks it (V11).
+  - Default behaviour: S3 with OAC; static files under a versioned prefix `site/<commit>/`, the
+    distribution's origin path points at the current one, so deploying the previous commit is an
+    instant revert (W6). A CloudFront Function rewrites `/c/<id>` to `/c/index.html`; other
+    unknown paths return a real 404 page (W18).
+  - Every boto3 client: `connect_timeout=2`, `read_timeout=3`, standard retry mode,
+    `max_attempts=3`. Every DynamoDB response checked; unexpected shapes raise and count as
+    `ScoringFailures` on scoring paths.
+  - `POWERTOOLS_LOGGER_LOG_EVENT=false`; validation errors are logged as field names and error
+    types only, never input values or headers (S3).
+  - Two more functions: `pre_traffic_check` (R10) and `stock_check` (R11). Both are invoked
+    asynchronously; each has an on-failure destination (SNS) and an error alarm.
+- **Alternatives considered**: one function per route (more aliases for no gain); REST API
+  (request validation at the edge but more cost; edge validation done in WAF instead, R9).
 
 ## R9. Rate limiting and WAF
 
-- **Decision**: AWS WAF web ACL on CloudFront (created in `us-east-1`), with a rate-based rule per
-  IP on `/api/*` (initial value 300 requests per 5 minutes) and the AWS managed common rule set.
-  API Gateway stage throttling as a second limit (burst 50, rate 20 per second). Lambda reserved
-  concurrency 20 caps the cost of a flood. WAF logging off (it would store IP addresses).
-- **Cost**: CloudFront flat-rate plans (Free plan: 1M requests and 100 GB per month, WAF
-  included, no overage charges) would remove the WAF cost. **Verify before first deploy**: whether
-  the Free plan includes WAF rate-based rules and is available to this account (sources disagree;
-  AWS pricing page lists the allowance, third-party pages list "5 WAF rules"). Fallback: standard
-  WAF pricing, estimated at about USD 7 a month (web ACL plus 2 rules), still under the USD 20
-  budget. Estimate, not measured.
+- **Decision**: WAF web ACL on CloudFront (in `us-east-1`): rate-based rule per IP on `/api/*` at
+  1,000 requests per 5 minutes (a full daily uses about 15; the margin covers schools and offices
+  behind one IP, W12) with a custom response: status 429, `Content-Type: application/json`, body
+  `{"code":"rate_limited","message":"Too many requests. Try again in a few minutes."}`; a
+  size-constraint rule refusing `/api/*` bodies over 2 KB (edge validation for Principle VI); AWS
+  managed common rule set. API Gateway throttling: burst 50, rate 20 per second. Lambda reserved
+  concurrency 20: a flood gives 5xx to real players instead of a bill; recorded as a deliberate
+  availability trade-off. WAF logging off (it would store IPs).
+- **Cost**: **Verify before first deploy** whether the CloudFront flat-rate Free plan (1M requests
+  and 100 GB a month, WAF included per AWS pricing pages; rule limits unconfirmed) is available to
+  the account and covers these rules. Fallback: standard WAF, estimated at about USD 7 a month
+  (web ACL + 3 rules). Estimate, not measured.
 - **Sources**: <https://aws.amazon.com/cloudfront/pricing/>,
   <https://docs.aws.amazon.com/PricingPlanManager/latest/UserGuide/plans.html>
 
-## R10. Canary and automatic rollback with low traffic
+## R10. Canary, pre-traffic self-check, rollback
 
-- **Decision**: The API function is deployed through a Lambda alias `live` and a CodeDeploy
-  deployment group with `LambdaCanary10Percent5Minutes` in prod (`AllAtOnce` in dev). Rollback
-  alarms on the alias: `Errors >= 1`, API `5xx >= 1` and `ScoringFailures >= 1`, each over 1
-  minute. Because a quiet hour may send zero real requests to the 10 % canary, a
-  **BeforeAllowTraffic hook** (`pre_traffic_check`) calls the new version directly: it opens and
-  answers a hidden self-test daily set (level `selftest`, never listed), checks grades, the
-  answer-hiding schema and the "same answer twice" rule, then reports success or failure to
-  CodeDeploy. A failing hook stops the deployment before any player traffic.
-  Fault injection for SC-005: a `FAULT_INJECTION=scoring` setting that makes grading raise; a CDK
-  assertion test fails the build if it is set in the prod stage.
-- **Rationale**: Principle V and FR-029. Without the hook, a canary with no traffic proves nothing.
-- **Alternatives considered**: CloudWatch Synthetics canary every 5 minutes (costs more, and only
-  sees the live version).
+- **Decision**:
+  - Lambda alias `live`, CodeDeploy deployment group: `LambdaCanary10Percent5Minutes` in prod,
+    `AllAtOnce` in dev.
+  - **Self-check without data (C5)**: the API package contains a `selfcheck` entry point that
+    grades fixtures bundled in the package (no table access, no metrics except its own
+    `SelfCheckFailures`), checks the view builder against the allowlist, and checks the
+    duplicate-classification table of R2 with a stubbed DynamoDB client. `pre_traffic_check`
+    invokes the **new version** directly (its qualified ARN is passed as an environment
+    variable from the same CDK construct; IAM allows `lambda:InvokeFunction` on that ARN only),
+    with a synthetic event that routes to `selfcheck`, then reports to CodeDeploy
+    (`PutLifecycleEventHookExecutionStatus`). The `selftest` level no longer exists anywhere.
+  - **Rollback alarms (W5)**, all `treatMissingData=notBreaching`, period 60 s, 1 of 1 datapoint:
+
+    | Alarm | Metric | Dimensions |
+    |---|---|---|
+    | Canary errors | `AWS/Lambda Errors` | `FunctionName`, `Resource=<fn>:live`, `ExecutedVersion=<new>` |
+    | Canary scoring failures | `StaySharp ScoringFailures` | `Stage`, `FunctionVersion` (from `context.function_version`) |
+    | API 5xx | `AWS/ApiGateway 5xx` | `ApiId`, `Stage` |
+
+    The paging alarm for the maintainer (FR-028) is separate: `ScoringFailures` summed over
+    versions, >= 1 in 5 minutes, SNS only, never wired to CodeDeploy. Once the alias is at 100 %,
+    CodeDeploy no longer rolls back; `docs/runbooks/rollback.md` covers that case.
+  - **Fault injection (W11)**: a separate test-only handler module, packaged only in the dev
+    build (CDK asset excludes it for prod; a CDK assertion checks the prod asset has no such
+    file); the code also refuses it at runtime when `STAGE=prod`. The drill (V8) restores dev in a
+    `finally` step, and an alarm fires if a dev function runs with injection on for more than
+    30 minutes.
+  - **Front end after API (W6)**: the deploy job uploads the new site only after the canary has
+    completed. API changes stay compatible with the previous front end for one release (`/api/v1`
+    is additive only).
+- **Rationale**: Principle V, FR-029; a canary with almost no traffic proves nothing without the
+  self-check.
 
 ## R11. Alarms, metrics, logs
 
-- **Decision**: Powertools Logger (JSON, `request_id`, `question_id`, `play_id` hash, never the
-  player id in plain form, never IP), Powertools Metrics (EMF, namespace `StaySharp`):
-  `ScoringFailures`, `AnswersGraded`, `DuplicateAnswers`, `SuspiciouslyFast` (by deck),
-  `PlaysStarted`, `PlaysFinished`, `ChallengesCreated`, `ChallengesFinished`, `StockDaysAhead`.
-  Alarms to an SNS topic with the maintainer's e-mail: scoring failures (>= 1 in 1 minute,
-  meets the 5-minute target of SC-004), API 5xx, Lambda errors and throttles, `StockDaysAhead < 7`,
-  AWS Budget at USD 20 (actual) and USD 16 (forecast). API Gateway access logs exclude
-  `sourceIp`; CloudFront standard logs off. Log retention 30 days.
-- **Rationale**: Principles IV, VI, VIII; FR-028, FR-031; SC-010 aggregate analytics without
-  cookies.
+- **Decision**: Powertools Logger (JSON; `request_id`, `question_id`, `player_hash`; never IP,
+  never raw player id). Powertools Metrics (EMF, namespace `StaySharp`, dimension `Stage` on
+  everything), one dimension set per metric (W9):
+
+  | Metric | Extra dimension | Use |
+  |---|---|---|
+  | `ScoringFailures` | `FunctionVersion` | paging + rollback |
+  | `AnswersGraded`, `DuplicateAnswers` | - | health |
+  | `SuspiciouslyFast` | `Deck` (10 values) | review |
+  | `PlaysStarted`, `PlaysFinished`, `PlayDurationMs` | - | SC-001 (p50 of `PlayDurationMs`), SC-010 support |
+  | `ChallengesCreated`, `ChallengesFinished` | - | SC-010 |
+  | `StockDaysAhead` | `Level` | FR-026 |
+  | `SelfCheckFailures` | - | R10 |
+
+  About 25 metric series per stage; custom metrics are billed per metric-hour, so short-lived
+  `FunctionVersion` series cost little. Estimate in R15. A CDK test and the review checklist flag
+  any new dimension.
+- **Alarms** to one SNS topic with the maintainer's e-mail: paging `ScoringFailures`; API 5xx;
+  Lambda errors and throttles; CloudFront 5xx rate (W6); `StockDaysAhead < 7` with
+  `treatMissingData=breaching`, `stock_check` errors, and `stock_check` `Invocations < 1` per day
+  (W8); `SelfCheckFailures`; dev fault-injection left on. Stock counts days strictly after today.
+- **Budget**: one AWS Budget for the project account, USD 20 actual and USD 16 forecast, in the
+  ops stack (deployed once, not per stage; W9).
+- **Logs**: API Gateway access logs without `sourceIp`; CloudFront standard logs off; retention
+  30 days.
 
 ## R12. Front end
 
-- **Decision**: React 19, Vite, Tailwind CSS v4, TypeScript strict. No router library (four views:
-  home, play, result, practice; plus `/c/{id}` and `/privacy` as prerendered entry points).
-  Fonts self-hosted and subset (the prototype loads Google Fonts, which sends the visitor's IP to
-  Google). Strict Content-Security-Policy from CloudFront response headers. Tests: Vitest and
-  Testing Library (units and components), Playwright with `@axe-core/playwright` (a full daily by
-  keyboard, relaxed mode, challenge flow, leak scan), Lighthouse CI with all four categories
-  asserted at 1.0 on mobile and desktop presets.
-- **Rationale**: Principle VII, FR-033, FR-034, SC-006, SC-007.
+- **Decision**: React 19, Vite, Tailwind CSS v4, TypeScript strict. No router library. Fonts
+  self-hosted and subset. Strict CSP from CloudFront response headers. `POST /plays` returns the
+  first question, and `/today` is prefetched from the HTML, so the first question needs two
+  round trips at most (SC-007, W7). Tests: Vitest + Testing Library, Playwright + axe-core,
+  Lighthouse CI asserting 1.0 x4 on mobile and desktop presets.
 
-## R13. CI/CD and accounts
+## R13. CI/CD and the AWS account
 
-- **Decision**: GitHub Actions. On pull request: ruff, mypy (strict), pytest with coverage,
-  eslint, `tsc --noEmit`, vitest, `cdk synth`, CDK assertion tests, `cdk diff` against dev and prod
-  with a read-only OIDC role (trust limited to this repository; pull requests from forks get no
-  OIDC token). On merge to `main`: deploy dev, run API integration tests, Playwright, Lighthouse
-  CI and the leak scan against dev, then wait for manual approval (GitHub environment
-  `production`), then deploy prod (CodeDeploy canary). Accounts: `stay-sharp-dev` and
-  `stay-sharp-prod` in an AWS Organization; deploy roles via GitHub OIDC, no long-lived keys.
-  `cdk.context.json` committed; no account ids printed in public logs beyond what CDK requires.
-- **Rationale**: Principle V, FR-030.
+- **Decision**:
+  - One AWS account `stay-sharp` in an AWS Organization (constitution 1.0.1), stages `dev` and
+    `prod` as separate stacks with stage-prefixed names (`staysharp-dev-*`, `staysharp-prod-*`).
+  - **Pull requests** (C7): no AWS credentials at all. ruff, mypy strict, pytest, eslint,
+    `tsc --noEmit`, vitest, CDK assertion tests, `cdk synth --no-lookups` with the committed
+    `cdk.context.json`, the public leak-guard scan (R4, secret not available to forks).
+  - **Push to `main`**: `cdk diff` and deploy dev, then API integration tests, Playwright,
+    Lighthouse CI and the end-to-end leak scan against dev (fixture content only), then manual
+    approval (GitHub environment `production`), then the SC-002a gate (R4), `cdk diff` and
+    deploy prod with the canary, then the front-end upload.
+  - **OIDC roles**, one per purpose, trust pinned by `sub`:
+    `repo:<owner>/stay-sharp:ref:refs/heads/main` (dev deploy),
+    `repo:<owner>/stay-sharp:environment:production` (prod deploy),
+    `repo:<owner>/stay-sharp-content:ref:refs/heads/main` (publish prod, write `Q#`, `DAILY#`,
+    `POOL#`, `STOCK#` keys only, write the leak-guard SSM parameter and fingerprint object).
+    CDK bootstrap with narrowed `--cloudformation-execution-policies` (the default makes the deploy
+    role an account admin).
+  - Every third-party action pinned to a commit SHA; default `GITHUB_TOKEN` permissions read-only;
+    no artifacts or traces uploaded from jobs that can touch real content; diffs are printed only
+    in post-merge jobs.
+- **Rationale**: Principle V and VI for a public repository.
 
-## R14. Region
+## R14. Region and DNS
 
-- **Decision**: All stateful resources and Lambda in `eu-central-2` (Zurich). CloudFront, its ACM
-  certificate and the WAF web ACL are global and must be created in `us-east-1`; they store no
-  game data. DNS for `stay-sharp.lumineth.com` stays at Infomaniak (CNAME to CloudFront, plus the
-  ACM validation CNAME, added by hand by the maintainer).
-- **Verify before first deploy**: that API Gateway HTTP API, Lambda `python3.13` on arm64,
-  CodeDeploy and DynamoDB TTL are available in `eu-central-2`:
-  `aws ssm get-parameters-by-path --path /aws/service/global-infrastructure/regions/eu-central-2/services`.
-  Fallback: `eu-central-1` (Frankfurt), recorded as an exception under Principle VI.
+- **Decision**: Stateful resources and Lambdas in `eu-central-2`. CloudFront, its ACM certificate
+  and the WAF web ACL in `us-east-1` (no game data). `infra/app.py` uses
+  `cross_region_references=True` for the certificate and web ACL; the edge stack is deployed first
+  and destroyed last. DNS stays at Infomaniak: the ACM validation CNAME and the site CNAME are
+  added by the maintainer **in delivery step 1** (W16), so the wait is off the critical path.
+- **Verify before first deploy** (step 1): availability in `eu-central-2` of API Gateway HTTP API,
+  Lambda `python3.13` arm64, CodeDeploy, DynamoDB TTL, with the free SSM public parameters
+  (`/aws/service/global-infrastructure/regions/eu-central-2/services/<service>`). Fallback:
+  `eu-central-1`, recorded as an exception under Principle VI.
 - **Sources**: <https://aws.amazon.com/blogs/aws/a-new-aws-region-opens-in-switzerland/>,
   <https://aws.amazon.com/blogs/alps/3-year-anniversary-news-about-aws-europe-zurich-region>
 
 ## R15. Cost estimate (to replace with measured figures)
 
 Estimate for low traffic (hundreds of players a day), not measured: Lambda, API Gateway HTTP API,
-DynamoDB on-demand, S3 and CloudFront within or near free tiers (under USD 2); about 10 CloudWatch
-alarms (about USD 1); WAF USD 0 on the CloudFront Free plan or about USD 7 on standard pricing.
-Total estimate: USD 3 to 10 a month. The README will show the measured figure after one full month
-(Principle I).
+DynamoDB on-demand, S3 and CloudFront near or within free tiers (under USD 2); about 12 alarms
+(about USD 1.20); about 50 custom metric series across two stages, many idle in dev (USD 3 to 8
+depending on how many are active; free tier covers 10); WAF USD 0 on the CloudFront Free plan or
+about USD 7 on standard pricing; one Secrets Manager secret (USD 0.40). Total estimate: USD 5 to
+19 a month, which leaves little margin under USD 20 in the worst case: if the first month's
+measured cost is above USD 12, cut dev metrics first (dev emits only `ScoringFailures` and
+`SelfCheckFailures`). The README shows the measured figure after one full month (Principle I).
+
+## R16. Secrets
+
+- **Decision (W10)**: one secret, the challenge/log pepper, in Secrets Manager with
+  `generate_secret_string` and `RemovalPolicy.RETAIN`, per stage; read at cold start and cached.
+  Rotating it invalidates live challenges (owner and colleague hashes stop matching), so rotation
+  is announced 30 days ahead and done only after that. No other secret exists in M1.
+- **Alternatives considered**: SSM SecureString (CloudFormation cannot create one); a pepper in an
+  environment variable (visible in console and diffs).
+
+## R17. Data recovery
+
+- **Decision (S10)**: PITR on in prod. `docs/runbooks/restore.md`: restore to a new table, compare
+  item counts, switch the table name parameter, redeploy. Tried once in dev before launch.

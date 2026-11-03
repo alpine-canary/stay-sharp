@@ -24,6 +24,8 @@
   sample questions; a question may be copied to the public repository only after its day has
   passed. The 14 prototype days are already public, so they are used as practice and demo
   content, never as daily sets.
+- Q: One AWS account per environment, or one for the project? -> A: One new account dedicated to
+  Stay Sharp (constitution 1.0.1); dev and prod are separate stacks in it.
 
 **Input**: User description: "M1 of Stay Sharp: public web app without accounts. Daily set of 5
 questions (one per deck: spot the bug, could do better, what if it fails, acronym or tool, AI this
@@ -163,6 +165,9 @@ check that B sees both results and A can see B's result from the same link.
 3. **Given** a colleague opens a challenge link for a past date, **When** they play it, **Then** it
    is played as a past set: graded and explained, compared side by side, but it does not count
    for their streak.
+3a. **Given** a colleague already finished today's daily before opening a challenge link for
+   today, **When** they open it, **Then** both results are shown side by side at once, using
+   their existing result; nothing is replayed.
 4. **Given** the colleague has finished, **When** either player opens the link again, **Then**
    both results are shown side by side.
 5. **Given** a link with an unknown, malformed or expired id, **When** it is opened, **Then** the
@@ -251,7 +256,9 @@ rejects the invalid one with a clear reason and accepts the rest.
 ### Edge Cases
 
 - A player plays across midnight Europe/Zurich: the set they started stays the set they finish,
-  and it counts for the date it was started; the new set unlocks after they finish.
+  and it counts for the date it was started (streak, week and share card all use that date). It
+  can be finished until the end of the next day. The new day's set is available at once and is a
+  separate play.
 - The device clock is wrong or in another time zone: the date of the set and of streak days comes
   from the server, not the device.
 - A player clears browser storage: streak, freeze, skill view and practice history are lost
@@ -307,7 +314,9 @@ rejects the invalid one with a clear reason and accepts the rest.
   - Starter: Logic puzzle 60 s, Read the code 45 s, What happens if… 30 s, Tech words 20 s, AI
     sense 30 s.
 - **FR-005c**: There MUST be no hard time limit. A "relaxed" setting, remembered on the browser,
-  hides the timer and turns the bonus off; the result is marked relaxed (WCAG 2.2.1).
+  hides the timer and turns the bonus off; the result is marked relaxed (WCAG 2.2.1). Relaxed can
+  be switched on at any moment, including in the middle of a play (no bonus from then on, result
+  marked relaxed); it cannot be switched off for a play already marked relaxed.
 - **FR-005d**: Right answers received faster than 3 seconds (5 seconds for Spot the bug and Logic
   puzzle) MUST be counted as "suspiciously fast" in an aggregate metric, without personal data and
   without changing the grade.
@@ -420,7 +429,8 @@ rejects the invalid one with a clear reason and accepts the rest.
 - **Daily set**: a date and a level, with five question references in deck order and the target
   time per deck in force that day. Has a game number (#n) counted from launch day.
 - **Anonymous player**: a random id per browser. No personal data.
-- **Answer record**: player id, date, mode (daily, replay, practice, challenge), question id,
+- **Answer record**: player id, play (date, level, mode daily or replay; a challenge is a daily
+  or replay play linked to the challenge) or practice attempt, question id,
   submitted choice and line, grade, time the question was first sent, time the answer arrived,
   speed bonus, relaxed or not. At most one per player, date, mode and question.
 - **Daily result**: player id, date, level, five grades, score, speed bonus, time taken, relaxed
@@ -436,9 +446,10 @@ rejects the invalid one with a clear reason and accepts the rest.
 
 - **SC-001**: A player can play a full daily set in about 5 minutes; the median time to finish,
   measured over the first 4 weeks, is under 6 minutes.
-- **SC-002**: In an automated check run before every release, zero correct answers or explanations
-  are found in anything the browser receives before submitting, for every question of the next 7
-  days.
+- **SC-002**: In an automated check run before every release, the same code that builds what the
+  browser receives is run over every question of the next 7 days, and zero correct answers,
+  explanations or sources are found in its output; an end-to-end scan of a full play finds none
+  either.
 - **SC-003**: In an automated check, submitting the same answer 2, 10 and 50 times (in sequence
   and at the same time) always yields exactly one recorded grade and an unchanged score.
 - **SC-004**: In a test environment, an injected scoring failure triggers a maintainer alert
@@ -476,8 +487,14 @@ rejects the invalid one with a clear reason and accepts the rest.
 - **Starter "Read the code"** uses short Python snippets (4 to 8 lines) only.
 - **Anonymous id**: kept in the browser; the server stores answers under it to enforce
   "count once" and to allow an account to adopt the history in M2.
-- **Retention**: anonymous answer records and challenges are deleted after 90 days and 30 days
-  respectively; there is no personal data to delete in M1.
+- **Retention**: anonymous plays and answers are deleted about 90 days after they start, practice
+  attempts about 14 days, challenges about 30 days (expired links are refused at once; storage
+  clean-up can lag up to two days); there is no personal data to delete in M1.
+- **Known residual (accepted for M1)**: the daily set is the same for everyone, so a player who
+  has finished can tell others the right answers. With no leaderboard this harms only the
+  cheater; the M2 leaderboard will need per-player choice ids.
+- **Return rate (SC-010)** is measured by a monthly read-only count over stored plays (players
+  with finished plays on two or more dates), not by tracking individuals.
 - **Analytics**: only aggregate, cookie-free counts (plays, finishes, challenge opens) are
   recorded, so no consent banner is needed.
 - **Constraints set by the project (not open in this spec)**: React 19 + Vite + Tailwind front end;

@@ -1,20 +1,24 @@
 # Implementation Plan: M1 - public daily game without accounts
 
-**Branch**: `001-m1-web-app` | **Date**: 2026-11-03 | **Spec**: [spec.md](./spec.md)
+**Branch**: `001-m1-web-app` | **Date**: 2026-11-03 (revised after the plan audit) |
+**Spec**: [spec.md](./spec.md)
 
 **Input**: Feature specification from `specs/001-m1-web-app/spec.md`
 
 ## Summary
 
 A public web game with two levels (Senior, Starter 12+), five questions a day, graded on the
-server. The browser gets one question at a time, without its answer; the server records when it
-sent the question, grades the answer once (conditional write in a DynamoDB transaction), adds a
-speed bonus, and only then returns the answer and explanation. Streak, freeze, skill view and
-practice boxes live in the browser in M1. Challenge links store anonymous result snapshots.
-Questions live in a private content repository and are loaded by a validated, all-or-nothing
-publish step. One API Lambda behind API Gateway and CloudFront, deployed with a CodeDeploy canary
-whose pre-traffic check exercises grading on a hidden self-test set, and which rolls back on
-error or scoring-failure alarms. Everything in CDK (Python), gated by GitHub Actions.
+server. The browser gets one question at a time, built from a field allowlist, without its answer;
+the server records when it sent the question, grades the answer once (conditional write in a
+DynamoDB transaction, old item returned on cancellation), adds a speed bonus, and only then
+returns the answer and explanation. Streak, freeze, skill view and practice boxes live in the
+browser in M1. Challenge links store anonymous result snapshots written in the same transaction
+as the last answer. Questions live in a private content repository; only fixtures reach dev, and a
+two-layer leak guard gates every prod release. One API Lambda behind API Gateway and CloudFront
+(`/api/*` never cached), deployed with a CodeDeploy canary whose pre-traffic step runs a data-free
+self-check on the new version, and which rolls back on version-scoped alarms. Everything in CDK
+(Python) in one dedicated AWS account, gated by GitHub Actions with no AWS credentials on pull
+requests.
 
 ## Technical Context
 
@@ -23,20 +27,19 @@ error or scoring-failure alarms. Everything in CDK (Python), gated by GitHub Act
 **Primary Dependencies**: AWS Lambda Powertools for Python (event handler, logger, metrics,
 parser), Pydantic v2, boto3; React 19, Vite, Tailwind CSS v4; AWS CDK v2
 
-**Storage**: DynamoDB, one table, on-demand, PITR, TTL; S3 for static files; browser
-`localStorage` for local progress
+**Storage**: DynamoDB (one table per stage, on-demand, PITR, TTL); S3 (versioned site prefixes);
+Secrets Manager (one pepper per stage); browser `localStorage` for local progress
 
-**Testing**: pytest (+ moto for units, DynamoDB Local for integration), CDK assertions; Vitest,
-Testing Library; Playwright with axe-core; Lighthouse CI; schemathesis or a schema check against
-`contracts/openapi.yaml`
+**Testing**: pytest (DynamoDB Local for anything transactional, moto only for simple units), CDK
+assertions; Vitest, Testing Library; Playwright with axe-core; Lighthouse CI; contract tests
+against `contracts/openapi.yaml`
 
-**Target Platform**: AWS Lambda arm64 in `eu-central-2`; CloudFront; evergreen browsers, 390 px
-and up
+**Target Platform**: AWS Lambda arm64 in `eu-central-2`; CloudFront; evergreen browsers from 390 px
 
 **Project Type**: web application (static front end + serverless API + infrastructure)
 
-**Performance Goals**: first question usable within 2 s on a mid-range phone on 4G (SC-007);
-answer round trip p95 under 500 ms warm; Lighthouse 100 x4
+**Performance Goals**: first question usable within 2 s on a mid-range phone on 4G (two round
+trips at most); answer round trip p95 under 500 ms warm; Lighthouse 100 x4
 
 **Constraints**: no answer in the browser before submit; no personal data stored or logged; data
 in Switzerland or EU; USD 20 a month budget; WCAG 2.2 AA; no hard time limit
@@ -46,20 +49,20 @@ questions at launch; about 8 screens
 
 ## Constitution Check
 
-*Initial gate: pass. Re-checked after Phase 1 design: pass.*
+*Initial gate: pass. Re-checked after the audit revision: pass.*
 
 | Principle | How this plan complies | Status |
 |---|---|---|
-| I. Honesty | README "Numbers" stays "Not measured yet"; cost in research R15 is labelled an estimate; questions are written by a person with dated sources; prototype anecdote already removed. | Pass |
-| II. Deterministic, server-side grading | Grading is a pure Python function of (question version, choice, line, elapsed, relaxed); one question sent at a time with a strict response schema; choice ids random and order shuffled at publish; no content in the static bundle; private content repo + leak guard (R1, R4); contract test, Playwright leak scan, SC-002 scan before each release. | Pass |
-| III. Model proposes, person decides | No model in M1. All questions human-written and approved in the content repo; no Bedrock permission exists in any M1 role. | Pass (N/A in practice) |
-| IV. Reliability first | Conditional writes in a transaction for every grade (R2); timeouts and limited retries on every AWS client (R8); every DynamoDB response checked (cancellation reasons inspected, not assumed); errors logged with ids and turned into 5xx plus a `ScoringFailures` metric. **No queues in M1**, so DLQ, maxReceiveCount, redrive and partial batch failures have nothing to apply to; they become mandatory in M3. The two async invocations (EventBridge to `stock_check`, CodeDeploy to `pre_traffic_check`) get an on-failure destination and an alarm. | Pass |
-| V. Everything as code, gated delivery | CDK Python for all resources; CI gates lint, types, tests, CDK assertions, synth and diff; prod through CodeDeploy canary with alarms and a pre-traffic check; dev and prod accounts in an Organization (R10, R13). | Pass |
-| VI. Security and privacy | One IAM role per function, scoped to the table and needed actions (publish role limited by `LeadingKeys` to `Q#`, `DAILY#`, `POOL#`, `STOCK#`); no secrets needed in M1 (the challenge pepper is a generated SSM SecureString, never in code); no IP or player id in logs (player id hashed); region `eu-central-2`, edge-only resources in `us-east-1` hold no game data; fonts self-hosted; input validated by Pydantic with size limit; WAF and throttling (R9). Delete-my-account: not applicable without accounts; data expires after 90 days. | Pass |
-| VII. Accessibility and performance | Keyboard play, relaxed mode, text labels for squares, reduced motion; Lighthouse CI asserting 1.0 x4 on mobile and desktop; axe in Playwright (R12). | Pass |
-| VIII. Cost ceiling | Budget USD 20 with actual and forecast alerts created in the first infra deploy; on-demand everything; reserved concurrency caps a flood; WAF cost decided before first deploy (R9). | Pass |
-| Writing rules | English only, straight hyphens; Starter content rules in FR-024a. | Pass |
-| Review checklist | Each pull request uses the constitution checklist; `AGENTS.md` added in this feature. | Pass |
+| I. Honesty | README "Numbers" stays "Not measured yet"; costs in R15 labelled estimates, with the worst case close to the limit stated; retention written as "about"; the shared-answer residual is written down (R1, spec Assumptions); reserved concurrency recorded as an availability trade-off. | Pass |
+| II. Deterministic, server-side grading | Pure grading function; allowlist view builder with a test that feeds it a full item; one question at a time; random choice ids and publish-time shuffle with a uniformity check; replay of today refused until the daily is finished; practice limited to the past pool; `/api/*` never cached; content only in the private repo, fixtures only in dev; leak guard in both repos and a release gate (R1, R4, R8). | Pass |
+| III. Model proposes, person decides | No model in M1; questions human-written, approved, Starter with a second reader; no Bedrock permission in any role. | Pass |
+| IV. Reliability first | Transaction with a cancellation-reason table, retries only for temporary errors, `503` plus `ScoringFailures` otherwise (R2); timeouts and limited retries on every client; every response checked; async functions with on-failure destinations; missing stock metric treated as breaching. No queues in M1, so DLQ, `maxReceiveCount`, redrive and partial batch failures apply from M3. | Pass |
+| V. Everything as code, gated delivery | CDK for all resources; PR gates without credentials; diff and deploy after merge; canary with data-free pre-traffic self-check and version-scoped rollback alarms; front end uploaded after the canary, revertible by origin path; one dedicated account, dev and prod stacks (constitution 1.0.1). | Pass |
+| VI. Security and privacy | One IAM role per function; OIDC trust pinned by `sub` per role; narrowed CDK bootstrap policy; actions pinned to SHAs; one secret (pepper) in Secrets Manager, retained; player id only as HMAC in logs and challenges; no event or input logging; no IP stored; edge size limit and rate limit with a JSON 429; `eu-central-2`, edge-only resources in `us-east-1`. | Pass |
+| VII. Accessibility and performance | Keyboard play, relaxed switchable mid-play, text labels for squares, reduced motion; Lighthouse CI 1.0 x4; axe; first question in two round trips. | Pass |
+| VIII. Cost ceiling | One USD 20 budget for the account with actual and forecast alerts, in the first deploy; metric dimensions capped and counted; WAF price verified in step 1. | Pass |
+| Writing rules | English, straight hyphens; Starter rules FR-024a. | Pass |
+| Review checklist | Constitution checklist on every PR; `AGENTS.md` in this feature. | Pass |
 
 ## Project Structure
 
@@ -68,9 +71,9 @@ questions at launch; about 8 screens
 ```text
 specs/001-m1-web-app/
 ├── plan.md              # This file
-├── research.md          # Phase 0: decisions R1-R15
+├── research.md          # Phase 0: decisions R1-R17
 ├── data-model.md        # Phase 1: table design, entities, states
-├── quickstart.md        # Phase 1: validation scenarios V1-V12
+├── quickstart.md        # Phase 1: validation scenarios V1-V18
 ├── contracts/
 │   ├── openapi.yaml           # public API
 │   ├── question.schema.json   # authoring format (content repository)
@@ -84,18 +87,22 @@ specs/001-m1-web-app/
 ```text
 api/                               # Python 3.13, uv
 ├── src/staysharp/
-│   ├── handlers/                  # thin Lambda entry points
-│   │   ├── api.py                 # Powertools APIGatewayHttpResolver, routes from openapi.yaml
-│   │   ├── pre_traffic_check.py   # CodeDeploy BeforeAllowTraffic hook
-│   │   └── stock_check.py         # daily schedule, StockDaysAhead metric
+│   ├── handlers/
+│   │   ├── api.py                 # Powertools APIGatewayHttpResolver; also routes the selfcheck event
+│   │   ├── pre_traffic_check.py   # invokes the new version's selfcheck, reports to CodeDeploy
+│   │   └── stock_check.py         # daily, StockDaysAhead per level
 │   ├── domain/                    # pure, no AWS imports
-│   │   ├── grading.py             # grade + bonus, deterministic
+│   │   ├── grading.py             # grade + bonus
+│   │   ├── views.py               # allowlist view builder (the only way a question leaves)
 │   │   ├── calendar.py            # Zurich today, allowed dates, game number, ISO week
-│   │   └── models.py              # Pydantic request/response models (strict)
-│   ├── store/                     # DynamoDB access, one module per entity, conditional writes
-│   ├── publish/                   # validate + apply, used by the content repository CI
-│   ├── tools/                     # seed (samples, selftest), leak_scan
-│   └── aws.py                     # boto3 clients with timeouts and retry config
+│   │   ├── cancellation.py        # R2 reason table -> outcome
+│   │   └── models.py              # strict Pydantic models
+│   ├── selfcheck/                 # bundled fixtures + checks, no table access
+│   ├── store/                     # DynamoDB access, transactions, conditional writes
+│   ├── publish/                   # validate + apply + fingerprints (used by the content repo)
+│   ├── tools/                     # seed fixtures, leak scan, return-rate report
+│   └── aws.py                     # clients with timeouts and retry config
+├── testing/                       # fault-injection handler, packaged for dev only
 └── tests/ { unit/, integration/, contract/ }
 
 front/                             # React 19 + Vite + Tailwind v4, pnpm
@@ -109,56 +116,64 @@ front/                             # React 19 + Vite + Tailwind v4, pnpm
 └── tests/ { unit/, e2e/ }         # Vitest; Playwright + axe; lighthouserc.json
 
 infra/                             # AWS CDK v2, Python
-├── app.py                         # stages dev and prod, env from cdk.json context
+├── app.py                         # stages dev and prod in one account; cross_region_references
 ├── stacks/
-│   ├── edge_stack.py              # us-east-1: ACM certificate, WAF web ACL
-│   ├── data_stack.py              # DynamoDB table
-│   ├── api_stack.py               # Lambdas, alias, CodeDeploy group, HTTP API, alarms
-│   ├── web_stack.py               # S3 (private, OAC), CloudFront, response headers (CSP)
-│   └── ops_stack.py               # SNS topic, budget, stock_check schedule, dashboard
+│   ├── edge_stack.py              # us-east-1: ACM certificate, WAF (rate rule with JSON 429, size rule)
+│   ├── data_stack.py              # DynamoDB table, pepper secret
+│   ├── api_stack.py               # Lambdas, alias, CodeDeploy group, HTTP API, rollback alarms
+│   ├── web_stack.py               # S3 (OAC, versioned prefixes), CloudFront (/api/* no cache, CF function), headers
+│   ├── ops_stack.py               # SNS, paging alarms, stock schedule (per stage)
+│   └── account_stack.py           # budget, OIDC provider and roles (once per account)
 └── tests/                         # CDK assertion tests
 
-content/samples/                   # sample questions only (sample: true) + prototype days
-docs/                              # spec.md, runbooks/ (rollback, fault drill, publish)
-.github/workflows/                 # ci.yml (PR), deploy.yml (main -> dev -> approval -> prod)
-AGENTS.md                          # agent roles, limits, review rule
+content/samples/                   # sample + prototype questions (sample: true, daily_eligible: false)
+docs/runbooks/                     # rollback, restore, fault drill, publish, pepper rotation
+.github/workflows/                 # ci.yml (PR, no AWS), deploy.yml (main -> dev -> approval -> gate -> prod)
+AGENTS.md
 prototype/                         # M0, unchanged
 ```
 
-**Structure Decision**: web application split into `api/`, `front/` and `infra/` at the
-repository root, each with its own toolchain and tests; one shared contract in
-`specs/001-m1-web-app/contracts/` (copied to `api/` and `front/` by a codegen step so both sides
-build from the same file). Content and its publish CI live in the private `stay-sharp-content`
-repository, which installs `api/` as a package to reuse `publish/`.
+**Structure Decision**: `api/`, `front/` and `infra/` at the root, each with its own toolchain and
+tests; one shared contract in `specs/001-m1-web-app/contracts/`, copied by codegen into `api/`
+and `front/`. Content and its publish CI live in the private `stay-sharp-content` repository,
+which installs `api/` as a package to reuse `publish/` and `domain/views.py`.
 
 ## Delivery order (input for /speckit-tasks)
 
-1. Accounts, OIDC roles, budget and SNS topic (ops first, so cost and alarms exist before
-   anything else) and the region check from research R14.
-2. Domain: grading, calendar, models, with unit tests (no AWS).
-3. Data and API: table, store with conditional writes, routes, contract and integration tests,
-   idempotency and timing tests (V3, V4).
-4. Content: schema, publish validate/apply, private repository, leak guard, selftest set (V7).
-5. Front end: Play and Result first (Story 1), then streak and share, challenge, practice, privacy.
-6. Delivery: CloudFront, WAF, CI, deploy workflow, canary with pre-traffic check, drills V8 and V9.
-7. Quality gates: Lighthouse CI, axe, leak scan (V2, V10), runbooks, AGENTS.md, README.
+0. **Gate before anything is public or in prod** (W17): clean the history of the public
+   repository (decision and method recorded in `docs/`), then make it public.
+1. **Account and edge prerequisites**: `stay-sharp` account in the Organization (done by the
+   maintainer), region and WAF pricing checks (R9, R14), ACM certificate request and Infomaniak
+   DNS records, CDK bootstrap with narrowed policies, OIDC roles, budget, SNS topic.
+2. **Domain**: grading, views allowlist, calendar, cancellation table, models; unit tests,
+   including the allowlist test and the R2 table.
+3. **Data, API and a thin edge**: table, store, routes, contract and integration tests on
+   DynamoDB Local (V3, V4, V13, V14, V15), plus a minimal CloudFront with the `/api/*` behaviour
+   in dev so caching, headers and CSP are tested early (W16).
+4. **Content**: schemas, publish validate/apply with all R4 checks, private repository and its CI,
+   fingerprints, both leak-guard layers, fixtures for dev (V7, V2).
+5. **Front end**: Play and Result (Story 1), relaxed, streak and share, challenge, practice,
+   privacy page.
+6. **Delivery**: WAF, deploy workflow, canary with pre-traffic self-check, front-end upload after
+   canary, drills V8 and V9, runbooks.
+7. **Quality gates and docs**: Lighthouse CI, axe, return-rate report, `AGENTS.md`, README.
+8. **Content stock**: 140 questions (70 Senior, 70 Starter) written and reviewed, starting in
+   parallel with step 2.
 
 ## Risks and open items
 
-- **Region and pricing facts not yet verified** (R9, R14): checked before the first deploy, not
-  assumed.
-- **Content volume**: 140 new questions before launch is the longest task, and it is not code. It
-  runs in parallel from day one.
-- **Children's audience (Starter)**: content review against FR-024a by a second reader before
-  publish is recommended; no personal data means no consent flow in M1.
-- **History of the public repository**: earlier commits on `main` hold private wording; the
-  maintainer decides how to clean it before the repository is made public (outside this plan).
+- **Region and pricing facts** (R9, R14): checked in step 1.
+- **Cost margin** (R15): worst-case estimate is close to USD 20; first measured month decides
+  whether dev metrics are cut.
+- **Content volume**: 140 new questions is the longest task and is not code.
+- **Starter audience**: second reader required by the schema; no personal data, so no consent
+  flow in M1.
+- **Public history**: step 0 gates it.
 
 ## Complexity Tracking
 
-No violations. The one point worth recording:
-
 | Item | Why | Simpler alternative rejected because |
 |---|---|---|
-| Private content repository next to the public one | Principle II: answers must not be readable on GitHub | Encrypted files in the public repo: key handling, and one mistake leaks all future answers |
-| Pre-traffic check Lambda | A canary with no traffic proves nothing (R10) | Canary alarms alone: may pass with zero requests |
+| Private content repository + fingerprint scan in the public repo | Principle II: answers must not be readable on GitHub, and FR-024b needs a check in the public CI | Encrypted files in the public repo: key handling, one mistake leaks everything |
+| Pre-traffic self-check | A canary with almost no traffic proves nothing (R10) | Canary alarms alone; or a self-test set in prod data, which pollutes metrics and needs content every day |
+| Size limit enforced in WAF and the Lambda, not in API Gateway | HTTP API has no request validation | REST API: higher cost for one feature |
