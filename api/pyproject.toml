@@ -1,0 +1,54 @@
+[project]
+name = "staysharp"
+version = "0.1.0"
+description = "Stay Sharp API: daily game, graded on the server"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "aws-lambda-powertools[parser]>=3.38.0",
+    "boto3>=1.43.123",
+    "pydantic>=2",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/staysharp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+markers = [
+  "integration: needs DynamoDB Local on localhost:8000 (docker compose up -d dynamodb)",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+mypy_path = "src"
+files = ["src", "tests", "scripts"]
+plugins = ["pydantic.mypy"]
+
+[dependency-groups]
+dev = [
+    "boto3-stubs[cloudwatch,codedeploy,dynamodb,lambda,secretsmanager,ssm]>=1.43.123",
+    "mypy>=2.4.1",
+    "openapi-core>=0.23.1",
+    "pytest>=9.2.0",
+    "pytest-cov>=7.1.0",
+    "pyyaml>=6.0.3",
+    "ruff>=0.17.3",
+    "types-pyyaml>=6.0.12.20261103",
+]
