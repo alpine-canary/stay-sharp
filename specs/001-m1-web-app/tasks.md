@@ -86,7 +86,7 @@ dev. No user story can start before this phase ends.
 
 ### Storage and AWS access
 
-- [ ] T030 Implement `api/src/staysharp/aws.py`: one factory for boto3 clients with `connect_timeout=2`, `read_timeout=3`, retry mode `standard`, `max_attempts=3`, endpoint override for DynamoDB Local in tests (R8)
+- [x] T030 Implement `api/src/staysharp/aws.py`: one factory for boto3 clients with `connect_timeout=2`, `read_timeout=3`, retry mode `standard`, `max_attempts=3`, endpoint override for DynamoDB Local in tests (R8)
 - [ ] T031 Spike in `api/tests/integration/test_dynamodb_local_cancellation.py`: check that DynamoDB Local returns the `ALL_OLD` item inside `CancellationReasons` for `TransactWriteItems`; if not, mark the affected tests to run against the dev table and note it in research.md R2 (W15)
 - [ ] T032 Implement `infra/stacks/data_stack.py`: table `staysharp-<stage>` with string `PK`/`SK`, on-demand, PITR on, deletion protection on in prod, TTL attribute `expiresAt`; pepper secret with `generate_secret_string` and `RemovalPolicy.RETAIN` (R16)
 - [ ] T033 [P] CDK assertion tests in `infra/tests/test_data_stack.py`: PITR and TTL on, deletion protection in prod, secret retained (V11)
