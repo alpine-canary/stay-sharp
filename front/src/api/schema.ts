@@ -50,6 +50,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
+                /** @description OK */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -136,6 +137,7 @@ export interface paths {
                         "application/json": components["schemas"]["PlayState"];
                     };
                 };
+                /** @description Invalid request. */
                 400: {
                     headers: {
                         [name: string]: unknown;
@@ -186,6 +188,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
+                /** @description OK */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -194,6 +197,7 @@ export interface paths {
                         "application/json": components["schemas"]["PlayState"];
                     };
                 };
+                /** @description Not found. */
                 404: {
                     headers: {
                         [name: string]: unknown;
@@ -235,6 +239,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
+                /** @description OK */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -275,6 +280,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
+                /** @description OK */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -326,6 +332,7 @@ export interface paths {
                 };
             };
             responses: {
+                /** @description OK */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -398,6 +405,7 @@ export interface paths {
                 };
             };
             responses: {
+                /** @description OK */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -444,6 +452,7 @@ export interface paths {
                 };
             };
             responses: {
+                /** @description OK */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -494,6 +503,7 @@ export interface paths {
                 };
             };
             responses: {
+                /** @description OK */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -545,6 +555,7 @@ export interface paths {
             };
             requestBody?: never;
             responses: {
+                /** @description OK */
                 200: {
                     headers: {
                         [name: string]: unknown;
@@ -565,7 +576,7 @@ export interface paths {
                         };
                     };
                 };
-                /** @description Unknown */
+                /** @description Unknown, malformed or expired (code expired). */
                 404: {
                     headers: {
                         [name: string]: unknown;

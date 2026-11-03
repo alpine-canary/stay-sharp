@@ -118,6 +118,7 @@ paths:
       summary: Server date in Europe/Zurich, game number, and which levels have a set.
       responses:
         '200':
+          description: OK
           content:
             application/json:
               schema:
@@ -149,27 +150,27 @@ paths:
       responses:
         '200': { description: Existing play, content: { application/json: { schema: { $ref: '#/components/schemas/PlayState' } } } }
         '201': { description: New play, content: { application/json: { schema: { $ref: '#/components/schemas/PlayState' } } } }
-        '400': { content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '400': { description: Invalid request., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
         '404': { description: No set for that date and level (code not_ready). }
         '409': { description: 'mode=replay for today while the daily play of that date and level is not finished (code conflict).' }
   /plays/{playId}:
     get:
       parameters: [ { $ref: '#/components/parameters/PlayerId' }, { $ref: '#/components/parameters/PlayId' } ]
       responses:
-        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/PlayState' } } } }
-        '404': { content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/PlayState' } } } }
+        '404': { description: Not found., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
   /plays/{playId}/relaxed:
     post:
       summary: Switch the play to relaxed from the next answer on. One-way; calling it again is a no-op.
       parameters: [ { $ref: '#/components/parameters/PlayerId' }, { $ref: '#/components/parameters/PlayId' } ]
       responses:
-        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/PlayState' } } } }
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/PlayState' } } } }
   /plays/{playId}/questions/{index}/open:
     post:
       summary: Return question index without its answer; records servedAt the first time only.
       parameters: [ { $ref: '#/components/parameters/PlayerId' }, { $ref: '#/components/parameters/PlayId' }, { $ref: '#/components/parameters/Index' } ]
       responses:
-        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/QuestionView' } } } }
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/QuestionView' } } } }
         '409': { description: Previous question not answered yet. }
   /plays/{playId}/questions/{index}/answer:
     post:
@@ -177,7 +178,7 @@ paths:
       parameters: [ { $ref: '#/components/parameters/PlayerId' }, { $ref: '#/components/parameters/PlayId' }, { $ref: '#/components/parameters/Index' } ]
       requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/AnswerRequest' } } } }
       responses:
-        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/AnswerResult' } } } }
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AnswerResult' } } } }
         '400': { description: 'Unknown choice, line missing or outside the served code, question not opened.' }
         '409':
           description: A different answer was already recorded; the stored result is returned so the UI can show it.
@@ -199,6 +200,7 @@ paths:
                 prefer: { type: array, maxItems: 5, items: { type: string, pattern: '^[a-z0-9_]{3,64}$' }, description: 'Only honoured for questions in the past practice pool of this level and deck.' }
       responses:
         '200':
+          description: OK
           content:
             application/json:
               schema:
@@ -214,7 +216,7 @@ paths:
       parameters: [ { $ref: '#/components/parameters/PlayerId' }, { name: attemptId, in: path, required: true, schema: { type: string } } ]
       requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/AnswerRequest' } } } }
       responses:
-        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/AnswerResult' } } } }
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AnswerResult' } } } }
         '409': { description: A different answer was already recorded for this attempt. }
   /challenges:
     post:
@@ -222,7 +224,7 @@ paths:
       parameters: [ { $ref: '#/components/parameters/PlayerId' } ]
       requestBody: { content: { application/json: { schema: { type: object, additionalProperties: false, required: [playId], properties: { playId: { type: string } } } } } }
       responses:
-        '200': { content: { application/json: { schema: { type: object, additionalProperties: false, required: [challengeId, url], properties: { challengeId: { type: string }, url: { type: string, format: uri } } } } } }
+        '200': { description: OK, content: { application/json: { schema: { type: object, additionalProperties: false, required: [challengeId, url], properties: { challengeId: { type: string }, url: { type: string, format: uri } } } } } }
         '409': { description: Play not finished. }
   /challenges/{challengeId}:
     get:
@@ -232,6 +234,7 @@ paths:
       parameters: [ { $ref: '#/components/parameters/PlayerId' }, { name: challengeId, in: path, required: true, schema: { type: string, pattern: '^[A-Z2-7]{12}$' } } ]
       responses:
         '200':
+          description: OK
           content:
             application/json:
               schema:
@@ -247,4 +250,4 @@ paths:
                   owner: { $ref: '#/components/schemas/ResultSnapshot' }
                   you: { $ref: '#/components/schemas/ResultSnapshot' }
                   others: { type: integer, description: Number of colleagues who finished. }
-        '404': { description: Unknown, malformed or expired (code expired). }
+        '404': { description: 'Unknown, malformed or expired (code expired).' }
