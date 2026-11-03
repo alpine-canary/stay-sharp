@@ -39,14 +39,24 @@
 - Unlimited questions from the archive, by deck and level.
 - **Weak spots**: missed questions come back sooner (Leitner boxes, 5 boxes).
 
-### 2.3 Accounts
-- **Play without an account** (progress in the browser).
-*Accounts arrive in M2. M1 is played without an account (streak kept in the browser).*
-- **Account optional**, to keep streaks across devices and appear on the leaderboard: username + password (Cognito), e-mail needed only for password reset. No other personal data.
-- **Leaderboard** (later, not at launch: streaks come first): weekly, per level, by username. Opt-in.
+### 2.3 Fun without childishness (decided 03.11.2026)
+Borrow the mechanics that keep a daily habit going; leave out the ones that feel childish or manipulative.
+- **Streak with a freeze**: one freeze a week, earned, never bought. "Longest streak" is shown too, so a broken streak is not a total loss. (M1)
+- **Skill view**: results per deck ("strong on failures, weak on acronyms"); missed questions come back in practice. (M1)
+- **Challenge a colleague**: after the daily, a link lets someone play the same set and see both results side by side. Anonymous: a random result id, no account, no personal data. (M1)
+- **Private groups**: a weekly table for a team or a meetup, invite-only. (M2)
+- **A few badges that mean something** ("30-day streak", "100 failure questions"). (M2)
+- **One optional daily reminder**, turned on by the player. (M2)
+- **Not used**: mascot, guilt notifications, lives or hearts, a shop, paid streak repairs.
+
+### 2.4 Accounts (M2)
+- **Play without an account first**. M1 has no login; each browser gets a random player id, stored server-side with its answers, so an account can adopt that history later.
+- **Account optional**, offered when it has value ("Keep your 12-day streak on your phone too?"), never before the first game.
+- **Sign-in with a passkey or an e-mail link** (Cognito), no password. Stored: e-mail and a display name, nothing else.
+- **Leaderboard** (later, not at launch: streaks and private groups come first): weekly, per level, by display name. Opt-in.
 - **Delete my account** button, with all data (nFADP / GDPR).
 
-### 2.4 Not in v1
+### 2.5 Not in v1
 - Free-text answers graded by a model (cost, abuse, unpredictability). The game is **graded deterministically**; the model is used only *before* publication, to draft content a person approves.
 - Mobile store app. v1 is a web app that installs on the home screen (PWA). Store app only if people use it.
 - Paid features, ads.
@@ -134,6 +144,7 @@ API Gateway (HTTP API) ── Cognito authorizer (optional login)
 Lambda (Python 3.13, AWS Lambda Powertools) ─► DynamoDB (single table)
    - GET  /daily?level=          today's questions WITHOUT answers
    - POST /daily/answer          server-side scoring; idempotent per (player, date, question)
+   - POST /challenge, GET /challenge/{id}   anonymous "challenge a colleague" result (M1)
    - GET  /practice                  (M1)
    - GET  /me, /leaderboard          (M2, with accounts; leaderboard after streaks)
    - DELETE /me                  account + data
@@ -171,8 +182,8 @@ At low traffic (hundreds of players a day): CloudFront + S3 + Lambda + DynamoDB 
 | # | Deliverable | Shows |
 |---|---|---|
 | M0 | Clickable prototype (`prototype/stay-sharp.html`), 2 weeks of dailies, self-play | Game feel; question quality |
-| M1 | Public web app, no accounts: daily + practice + share card; CDK, CI, canary | React, CDK, serverless API |
-| M2 | Accounts, streaks across devices, delete-my-account; leaderboard once streaks are in use | Cognito, DynamoDB design, privacy |
+| M1 | Public web app, no accounts: daily + practice + share card + streak freeze + skill view + "challenge a colleague" links; CDK, CI, canary | React, CDK, serverless API |
+| M2 | Accounts (passkey or e-mail link), streaks across devices, private groups, a few badges, optional reminder, delete-my-account; public leaderboard later | Cognito, DynamoDB design, privacy |
 | M3 | News pipeline with Bedrock + admin approval + golden set | SQS/DLQ/idempotency, LLM guardrails, evaluation |
 | M4 | Public launch on LinkedIn + "how I built it" posts; 60 days of stock | Visibility |
 | M5 | After 4 weeks: numbers in README (players, retention, cost, incidents + post-mortems) | Run, honesty |
