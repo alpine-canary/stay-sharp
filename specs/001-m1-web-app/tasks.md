@@ -74,7 +74,7 @@ dev. No user story can start before this phase ends.
 
 ### Domain (pure Python, no AWS imports) - tests first
 
-- [ ] T021 [P] Unit tests for `calendar` in `api/tests/unit/test_calendar.py`: Zurich today across DST changes, game number from launch day, ISO week Monday to Sunday, allowed dates (`daily` start only today; `open` and `answer` accept the play's date or the day after; future always refused) (R6, W2)
+- [x] T021 [P] Unit tests for `calendar` in `api/tests/unit/test_calendar.py`: Zurich today across DST changes, game number from launch day, ISO week Monday to Sunday, allowed dates (`daily` start only today; `open` and `answer` accept the play's date or the day after; future always refused) (R6, W2)
 - [ ] T022 [P] Unit tests for `grading` in `api/tests/unit/test_grading.py`: grades 1, 0.5 (Spot the bug: line or problem right, not both), 0; bonus 0.2 only for grade 1, not relaxed, `elapsedMs <= target`; total at most 6.0; same input always same output (FR-004, FR-005, FR-005b, V4)
 - [ ] T023 [P] Unit tests for `views` in `api/tests/unit/test_views.py`: given a full question item with every answer and authoring field, the output has exactly `id, deck, prompt, code, language, choices, targetSeconds, servedAt` and no `answerChoiceId`, `answerLines`, `explanation`, `sourceUrl`, `sourceDate`, `approvedBy`, `secondReader`, `changeReason` (R1, S2, V2)
 - [ ] T024 [P] Unit tests for `cancellation` in `api/tests/unit/test_cancellation.py`: every row of the R2 table (duplicate, conflict 409 with stored result, not opened 400, challenge full, temporary/unknown -> retry then 503) and that a temporary error is never classified as a duplicate
