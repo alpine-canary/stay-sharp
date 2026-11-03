@@ -49,9 +49,7 @@ jobs:
       - name: api - unit and contract tests
         run: uv run --directory api pytest -m "not integration"
       - name: api - integration tests (DynamoDB Local)
-        # Exit code 5 means "no tests collected": allowed only until the first integration test
-        # lands (task T031); remove this exception then.
-        run: uv run --directory api pytest -m integration || [ $? -eq 5 ]
+        run: uv run --directory api pytest -m integration
       - name: api - models match the contract
         run: uv run --directory api python scripts/gen_models.py
       - name: infra - install

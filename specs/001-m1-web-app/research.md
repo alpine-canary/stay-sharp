@@ -59,6 +59,10 @@ deploy** are facts not confirmed from an AWS primary source on 2026-11-03. Audit
 - **Rationale**: Principle IV, FR-006. The business key is the idempotency key, so double clicks,
   retries and two tabs all end in one stored grade, and the old item comes back inside the
   cancellation (no second read, no consistency question).
+- **Spike result (T031, 2026-11-03)**: DynamoDB Local 3.3.2 returns the `ALL_OLD` item inside
+  `CancellationReasons` (`ConditionalCheckFailed` with `Item`), and no `Item` when the answer item
+  does not exist. Duplicate and conflict tests therefore run on DynamoDB Local; no dev-table
+  exception is needed.
 - **Tests (W15)**: run on DynamoDB Local, not moto (cancellation reasons). An early spike checks
   that DynamoDB Local returns `ALL_OLD` items in cancellation reasons; if not, that case is
   covered by an integration test against the dev table.
