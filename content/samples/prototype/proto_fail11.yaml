@@ -1,0 +1,21 @@
+id: proto_fail11
+level: senior
+deck: fail
+language: text
+prompt: One worker on Fargate reads the queue and calls the supplier at a fixed rate. It crashes mid-message.
+code: SQS ─► 1 Go worker (ECS service, desired count 1) ─► supplier
+choices:
+- The message is lost
+- The queue is emptied
+- SQS stops accepting messages
+- 'The message reappears after its visibility timeout and ECS starts a new task: no loss, but the message
+  may run twice'
+answer:
+  choice: 3
+explanation: The queue holds the work, the service restarts the worker. The single worker is a deliberate
+  rate limiter; its weakness is a pause, not data loss, as long as processing is idempotent.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

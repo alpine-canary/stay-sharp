@@ -1,0 +1,27 @@
+id: proto_spot02
+level: senior
+deck: spot
+language: python
+prompt: Pick the worst line and say what is wrong with it.
+code: |-
+  def find_user(cur, email):
+      sql = f"SELECT id, name FROM users WHERE email = '{email}'"
+      cur.execute(sql)
+      return cur.fetchone()
+choices:
+- fetchone() returns a list, not a row
+- 'SQL injection: the e-mail is pasted into the query text'
+- f-strings are too slow for SQL
+- The e-mail should be lower-cased first
+answer:
+  choice: 1
+  lines:
+  - 2
+  - 3
+explanation: 'An e-mail like x'' OR ''1''=''1 changes the query. Pass values as parameters: cur.execute("...
+  WHERE email = %s", (email,)). The driver escapes them, and the query plan can be reused.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

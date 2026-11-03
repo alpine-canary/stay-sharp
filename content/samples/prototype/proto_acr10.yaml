@@ -1,0 +1,18 @@
+id: proto_acr10
+level: senior
+deck: acronym
+prompt: BM25 is…
+choices:
+- An embedding model
+- A vector index
+- A keyword ranking function used by search engines
+- A compression format
+answer:
+  choice: 2
+explanation: It scores documents by term frequency and rarity, adjusted for length. Still hard to beat
+  for exact names, codes and references, which is why hybrid search keeps it.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

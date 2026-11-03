@@ -1,0 +1,26 @@
+id: proto_bet04
+level: senior
+deck: better
+language: python
+prompt: 'The error is re-raised: good. What makes the next incident faster to solve?'
+code: |-
+  def handle(msg):
+      try:
+          save(msg)
+      except DbError as e:
+          print("save failed", e)
+          raise
+choices:
+- Print the whole message body
+- Log at DEBUG level
+- Remove the print, the stack trace is enough
+- A structured log with the message id and booking reference, and no personal data
+answer:
+  choice: 3
+explanation: At 2 a.m. you search logs by id. JSON logs with a correlation id (message id, booking ref)
+  let you follow one item through every service. Ids, not content.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

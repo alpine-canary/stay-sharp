@@ -1,0 +1,24 @@
+id: proto_bet01
+level: senior
+deck: better
+language: python
+prompt: 2,000 bookings means 2,001 queries. The best improvement?
+code: |-
+  bookings = db.query("SELECT * FROM bookings WHERE day = %s", day)
+  for b in bookings:
+      hotel = db.query_one("SELECT name FROM hotels WHERE id = %s", b.hotel_id)
+      print(b.ref, hotel.name)
+choices:
+- 'Fetch the hotels in one query: a JOIN, or WHERE id IN (...)'
+- Put a cache in front of MySQL
+- Run the loop in 4 threads
+- Select only the name column
+answer:
+  choice: 0
+explanation: 'The N+1 pattern: one query for the list, then one per row. A JOIN returns everything in
+  one round trip. Threads and caches hide the cost without removing it.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

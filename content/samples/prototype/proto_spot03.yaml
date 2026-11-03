@@ -1,0 +1,30 @@
+id: proto_spot03
+level: senior
+deck: spot
+language: python
+prompt: Pick the worst line and say what is wrong with it.
+code: |-
+  def total_with_vat(items):
+      total = 0.0
+      for it in items:
+          total += it["price"] * it["qty"]
+      return round(total * 1.081, 2)
+choices:
+- Swiss VAT is 7.7%, not 8.1%
+- round() needs 3 digits for francs
+- Money is held in binary floats, so amounts drift by fractions of a centime
+- items could be a tuple
+answer:
+  choice: 2
+  lines:
+  - 2
+  - 4
+  - 5
+explanation: 0.1 + 0.2 != 0.3 in binary floats. Use Decimal (or integer centimes), round once with an
+  explicit rule (ROUND_HALF_UP, 5 centimes in CHF), and keep the currency with every amount. Swiss standard
+  VAT has been 8.1% since 2024.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

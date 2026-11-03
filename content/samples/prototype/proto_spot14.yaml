@@ -1,0 +1,27 @@
+id: proto_spot14
+level: senior
+deck: spot
+language: python
+prompt: Pick the worst line and say what is wrong with it.
+code: |-
+  def handle_payment(msg):
+      order = db.get_order(msg["order_id"])
+      db.execute("UPDATE orders SET paid = paid + %s WHERE id = %s", msg["amount"], order.id)
+      send_receipt(order.email)
+choices:
+- '%s should be ?'
+- send_receipt should run first
+- get_order should be in a try block
+- 'Not idempotent: if SQS delivers the message twice, the amount is added twice and two receipts go out'
+answer:
+  choice: 3
+  lines:
+  - 3
+explanation: SQS is at-least-once. Record the payment by its payment id with a unique key (or a DynamoDB
+  conditional write), add the amount only when that insert succeeds, and send the receipt from that same
+  decision.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

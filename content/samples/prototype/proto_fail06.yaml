@@ -1,0 +1,23 @@
+id: proto_fail06
+level: senior
+deck: fail
+language: text
+prompt: The new version has a parsing bug. It catches it and reports batch item failures. What does the
+  canary do?
+code: |-
+  CodeDeploy: 10% of traffic ─► new Lambda version, 5 minutes
+  canary alarm ─► Lambda "Errors" metric
+choices:
+- Catches it and rolls back
+- Passes it; the bug shows only later, as the DLQ fills
+- Blocks the deploy
+- Doubles the Errors metric
+answer:
+  choice: 1
+explanation: 'Errors counts exceptions that escape the handler. Gate the canary on the business signal
+  too: failed records, age of the oldest message, DLQ depth.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

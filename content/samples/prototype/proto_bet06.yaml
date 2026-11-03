@@ -1,0 +1,22 @@
+id: proto_bet06
+level: senior
+deck: better
+language: python
+prompt: The contracts table has 3 million rows.
+code: |-
+  rows = db.query("SELECT * FROM contracts")
+  active = [r for r in rows if r.status == "active" and r.customer_id == cid]
+choices:
+- Use a generator instead of a list
+- Filter in SQL (WHERE customer_id = %s AND status = 'active') with an index on customer_id
+- Sort the rows first
+- Dump the table to a file once a day
+answer:
+  choice: 1
+explanation: 'Let the database do what it''s built for: filter with an index, return only what you need.
+  Moving 3 million rows to Python for a handful is slow and memory-hungry.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

@@ -1,0 +1,22 @@
+id: proto_bet08
+level: senior
+deck: better
+language: sql
+prompt: This runs for every incoming e-mail.
+code: |-
+  SELECT id, status FROM bookings WHERE supplier_ref = 'NS-88412';
+  -- 2.8 million rows, 1.9 s
+choices:
+- Add LIMIT 1
+- Move to a bigger instance
+- Add an index on supplier_ref, ideally UNIQUE
+- Use SELECT * to warm the cache
+answer:
+  choice: 2
+explanation: Without an index MySQL scans every row. A unique index turns it into a lookup of a few milliseconds
+  and also blocks duplicate references at the database.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

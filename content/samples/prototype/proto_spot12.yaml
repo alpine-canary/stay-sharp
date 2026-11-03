@@ -1,0 +1,24 @@
+id: proto_spot12
+level: senior
+deck: spot
+language: python
+prompt: Pick the worst line and say what is wrong with it.
+code: |-
+  def chunks(items, size):
+      return [items[i:i + size] for i in range(0, len(items) - size, size)]
+choices:
+- Slicing copies the list, too slow
+- size must be a power of two
+- 'The range stops too early: 25 items in chunks of 10 gives 2 chunks and drops the last 5'
+- A list comprehension can't return lists
+answer:
+  choice: 2
+  lines:
+  - 2
+explanation: 'range(0, 15, 10) yields 0 and 10 only. It should be range(0, len(items), size). The test
+  that catches it: a length that isn''t a multiple of size, and an exact multiple.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

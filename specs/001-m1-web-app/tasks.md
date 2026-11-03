@@ -93,7 +93,7 @@ dev. No user story can start before this phase ends.
 - [x] T034 Implement the store base in `api/src/staysharp/store/table.py`: key builders for every access pattern A1 to A8 of data-model.md, response checks (unexpected shapes raise), `expiresAt` compared with now on every read that depends on expiry
 - [x] T035 Implement `api/src/staysharp/store/questions.py`: read daily set (A1) and a question version (A2); a missing set returns a typed "not ready" result, never an exception to the client (Story 7, scenario 2)
 - [x] T036 Implement `api/src/staysharp/tools/seed.py` (`python -m staysharp.tools.seed --fixtures`): load `content/samples/` and test fixtures into DynamoDB Local or the dev table only; refuse `STAGE=prod`
-- [ ] T037 [P] Add sample questions in `content/samples/` (one per deck for both levels, `sample: true`, `daily_eligible: false`, valid against `contracts/question.schema.json`) and the 14 prototype days converted to the same format with `daily_eligible: false` (FR-024c)
+- [x] T037 [P] Add sample questions in `content/samples/` (one per deck for both levels, `sample: true`, `daily_eligible: false`, valid against `contracts/question.schema.json`) and the 14 prototype days converted to the same format with `daily_eligible: false` (FR-024c)
 
 ### API skeleton, observability and secrets
 

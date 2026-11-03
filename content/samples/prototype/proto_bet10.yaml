@@ -1,0 +1,24 @@
+id: proto_bet10
+level: senior
+deck: better
+language: python
+prompt: '40 suppliers, about 800 ms each: a search takes 32 seconds.'
+code: |-
+  results = []
+  for s in suppliers:
+      results.append(s.search(query))
+choices:
+- Drop the 20 slowest suppliers
+- Cache every result forever
+- Use a faster CPU
+- Call them concurrently, with a concurrency limit and a timeout per call, and return what arrived in
+  time
+answer:
+  choice: 3
+explanation: The calls wait on the network, not the CPU. Concurrent calls take about as long as the slowest
+  one; the per-call timeout caps that; the limit protects small suppliers from being flooded.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

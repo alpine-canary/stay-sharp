@@ -1,0 +1,28 @@
+id: proto_spot07
+level: senior
+deck: spot
+language: typescript
+prompt: Pick the worst line and say what is wrong with it.
+code: |-
+  export const handler = async (event) => {
+    console.log("event", JSON.stringify(event));
+    const input = JSON.parse(event.body);
+    const user = await createUser(input.email, input.password);
+    return { statusCode: 201, body: JSON.stringify({ id: user.id }) };
+  };
+choices:
+- 201 is the wrong status for a creation
+- JSON.parse must be awaited
+- It logs the whole request, password and personal data included, into CloudWatch
+- An async handler can't return an object
+answer:
+  choice: 2
+  lines:
+  - 2
+explanation: Logs are copied, exported and read by many people. Log ids and outcomes, never bodies, passwords,
+  tokens or e-mails. Set a retention period on the log group too.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

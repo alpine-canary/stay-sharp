@@ -1,0 +1,26 @@
+id: proto_spot10
+level: senior
+deck: spot
+language: python
+prompt: Pick the worst line and say what is wrong with it.
+code: |-
+  s3 = boto3.client("s3")
+  resp = s3.list_objects_v2(Bucket="archive")
+  for obj in resp["Contents"]:
+      backup(obj["Key"])
+choices:
+- list_objects_v2 returns at most 1,000 keys per call, so without a paginator the rest are silently skipped
+- It should use boto3.resource
+- The key field is lower-case "key"
+- Bucket names must be upper-case
+answer:
+  choice: 0
+  lines:
+  - 2
+explanation: 'Use s3.get_paginator("list_objects_v2") and loop over the pages. Also: "Contents" is missing
+  when the bucket is empty, so resp["Contents"] raises KeyError.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

@@ -1,0 +1,21 @@
+id: proto_fail12
+level: senior
+deck: fail
+language: text
+prompt: Your RDS MySQL is Single-AZ. Its Availability Zone has an outage.
+code: app ─► RDS MySQL (Single-AZ, eu-central-2a)
+choices:
+- Downtime until the zone recovers or you restore a snapshot elsewhere; Multi-AZ adds a standby with automatic
+  failover
+- Automatic failover in about a minute
+- A read replica takes over writes on its own
+- 'Nothing: RDS is serverless'
+answer:
+  choice: 0
+explanation: Multi-AZ keeps a synchronous standby in another zone and fails over automatically. Read replicas
+  need a manual (or scripted) promotion.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

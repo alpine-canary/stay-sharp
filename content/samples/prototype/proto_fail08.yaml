@@ -1,0 +1,23 @@
+id: proto_fail08
+level: senior
+deck: fail
+language: text
+prompt: You deduplicate on the e-mail Message-ID. The client resends "cancel booking 4521" an hour later.
+code: |-
+  e-mail 1: cancel 4521   Message-ID <a1@...>
+  e-mail 2: cancel 4521   Message-ID <b7@...>
+choices:
+- The second e-mail is skipped
+- It's a new e-mail with a new Message-ID, so it's processed again; deduplicate on a business key (sender,
+  booking, request type) and make the cancellation idempotent
+- SQS catches it
+- The mail server rejects it
+answer:
+  choice: 1
+explanation: 'Two kinds of duplicate: the same message delivered twice (key: Message-ID) and the same
+  request sent twice (key: what it asks for). Attach the second to the existing case; never confirm twice.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

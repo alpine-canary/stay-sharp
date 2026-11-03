@@ -1,0 +1,18 @@
+id: proto_acr12
+level: senior
+deck: acronym
+prompt: Apache Iceberg is…
+choices:
+- A Kafka replacement
+- A columnar file format like Parquet
+- A data warehouse service
+- 'An open table format for data lakes: schema evolution, time travel and ACID commits on files in S3'
+answer:
+  choice: 3
+explanation: Iceberg sits on top of Parquet files and tracks them as one table. Athena, Spark, Snowflake
+  and others can read the same table.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

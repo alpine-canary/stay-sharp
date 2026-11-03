@@ -1,0 +1,23 @@
+id: proto_bet13
+level: senior
+deck: better
+language: python
+prompt: What's wrong with this test?
+code: |-
+  def test_total(mocker):
+      mocker.patch("billing.compute_total", return_value=100)
+      assert billing.compute_total([50, 50]) == 100
+choices:
+- It mocks the very function it tests, so it can never fail
+- It should use unittest
+- 100 should be 100.0
+- It needs a fixture for the list
+answer:
+  choice: 0
+explanation: 'Test the real function; mock only the boundaries (database, network, clock). Add the failure
+  cases too: empty list, negative amounts, rounding.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

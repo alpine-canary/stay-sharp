@@ -1,0 +1,20 @@
+id: proto_fail10
+level: senior
+deck: fail
+language: text
+prompt: 'The API answers 429 Too Many Requests with a Retry-After: 30 header.'
+code: 'worker ─► partner API ─► 429, Retry-After: 30'
+choices:
+- Retry immediately
+- Wait at least as long as Retry-After, slow the whole worker down, and leave the message in the queue
+- Treat it as a permanent failure and drop it
+- Open more connections
+answer:
+  choice: 1
+explanation: 'A 429 is temporary and polite: the partner tells you when to come back. Slow the shared
+  rate (one governor for all workers), don''t just delay one request.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

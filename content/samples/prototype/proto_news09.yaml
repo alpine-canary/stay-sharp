@@ -1,0 +1,22 @@
+id: proto_news09
+level: senior
+deck: news
+prompt: What does Amazon Bedrock Managed Agents powered by OpenAI (public preview, October 2026) let you
+  do?
+choices:
+- Run OpenAI's ChatGPT app on EC2
+- Fine-tune GPT-6 on SageMaker
+- Migrate Bedrock Agents Classic to Azure
+- Build agents optimized for OpenAI models that run entirely inside AWS
+answer:
+  choice: 3
+explanation: You can build agents on OpenAI models without data or governance leaving your AWS account.
+  This matters for teams with data-residency or IAM-centric compliance needs.
+source:
+  url: https://aws.amazon.com/blogs/aws/aws-weekly-roundup-amazon-bedrock-managed-agents-powered-by-openai-q3-service-availability-updates-kiro-workflows-and-more-october-5-2026/
+  date: '2026-10-05'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

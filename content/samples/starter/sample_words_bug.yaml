@@ -1,0 +1,18 @@
+id: sample_words_bug
+level: starter
+deck: words
+prompt: In programming, what is a "bug"?
+choices:
+- A mistake in a program that makes it behave in the wrong way
+- A small program that runs in the background
+- A virus that spreads by e-mail
+- A part of the computer that stores files
+answer:
+  choice: 0
+explanation: A bug is a mistake in the code. Finding and fixing it is called debugging.
+sample: true
+daily_eligible: false
+second_reader: maintainer
+status: approved
+approved_by: maintainer
+approved_at: '2026-11-03T00:00:00Z'

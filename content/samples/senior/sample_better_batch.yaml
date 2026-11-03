@@ -1,0 +1,22 @@
+id: sample_better_batch
+level: senior
+deck: better
+language: python
+prompt: It works. What is the best improvement?
+code: |-
+  for user_id in user_ids:
+      table.put_item(Item={"PK": f"U#{user_id}", "SK": "PROFILE"})
+choices:
+- Write in batches of 25 with a batch writer, which also retries unprocessed items
+- Add a sleep between calls
+- Use a list comprehension instead of a loop
+- Read each item back after writing it
+answer:
+  choice: 0
+explanation: One request per item is slow and costs a round trip each time. A batch writer groups
+  up to 25 puts per request and resends the items DynamoDB did not process.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-11-03T00:00:00Z'

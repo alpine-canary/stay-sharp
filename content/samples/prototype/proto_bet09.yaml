@@ -1,0 +1,24 @@
+id: proto_bet09
+level: senior
+deck: better
+language: python
+prompt: export.csv is 6 GB. The container has 2 GB of memory.
+code: |-
+  with open("export.csv") as f:
+      lines = f.read().splitlines()
+  for line in lines:
+      load(line)
+choices:
+- Use f.readlines() instead
+- Iterate over the file object (or csv.reader on it) so only one line is in memory at a time
+- Compress the file
+- Add swap space
+answer:
+  choice: 1
+explanation: 'Stream it: for row in csv.reader(f). Memory stays flat whatever the file size. Then batch
+  the loads (e.g. 1,000 rows per insert) for speed.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

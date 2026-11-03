@@ -1,0 +1,22 @@
+id: proto_news02
+level: senior
+deck: news
+prompt: Claude Sonnet 5.5 (28 September 2026) kept Sonnet 5's base token prices. Which price did Anthropic
+  cut in half?
+choices:
+- Output tokens
+- Input tokens
+- Batch API requests
+- Cache reads
+answer:
+  choice: 3
+explanation: Cache reads dropped to $0.10 per million tokens from $0.20. Agent loops re-read long cached
+  prefixes on every turn, so this price drives much of their real cost.
+source:
+  url: https://www.anthropic.com/claude-sonnet-5-5
+  date: '2026-09-28'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

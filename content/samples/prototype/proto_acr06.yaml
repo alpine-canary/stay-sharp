@@ -1,0 +1,18 @@
+id: proto_acr06
+level: senior
+deck: acronym
+prompt: 'SLO vs SLA: which is true?'
+choices:
+- They're the same thing
+- An SLA is internal, an SLO is contractual
+- An SLO is your internal target; an SLA is a commitment to a customer, with consequences if missed
+- An SLO measures latency only
+answer:
+  choice: 2
+explanation: SLI = what you measure (e.g. % of successful requests). SLO = the target (99.9%). SLA = the
+  contract (credits if under 99.5%). The SLO is stricter than the SLA, to give you a margin.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

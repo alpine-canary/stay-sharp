@@ -1,0 +1,18 @@
+id: proto_acr11
+level: senior
+deck: acronym
+prompt: Which of these is an OLAP workload?
+choices:
+- Inserting a new booking
+- A monthly revenue report scanning 3 years of bookings
+- Updating a customer's e-mail
+- Fetching a booking by reference
+answer:
+  choice: 1
+explanation: OLTP = many small reads and writes (the app). OLAP = big scans and aggregates (reporting).
+  Separate stores keep reports from slowing down the app.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

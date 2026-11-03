@@ -1,0 +1,18 @@
+id: proto_acr07
+level: senior
+deck: acronym
+prompt: Backups run every 24 hours; a restore takes 2 hours. Your RPO and RTO?
+choices:
+- RPO 2 h, RTO 24 h
+- RPO up to 24 h, RTO about 2 h
+- Both 26 h
+- RPO 0, RTO 2 h
+answer:
+  choice: 1
+explanation: RPO = how much data you can lose (time since the last backup). RTO = how long until you're
+  back. Point-in-time recovery shrinks the RPO to minutes.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

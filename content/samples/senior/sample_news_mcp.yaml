@@ -1,0 +1,21 @@
+id: sample_news_mcp
+level: senior
+deck: news
+prompt: What is the Model Context Protocol (MCP) for?
+choices:
+- Connecting AI applications to tools and data sources through one open protocol
+- Compressing model weights for phones
+- Training models on private data without sending it
+- Measuring the energy used by a model
+answer:
+  choice: 0
+explanation: MCP is an open protocol, first published by Anthropic in November 2024, that lets an AI
+  application talk to tools and data sources through servers with a common interface.
+source:
+  url: https://www.anthropic.com/news/model-context-protocol
+  date: '2024-11-25'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-11-03T00:00:00Z'

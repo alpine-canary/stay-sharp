@@ -1,0 +1,31 @@
+id: proto_spot08
+level: senior
+deck: spot
+language: python
+prompt: Pick the worst line and say what is wrong with it.
+code: |-
+  def reserve_seat(db, event_id, user_id):
+      taken = db.scalar("SELECT COUNT(*) FROM seats WHERE event_id = %s", event_id)
+      if taken < 40:
+          db.execute("INSERT INTO seats (event_id, user_id) VALUES (%s, %s)", event_id, user_id)
+          return True
+      return False
+choices:
+- The %s placeholders allow SQL injection
+- Two requests can both read 39 and both insert, so 41 seats get sold
+- COUNT(*) is slower than COUNT(id)
+- It should return the seat id
+answer:
+  choice: 1
+  lines:
+  - 2
+  - 3
+  - 4
+explanation: 'Read-then-write without a lock is a race. Lock the event row (SELECT ... FOR UPDATE in a
+  transaction), or use a conditional write: UPDATE events SET seats_left = seats_left - 1 WHERE id = %s
+  AND seats_left > 0, and check the affected row count. The placeholders are fine: they''re parameters.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

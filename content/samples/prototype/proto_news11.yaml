@@ -1,0 +1,22 @@
+id: proto_news11
+level: senior
+deck: news
+prompt: Under the EU AI Act as amended by the Digital Omnibus on AI, when do the rules for stand-alone
+  high-risk AI systems (Annex III) apply?
+choices:
+- 2 August 2026
+- 2 February 2027
+- 2 December 2027
+- 2 August 2030
+answer:
+  choice: 2
+explanation: The Omnibus moved Annex III high-risk obligations, such as employment and credit scoring,
+  from August 2026 to 2 December 2027. Compliance roadmaps built on the original date need updating.
+source:
+  url: https://ai-act-service-desk.ec.europa.eu/en/ai-act/timeline/timeline-implementation-eu-ai-act
+  date: '2026-08-02'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

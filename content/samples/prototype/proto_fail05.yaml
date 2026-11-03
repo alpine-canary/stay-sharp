@@ -1,0 +1,22 @@
+id: proto_fail05
+level: senior
+deck: fail
+language: text
+prompt: The commit succeeds, then the publish fails. What's the state, and the standard fix?
+code: |-
+  1. INSERT order   (committed)
+  2. publish "OrderCreated" to the queue   ✗ fails
+choices:
+- Both are rolled back automatically
+- The queue retries the publish by itself
+- The order exists but nothing downstream hears about it; fix it with a transactional outbox
+- MySQL undoes the INSERT
+answer:
+  choice: 2
+explanation: Write the event to an outbox table in the same transaction as the order; a relay publishes
+  it and marks it sent. The relay may publish twice, so consumers stay idempotent.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

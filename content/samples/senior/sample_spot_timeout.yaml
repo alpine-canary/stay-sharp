@@ -1,0 +1,26 @@
+id: sample_spot_timeout
+level: senior
+deck: spot
+language: python
+prompt: Pick the worst line and say what is wrong with it.
+code: |-
+  def get_price(sku):
+      response = requests.get(f"{PRICES_URL}/{sku}")
+      response.raise_for_status()
+      return response.json()["price"]
+choices:
+- There is no timeout, so one slow call can hang the worker for good
+- raise_for_status() should come after .json()
+- f-strings cannot build URLs
+- The function should return a string
+answer:
+  choice: 0
+  lines:
+  - 2
+explanation: requests waits forever by default. Set a connect and read timeout (for example
+  timeout=(2, 3)), retry only temporary errors with backoff, then fail loudly.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-11-03T00:00:00Z'

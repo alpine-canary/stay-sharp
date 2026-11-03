@@ -1,0 +1,26 @@
+id: proto_spot11
+level: senior
+deck: spot
+language: php
+prompt: Pick the worst line and say what is wrong with it.
+code: |-
+  $expected = hash_hmac('sha256', $formId . $ts, $appKey);
+  if ($_POST['token'] == $expected) {
+      accept_submission($_POST);
+  }
+choices:
+- SHA-256 is too weak for an HMAC
+- hash_hmac's arguments are in the wrong order
+- 'Compare with hash_equals(): == is loose and not constant-time'
+- $_POST can't carry tokens
+answer:
+  choice: 2
+  lines:
+  - 2
+explanation: hash_equals() compares in constant time and without PHP's type juggling. Also check that
+  $ts is recent and that the token is used once, or it can be replayed.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

@@ -1,0 +1,25 @@
+id: proto_bet12
+level: senior
+deck: better
+language: python
+prompt: An agent reads customer e-mails and moves bookings.
+code: |-
+  resp = client.messages.create(model=MODEL, max_tokens=1024,
+      messages=[{"role": "user", "content": email_body}])
+  data = json.loads(resp.content[0].text)
+  update_booking(data["booking_ref"], data["new_date"])
+choices:
+- Raise max_tokens
+- Use a bigger model
+- Ask the model to double-check
+- Validate the output against a schema, check the booking and date are real, treat the e-mail as untrusted,
+  and have a person approve the change
+answer:
+  choice: 3
+explanation: The model proposes, code verifies, a person decides. An e-mail can contain instructions (prompt
+  injection), and a model can return a valid-looking but wrong reference.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

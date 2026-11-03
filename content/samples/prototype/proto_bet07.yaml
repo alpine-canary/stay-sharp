@@ -1,0 +1,20 @@
+id: proto_bet07
+level: senior
+deck: better
+language: python
+prompt: This is in a repository the whole team uses.
+code: client = anthropic.Anthropic(api_key="sk-ant-api03-...")
+choices:
+- Move the key to a .env file committed with the code
+- Base64-encode it
+- Rotate the key now, then read it at runtime from Secrets Manager or a deploy-time environment variable
+- Make the repository private
+answer:
+  choice: 2
+explanation: 'Once committed, a key lives in git history: rotate it first. On AWS, Bedrock needs no key
+  at all: the function''s IAM role grants access.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

@@ -1,0 +1,22 @@
+id: proto_fail01
+level: senior
+deck: fail
+language: text
+prompt: The Lambda does the INSERT and sends the e-mail, then hits its timeout before returning. What
+  happens next?
+code: SQS ─► Lambda (timeout 30 s) ─► INSERT booking ─► send confirmation e-mail
+choices:
+- The message is lost
+- 'The message becomes visible again and runs a second time: a duplicate booking and a second e-mail,
+  unless the consumer is idempotent'
+- SQS detects the timeout and skips the message
+- Lambda retries only the e-mail
+answer:
+  choice: 1
+explanation: 'SQS deletes a message only after a successful return. Assume every consumer may run twice:
+  an idempotency key with a conditional write (Powertools idempotency), or a unique constraint.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

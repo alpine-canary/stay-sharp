@@ -1,0 +1,18 @@
+id: proto_acr09
+level: senior
+deck: acronym
+prompt: A JWT's payload is…
+choices:
+- 'Signed but readable by anyone: it''s base64url, not encryption'
+- Encrypted with the server's key
+- Hashed and unreadable
+- Stored only on the server
+answer:
+  choice: 0
+explanation: Anyone can decode it; the signature only proves it wasn't changed. Never put secrets or personal
+  data in it (unless you use an encrypted JWE).
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

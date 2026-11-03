@@ -1,0 +1,25 @@
+id: proto_spot13
+level: senior
+deck: spot
+language: python
+prompt: Pick the worst line and say what is wrong with it.
+code: |-
+  def add_tag(tag, tags=[]):
+      tags.append(tag)
+      return tags
+choices:
+- The default list is created once and shared between calls, so tags leak from one call into the next
+- append returns None, so tags becomes None
+- tag must be a string
+- Lists aren't allowed as default arguments
+answer:
+  choice: 0
+  lines:
+  - 1
+explanation: Default values are evaluated once, when the function is defined. Use tags=None, then tags
+  = [] if tags is None else tags.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

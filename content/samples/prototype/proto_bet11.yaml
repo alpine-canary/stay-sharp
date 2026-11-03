@@ -1,0 +1,26 @@
+id: proto_bet11
+level: senior
+deck: better
+language: python
+prompt: Two copies of this worker run, for availability.
+code: |-
+  while True:
+      jobs = db.query("SELECT * FROM jobs WHERE status = 'new'")
+      for j in jobs:
+          run(j)
+      time.sleep(1)
+choices:
+- Sleep 5 seconds instead of 1
+- Run only one worker
+- Claim each job atomically before running it (SELECT ... FOR UPDATE SKIP LOCKED, or an UPDATE ... WHERE
+  status = 'new'), or use a queue
+- Add an index on status
+answer:
+  choice: 2
+explanation: Both workers read the same new jobs and run them twice. Claim first, then run; or use SQS,
+  which hides a message from other consumers while one works on it.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

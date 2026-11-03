@@ -1,0 +1,20 @@
+id: proto_fail07
+level: senior
+deck: fail
+language: text
+prompt: An API comes back after 2 minutes down. 5,000 clients retry exactly every second.
+code: 5,000 clients ─► retry every 1.0 s ─► API (just restarted)
+choices:
+- Fine, it's back up
+- Retry every 0.5 s to catch up faster
+- Turn retries off
+- They hit it all at once and can knock it down again; use exponential backoff with jitter
+answer:
+  choice: 3
+explanation: Synchronised retries make a thundering herd. Backoff spreads them over time; jitter (randomness)
+  stops clients from lining up.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

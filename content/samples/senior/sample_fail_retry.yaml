@@ -1,0 +1,21 @@
+id: sample_fail_retry
+level: senior
+deck: fail
+language: text
+prompt: The payment call times out, but the payment went through. The client retries. What happens?
+code: |-
+  client -> POST /payments (timeout) -> retry POST /payments
+choices:
+- The customer is charged twice, unless the request carries an idempotency key
+- The second call fails because the first one is still open
+- The payment provider always detects the duplicate
+- Nothing, a timeout means the payment failed
+answer:
+  choice: 0
+explanation: A timeout does not tell you whether the work happened. Send an idempotency key so the
+  server returns the first result instead of charging again.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-11-03T00:00:00Z'

@@ -1,0 +1,92 @@
+level: senior
+targets:
+  spot: 60
+  better: 45
+  fail: 45
+  acronym: 20
+  news: 30
+days:
+  '2026-10-23':
+  - proto_spot01
+  - proto_bet01
+  - proto_fail01
+  - proto_acr01
+  - proto_news01
+  '2026-10-24':
+  - proto_spot02
+  - proto_bet02
+  - proto_fail02
+  - proto_acr02
+  - proto_news02
+  '2026-10-25':
+  - proto_spot03
+  - proto_bet03
+  - proto_fail03
+  - proto_acr03
+  - proto_news03
+  '2026-10-26':
+  - proto_spot04
+  - proto_bet04
+  - proto_fail04
+  - proto_acr04
+  - proto_news04
+  '2026-10-27':
+  - proto_spot05
+  - proto_bet05
+  - proto_fail05
+  - proto_acr05
+  - proto_news05
+  '2026-10-28':
+  - proto_spot06
+  - proto_bet06
+  - proto_fail06
+  - proto_acr06
+  - proto_news06
+  '2026-10-29':
+  - proto_spot07
+  - proto_bet07
+  - proto_fail07
+  - proto_acr07
+  - proto_news07
+  '2026-10-30':
+  - proto_spot08
+  - proto_bet08
+  - proto_fail08
+  - proto_acr08
+  - proto_news08
+  '2026-10-31':
+  - proto_spot09
+  - proto_bet09
+  - proto_fail09
+  - proto_acr09
+  - proto_news09
+  '2026-11-01':
+  - proto_spot10
+  - proto_bet10
+  - proto_fail10
+  - proto_acr10
+  - proto_news10
+  '2026-11-02':
+  - proto_spot11
+  - proto_bet11
+  - proto_fail11
+  - proto_acr11
+  - proto_news11
+  '2026-11-03':
+  - proto_spot12
+  - proto_bet12
+  - proto_fail12
+  - proto_acr12
+  - proto_news12
+  '2026-11-04':
+  - proto_spot13
+  - proto_bet13
+  - proto_fail13
+  - proto_acr13
+  - proto_news13
+  '2026-11-05':
+  - proto_spot14
+  - proto_bet14
+  - proto_fail14
+  - proto_acr14
+  - proto_news14

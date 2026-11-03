@@ -1,0 +1,19 @@
+id: sample_whatif_save
+level: starter
+deck: whatif
+prompt: You click "Save" twice very fast in an app that does not handle it. What can happen?
+choices:
+- The same note is saved twice
+- The app saves nothing
+- The computer restarts
+- The second click deletes the note
+answer:
+  choice: 0
+explanation: Each click can send its own request. Good apps give each save an id, so the server keeps
+  only one copy.
+sample: true
+daily_eligible: false
+second_reader: maintainer
+status: approved
+approved_by: maintainer
+approved_at: '2026-11-03T00:00:00Z'

@@ -1,0 +1,22 @@
+id: proto_fail02
+level: senior
+deck: fail
+language: text
+prompt: A malformed message fails every time. What happens after the third failed receive?
+code: |-
+  SQS queue (maxReceiveCount = 3) ─► Lambda ─► fails
+            └─ redrive policy ─► DLQ
+choices:
+- SQS deletes it
+- It moves to the dead-letter queue, where it waits for a fix and a redrive
+- It's retried forever
+- Lambda disables the trigger
+answer:
+  choice: 1
+explanation: 'The DLQ keeps poison messages out of the way so the rest flows. It only helps if someone
+  looks: an alarm on its depth, and a documented redrive.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

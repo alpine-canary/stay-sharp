@@ -1,0 +1,31 @@
+id: proto_spot01
+level: senior
+deck: spot
+language: python
+prompt: Pick the worst line and say what is wrong with it.
+code: |-
+  orders = json.load(open("orders.json"))
+  for order in orders:
+      try:
+          requests.post(URL, json=order)
+          print("ok", order["id"])
+      except Exception as e:
+          print("failed", e)
+  print("All orders sent")
+choices:
+- requests doesn't raise on 4xx/5xx, so a 500 still prints "ok"
+- json.load can't read a top-level list
+- print() isn't safe inside a try block
+- The loop should use enumerate()
+answer:
+  choice: 0
+  lines:
+  - 4
+explanation: 'The worst defect is the one that lies: a rejected order counts as sent. Check the response
+  (raise_for_status), add a timeout, an Idempotency-Key so a rerun doesn''t duplicate orders, collect
+  the failures and exit non-zero. Line 8 also says "All orders sent" whatever happened.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

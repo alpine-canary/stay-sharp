@@ -1,0 +1,20 @@
+id: proto_fail09
+level: senior
+deck: fail
+language: text
+prompt: Your DLQ has held 214 messages for 9 days. Nobody knew. What was missing?
+code: DLQ ─► 214 messages ─► (silence)
+choices:
+- A bigger DLQ
+- More retries before the DLQ
+- An alarm on DLQ depth above 0, a redrive procedure, and retention set to the 14-day maximum
+- A shorter retention period
+answer:
+  choice: 2
+explanation: Messages expire (4 days by default, 14 at most), and the clock keeps the original enqueue
+  time. Without an alarm, a DLQ is where data goes to die quietly.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

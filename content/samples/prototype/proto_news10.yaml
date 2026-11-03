@@ -1,0 +1,22 @@
+id: proto_news10
+level: senior
+deck: news
+prompt: In September 2026, Amazon Bedrock replaced the per-model 'tokens per day' quota on the bedrock-runtime
+  endpoint. What is the new quota's scope?
+choices:
+- Per account, per Region, across all supported models
+- Per model, global across all Regions
+- Per IAM role, per model
+- Per inference profile only
+answer:
+  choice: 0
+explanation: The daily token cap, 'Cross-Model Max Tokens Per Day', is now shared across every model in
+  an account and Region. Heavy use of one model can now exhaust the daily budget for all the others.
+source:
+  url: https://docs.aws.amazon.com/bedrock/latest/userguide/quotas-runtime.html
+  date: '2026-09-21'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

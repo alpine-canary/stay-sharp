@@ -1,0 +1,20 @@
+id: sample_logic_socks
+level: starter
+deck: logic
+prompt: A drawer holds red socks and blue socks, all mixed. In the dark, how many socks must you take
+  to be sure you have two of the same colour?
+choices:
+- '3'
+- '2'
+- '4'
+- '5'
+answer:
+  choice: 0
+explanation: With two colours, the first two socks can be different. The third one must match one of
+  them.
+sample: true
+daily_eligible: false
+second_reader: maintainer
+status: approved
+approved_by: maintainer
+approved_at: '2026-11-03T00:00:00Z'

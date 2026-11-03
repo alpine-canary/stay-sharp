@@ -1,0 +1,22 @@
+id: proto_news12
+level: senior
+deck: news
+prompt: According to the European Commission's AI Act timeline, what happened on 2 August 2026?
+choices:
+- The AI Act was repealed by the Digital Omnibus
+- The majority of the AI Act's rules came into force and enforcement started for applicable rules
+- Only the bans on prohibited practices started to apply
+- Member States had to open their first regulatory sandboxes
+answer:
+  choice: 1
+explanation: Most rules, including the Article 50 transparency duties and enforcement over general-purpose
+  AI models, became enforceable on 2 August 2026. If you ship GenAI features in the EU, those duties already
+  apply.
+source:
+  url: https://ai-act-service-desk.ec.europa.eu/en/ai-act/timeline/timeline-implementation-eu-ai-act
+  date: '2026-08-02'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

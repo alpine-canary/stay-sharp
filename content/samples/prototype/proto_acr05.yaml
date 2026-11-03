@@ -1,0 +1,18 @@
+id: proto_acr05
+level: senior
+deck: acronym
+prompt: What does cdk synth produce?
+choices:
+- A CloudFormation template
+- A Terraform plan
+- A Docker image
+- A running stack
+answer:
+  choice: 0
+explanation: CDK is code (TypeScript, Python...) that generates CloudFormation. cdk deploy then hands
+  the template to CloudFormation, which creates the resources.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

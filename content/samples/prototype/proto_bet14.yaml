@@ -1,0 +1,26 @@
+id: proto_bet14
+level: senior
+deck: better
+language: python
+prompt: Prices change several times a day.
+code: |-
+  _rates = {}
+  def rate(hotel_id):
+      if hotel_id not in _rates:
+          _rates[hotel_id] = supplier.get_rate(hotel_id)
+      return _rates[hotel_id]
+choices:
+- Give each entry an expiry (TTL) that matches how fast prices change, and confirm the live price before
+  booking
+- Use a list instead of a dict
+- Clear the cache when memory is full
+- Write it to a file
+answer:
+  choice: 0
+explanation: 'Never refreshed, never bounded: stale prices for as long as the process lives, and memory
+  grows. A stale price that gets booked is a real loss.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

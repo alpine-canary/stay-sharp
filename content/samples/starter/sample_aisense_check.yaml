@@ -1,0 +1,19 @@
+id: sample_aisense_check
+level: starter
+deck: aisense
+prompt: An AI chatbot gives you a date for a history test. What is the best thing to do?
+choices:
+- Check it in your book or a trusted website, because chatbots can make mistakes
+- Trust it, because computers do not make mistakes
+- Ask the same chatbot again until it says the same thing twice
+- Use it only if the answer is long
+answer:
+  choice: 0
+explanation: Chatbots can write wrong facts in a very sure tone. Check important facts in a source you
+  trust.
+sample: true
+daily_eligible: false
+second_reader: maintainer
+status: approved
+approved_by: maintainer
+approved_at: '2026-11-03T00:00:00Z'

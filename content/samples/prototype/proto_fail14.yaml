@@ -1,0 +1,21 @@
+id: proto_fail14
+level: senior
+deck: fail
+language: text
+prompt: The new code reads a new column. The migration that adds it runs after the switch.
+code: deploy code v2 (reads bookings.channel) ─► then run migration
+choices:
+- MySQL creates the column on first read
+- The ORM retries until it exists
+- Errors until the migration runs; run backward-compatible migrations first, then the code (expand, then
+  contract)
+- Only writes fail
+answer:
+  choice: 2
+explanation: Expand (add the column, nullable), deploy code that uses it, then contract (remove the old
+  one) later. Each step must work with the previous version, so rollback stays possible.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

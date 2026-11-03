@@ -1,0 +1,23 @@
+id: proto_news13
+level: senior
+deck: news
+prompt: Mistral announced Mistral Large 4 as a public preview on 6 October 2026. How does Mistral describe
+  its size?
+choices:
+- 1 trillion parameters with 52 billion active
+- 405 billion dense parameters
+- 123 billion dense parameters
+- 2.4 trillion parameters, API only
+answer:
+  choice: 0
+explanation: Large 4 is a 1T-parameter Mixture-of-Experts model with 52B active parameters, and Mistral
+  says the weights come by the end of October. That makes it one of the largest open-weight European models
+  to self-host.
+source:
+  url: https://mistral.ai/news/mistral-large-4/
+  date: '2026-10-06'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

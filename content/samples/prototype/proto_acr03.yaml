@@ -1,0 +1,18 @@
+id: proto_acr03
+level: senior
+deck: acronym
+prompt: In hybrid search, RRF is used to…
+choices:
+- Compress embeddings
+- Re-train the model
+- Merge the rankings of keyword search (BM25) and vector search into one list
+- Remove duplicate documents
+answer:
+  choice: 2
+explanation: Reciprocal Rank Fusion scores each document by 1 / (k + rank) in each list and adds them
+  up. Simple, and needs no score calibration.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

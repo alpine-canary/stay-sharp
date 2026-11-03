@@ -1,0 +1,18 @@
+id: proto_acr04
+level: senior
+deck: acronym
+prompt: MCP lets an AI application…
+choices:
+- Compress model weights
+- Fine-tune on private data
+- Monitor GPU usage
+- Connect to tools and data sources through one standard protocol
+answer:
+  choice: 3
+explanation: 'Model Context Protocol: JSON-RPC between a client (the AI app) and servers that expose tools,
+  resources and prompts. One protocol instead of one connector per API.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

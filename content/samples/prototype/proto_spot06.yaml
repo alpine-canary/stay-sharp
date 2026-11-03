@@ -1,0 +1,30 @@
+id: proto_spot06
+level: senior
+deck: spot
+language: python
+prompt: Pick the worst line and say what is wrong with it.
+code: |-
+  def fetch(url):
+      while True:
+          try:
+              return requests.get(url, timeout=5).json()
+          except requests.RequestException:
+              continue
+choices:
+- timeout=5 is too long
+- It retries forever, instantly, with no limit and no backoff
+- You can't return .json() directly
+- requests.RequestException doesn't exist
+answer:
+  choice: 1
+  lines:
+  - 2
+  - 6
+explanation: During an outage this hammers the server and never gives up. Cap the attempts, use exponential
+  backoff with jitter, retry only temporary errors (timeouts, 429, 5xx), then raise so the caller or the
+  DLQ takes over.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

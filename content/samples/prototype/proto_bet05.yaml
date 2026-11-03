@@ -1,0 +1,24 @@
+id: proto_bet05
+level: senior
+deck: better
+language: python
+prompt: This Lambda handles 50 requests a second. An easy improvement?
+code: |-
+  def handler(event, context):
+      s3 = boto3.client("s3")
+      table = boto3.resource("dynamodb").Table("Bookings")
+      ...
+choices:
+- Create the clients once, outside the handler, so warm invocations reuse them
+- Raise memory to 10 GB
+- Put the function in a VPC
+- Call S3 through API Gateway
+answer:
+  choice: 0
+explanation: Code outside the handler runs once per execution environment and is reused by warm invocations.
+  Creating clients on every call adds latency and new connections.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

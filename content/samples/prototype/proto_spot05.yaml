@@ -1,0 +1,27 @@
+id: proto_spot05
+level: senior
+deck: spot
+language: php
+prompt: Pick the worst line and say what is wrong with it.
+code: |-
+  $id = $db->insert('submissions', $data);
+  mail($to, '[New request]', $body);
+  http_response_code(200);
+  echo json_encode(['status' => 'sent', 'id' => $id]);
+choices:
+- http_response_code() must come before the insert
+- mail()'s return value is ignored, so the visitor sees "sent" even when no e-mail left
+- json_encode can't encode integers
+- mail() needs a fifth parameter
+answer:
+  choice: 1
+  lines:
+  - 2
+explanation: Silent mail failures can last weeks. At minimum check the result and log it; better, write
+  the e-mail to an outbox table in the same transaction as the submission and send it from a job that
+  retries and alerts.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

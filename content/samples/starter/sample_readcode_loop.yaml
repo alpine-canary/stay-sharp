@@ -1,0 +1,25 @@
+id: sample_readcode_loop
+level: starter
+deck: readcode
+language: python
+prompt: What does this code print?
+code: |-
+  total = 0
+  for n in [1, 2, 3, 4]:
+      if n % 2 == 0:
+          total = total + n
+  print(total)
+choices:
+- '6'
+- '10'
+- '4'
+- '2'
+answer:
+  choice: 0
+explanation: n % 2 == 0 is true for even numbers only. The even numbers are 2 and 4, and 2 + 4 = 6.
+sample: true
+daily_eligible: false
+second_reader: maintainer
+status: approved
+approved_by: maintainer
+approved_at: '2026-11-03T00:00:00Z'

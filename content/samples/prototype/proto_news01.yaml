@@ -1,0 +1,22 @@
+id: proto_news01
+level: senior
+deck: news
+prompt: Anthropic released Claude Opus 5.5 on 22 September 2026. What is its standard API price per million
+  input / output tokens?
+choices:
+- $5 / $25
+- $4 / $20
+- $10 / $50
+- $2 / $10
+answer:
+  choice: 1
+explanation: Opus 5.5 costs $4/$20 per million tokens, 20% less than Opus 5. When you budget agent workloads,
+  a cheaper frontier tier changes which model is worth routing to.
+source:
+  url: https://www.anthropic.com/claude-opus-5-5
+  date: '2026-09-22'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

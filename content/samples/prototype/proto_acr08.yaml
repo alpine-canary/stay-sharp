@@ -1,0 +1,18 @@
+id: proto_acr08
+level: senior
+deck: acronym
+prompt: An operation is idempotent when…
+choices:
+- It never fails
+- It runs in a single transaction
+- It can't be called concurrently
+- Running it several times has the same effect as running it once
+answer:
+  choice: 3
+explanation: SET status = 'paid' is idempotent; paid = paid + 10 isn't. With at-least-once delivery, idempotency
+  is what makes the result exactly-once.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

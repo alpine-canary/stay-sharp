@@ -1,0 +1,21 @@
+id: proto_fail03
+level: senior
+deck: fail
+language: text
+prompt: Record 7 of a batch of 10 raises an exception. The function doesn't use partial batch responses.
+  What happens?
+code: SQS batch of 10 ─► Lambda ─► record 7 raises
+choices:
+- Only record 7 is retried
+- Record 7 is dropped
+- All 10 come back, so the 9 successful records run again
+- The batch is split in two automatically
+answer:
+  choice: 2
+explanation: With ReportBatchItemFailures the function returns the ids that failed and only those return.
+  Either way, consumers must be idempotent.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

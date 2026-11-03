@@ -1,0 +1,23 @@
+id: proto_news04
+level: senior
+deck: news
+prompt: OpenAI launched GPT-6 Astra in early September 2026. What did it reach under OpenAI's Preparedness
+  Framework?
+choices:
+- It was the first model rated 'Low' risk in every category
+- It was the first OpenAI model to reach 'High' for biology
+- It crossed the 'Critical' threshold for cybersecurity risk
+- It was exempted from the framework as a research preview
+answer:
+  choice: 2
+explanation: OpenAI rated Astra 'Critical' for cybersecurity, which triggered extra deployment restrictions
+  such as a staged rollout and trust-gated cyber access. Expect gated features and admin opt-in when you
+  adopt it.
+source:
+  url: https://www.infoworld.com/article/4218686/openai-launches-gpt-6-astra.html
+  date: '2026-09-04'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

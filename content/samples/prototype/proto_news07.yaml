@@ -1,0 +1,21 @@
+id: proto_news07
+level: senior
+deck: news
+prompt: OpenAI's Agents API entered public beta in September 2026. What does it expose to developers?
+choices:
+- A fine-tuning endpoint for GPT-6
+- A browser extension SDK
+- The managed Codex harness (sessions, orchestration, context compaction, recovery)
+- A self-hosted open-weights agent model
+answer:
+  choice: 2
+explanation: The API hosts the Codex agent harness, with MCP connections and multi-agent delegation built
+  in. Developers bring tools and choose the execution environment instead of writing their own agent loop.
+source:
+  url: https://aiweekly.co/alerts/openai-ships-agents-api-in-public-beta-exposing-managed-codex-harness-with
+  date: '2026-09-10'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

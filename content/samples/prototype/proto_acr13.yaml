@@ -1,0 +1,18 @@
+id: proto_acr13
+level: senior
+deck: acronym
+prompt: You set a DynamoDB TTL on items to expire at midnight. When are they deleted?
+choices:
+- Within a background window, typically a few days after expiry, so filter expired items in your reads
+- Exactly at midnight
+- Within one second
+- Only when you call DeleteItem
+answer:
+  choice: 0
+explanation: TTL deletion is free but not instant. Until then the item can still appear in reads, so queries
+  should check the expiry attribute.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

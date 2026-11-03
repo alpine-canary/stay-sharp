@@ -1,0 +1,18 @@
+id: sample_acronym_ttl
+level: senior
+deck: acronym
+prompt: In DynamoDB, what does TTL do?
+choices:
+- Deletes items some time after a timestamp attribute has passed
+- Limits how long a query may run
+- Sets how long a connection stays open
+- Caches items for a number of seconds
+answer:
+  choice: 0
+explanation: Time to live. DynamoDB deletes expired items in the background, usually within a few
+  days, so reads that depend on expiry must still compare the timestamp with now.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-11-03T00:00:00Z'

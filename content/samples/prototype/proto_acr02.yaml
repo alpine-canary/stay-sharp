@@ -1,0 +1,18 @@
+id: proto_acr02
+level: senior
+deck: acronym
+prompt: HNSW is…
+choices:
+- A hashing scheme for passwords
+- A graph index for fast approximate nearest-neighbour search on vectors
+- A network protocol
+- A tokenizer
+answer:
+  choice: 1
+explanation: Hierarchical Navigable Small World. Used by pgvector, OpenSearch and most vector databases.
+  It trades a little recall for a lot of speed.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

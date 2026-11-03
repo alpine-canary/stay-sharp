@@ -1,0 +1,25 @@
+id: proto_bet03
+level: senior
+deck: better
+language: python
+prompt: 'Retries with backoff: a good start. The main weakness?'
+code: |-
+  for attempt in range(5):
+      try:
+          return api.create_invoice(data)
+      except Exception:
+          time.sleep(2 ** attempt)
+choices:
+- The delay grows too fast
+- 5 attempts is too few
+- It retries everything, including a 400 "invalid data" that will never succeed, then returns None silently
+- time.sleep wastes CPU
+answer:
+  choice: 2
+explanation: 'Retry only temporary failures (timeouts, 429, 5xx), add jitter, raise after the last attempt.
+  And send an idempotency key: create_invoice may have succeeded just before the timeout.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

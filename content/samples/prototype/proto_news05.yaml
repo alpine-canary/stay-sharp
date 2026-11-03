@@ -1,0 +1,22 @@
+id: proto_news05
+level: senior
+deck: news
+prompt: Google made Gemini 3.8 Flash generally available in September 2026. What happens to its pricing
+  on 1 January 2027?
+choices:
+- It becomes free in AI Studio
+- The introductory price ends and standard pricing ($1.50 / $7.50 per 1M tokens) applies
+- Its price drops by 50%
+- It moves to per-request billing
+answer:
+  choice: 1
+explanation: The $0.75/$3.75 rate is introductory and ends on 31 December 2026. Cost models built on the
+  launch price will double in 2027.
+source:
+  url: https://ai.google.dev/gemini-api/docs/whats-new-gemini-3.8
+  date: '2026-09-02'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

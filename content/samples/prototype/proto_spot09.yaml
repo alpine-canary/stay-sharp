@@ -1,0 +1,28 @@
+id: proto_spot09
+level: senior
+deck: spot
+language: python
+prompt: Pick the worst line and say what is wrong with it.
+code: |-
+  def is_expired(contract):
+      end = datetime.strptime(contract["end"], "%Y-%m-%d %H:%M")
+      return datetime.now() > end
+choices:
+- strptime can't parse minutes
+- It should use >=
+- datetime.now() is deprecated
+- 'Naive datetimes: the server clock (often UTC) is compared with a Zurich local time, so contracts expire
+  1 to 2 hours off'
+answer:
+  choice: 3
+  lines:
+  - 2
+  - 3
+explanation: 'Attach the zone: parse with ZoneInfo("Europe/Zurich"), compare with datetime.now(timezone.utc).
+  Store instants in UTC, show them in local time. In energy, delivery periods and DST changeovers make
+  this a real money bug.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

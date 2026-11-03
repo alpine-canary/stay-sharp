@@ -1,0 +1,22 @@
+id: proto_news14
+level: senior
+deck: news
+prompt: DeepSeek released V4.1 Flash, a 552B-parameter multimodal MoE model, in September 2026. Under
+  which license are its weights published?
+choices:
+- Apache 2.0
+- Llama-style community license
+- API-only, no weights
+- MIT
+answer:
+  choice: 3
+explanation: The weights are MIT-licensed, one of the most permissive licenses, so you can use them commercially
+  and self-host with almost no restrictions. The model supports contexts of up to 1M tokens.
+source:
+  url: https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash
+  date: '2026-09-10'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

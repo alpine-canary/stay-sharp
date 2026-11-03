@@ -1,0 +1,20 @@
+id: proto_fail04
+level: senior
+deck: fail
+language: text
+prompt: The supplier stops answering but keeps the connection open. The client sets no timeout.
+code: queue ─► worker ─► supplier API ─► (no answer)
+choices:
+- The worker waits indefinitely, and everything behind it in the queue waits too
+- The worker gets an error after 30 seconds
+- The OS cancels the request after a minute
+- The queue skips to the next job
+answer:
+  choice: 0
+explanation: One hung call can block a whole queue for hours. Every external call needs a timeout, and
+  every job a time limit.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

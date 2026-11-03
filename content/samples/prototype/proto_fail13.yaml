@@ -1,0 +1,20 @@
+id: proto_fail13
+level: senior
+deck: fail
+language: text
+prompt: Product pages read prices from Redis and fall back to MySQL. Redis restarts empty at peak time.
+code: page ─► Redis (empty) ─► miss ─► MySQL
+choices:
+- Nothing changes
+- Every request hits MySQL at once, a cache stampede that can take the database down
+- Redis reloads everything from disk instantly
+- Pages show yesterday's prices
+answer:
+  choice: 1
+explanation: 'Protect the database: one request rebuilds a key while others wait (request coalescing),
+  limits on the fallback path, and a warm-up before taking traffic.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

@@ -1,0 +1,18 @@
+id: proto_acr14
+level: senior
+deck: acronym
+prompt: In ACID, the I (isolation) means…
+choices:
+- Data is replicated to other zones
+- Each table lives on its own disk
+- Concurrent transactions don't see each other's unfinished work
+- Transactions can't fail
+answer:
+  choice: 2
+explanation: Isolation levels (READ COMMITTED, REPEATABLE READ, SERIALIZABLE) trade strictness for speed.
+  MySQL InnoDB defaults to REPEATABLE READ.
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

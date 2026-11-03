@@ -1,0 +1,21 @@
+id: proto_news03
+level: senior
+deck: news
+prompt: What did Claude Haiku 5.5 (7 October 2026) bring that no previous Haiku-class model had?
+choices:
+- An adjustable effort setting
+- A 10M-token context window
+- Open weights
+- Native image generation
+answer:
+  choice: 0
+explanation: Haiku 5.5 is the first Haiku-class model with an adjustable effort setting. You can trade
+  cost and latency against intelligence for each call, which suits high-volume subagent work.
+source:
+  url: https://www.anthropic.com/claude-haiku-5-5
+  date: '2026-10-07'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'

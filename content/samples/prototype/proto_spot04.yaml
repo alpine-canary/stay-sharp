@@ -1,0 +1,32 @@
+id: proto_spot04
+level: senior
+deck: spot
+language: python
+prompt: Pick the worst line and say what is wrong with it.
+code: |-
+  def handler(event, context):
+      for record in event["Records"]:
+          try:
+              process(json.loads(record["body"]))
+          except Exception:
+              logger.exception("failed")
+      return {"statusCode": 200}
+choices:
+- 'Failures are logged and swallowed: the batch counts as a success, SQS deletes it, failed messages never
+  reach the DLQ'
+- An SQS handler must return statusCode 202
+- json.loads should be json.load
+- logger.exception doesn't record the stack trace
+answer:
+  choice: 0
+  lines:
+  - 5
+  - 6
+explanation: 'A logged error isn''t a handled error. Collect the failed messageIds and return {"batchItemFailures":
+  [...]} (ReportBatchItemFailures), so only those return to the queue and, after maxReceiveCount, land
+  in the DLQ with an alarm.'
+sample: true
+daily_eligible: false
+status: approved
+approved_by: maintainer
+approved_at: '2026-10-23T00:00:00Z'
