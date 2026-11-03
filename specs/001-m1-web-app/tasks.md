@@ -64,7 +64,7 @@ dev. No user story can start before this phase ends.
 
 - [x] T012 Create the `stay-sharp` member account in the Organization, Identity Center access with a 4-hour admin set, MFA on, local SSO profile `stay-sharp` (maintainer, done 2026-11-03)
 - [x] T013 Enable the opt-in region `eu-central-2` in the account (done 2026-11-03, R14)
-- [ ] T014 Write `docs/runbooks/account-setup.md`: enable `eu-central-2` first, SSO profile, CDK bootstrap with narrowed execution policies, DNS records at Infomaniak, root user without daily use; no ids or URLs in the file
+- [x] T014 Write `docs/runbooks/account-setup.md`: enable `eu-central-2` first, SSO profile, CDK bootstrap with narrowed execution policies, DNS records at Infomaniak, root user without daily use; no ids or URLs in the file
 - [ ] T015 Verify in the account and record in `specs/001-m1-web-app/research.md` R9 and R14: `python3.13` arm64 runtime and HTTP API available in `eu-central-2`; whether the CloudFront flat-rate Free plan covers the WAF rules of R9, else standard WAF cost
 - [ ] T016 Bootstrap CDK in `eu-central-2` and `us-east-1` with `--cloudformation-execution-policies` limited to the services in plan.md (no `AdministratorAccess`); commit the policy document as `infra/bootstrap/execution-policy.json` (maintainer runs the command)
 - [ ] T017 Request the ACM certificate for `stay-sharp.lumineth.com` in `us-east-1` from `infra/stacks/edge_stack.py` (DNS validation) and give the maintainer the validation CNAME to add at Infomaniak (maintainer action, W16)
