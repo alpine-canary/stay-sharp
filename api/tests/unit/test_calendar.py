@@ -9,8 +9,8 @@ from staysharp.domain import calendar
 LAUNCH = date(2026, 11, 16)
 
 
-def utc(*args: int) -> datetime:
-    return datetime(*args, tzinfo=UTC)
+def utc(year: int, month: int, day: int, hour: int, minute: int) -> datetime:
+    return datetime(year, month, day, hour, minute, tzinfo=UTC)
 
 
 @pytest.mark.parametrize(
