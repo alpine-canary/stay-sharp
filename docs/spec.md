@@ -25,8 +25,8 @@
   3. **What if it fails?** - a small system diagram + a failure ("the e-mail arrives twice", "the supplier API hangs"). Pick what happens / what protects it.
   4. **Acronym or tool** - "HNSW is…", "What does a DLQ hold?", "CDK vs CloudFormation?".
   5. **AI this week** - one question on recent AI news, always with date and source link shown after answering.
-- **Levels**: Junior, Mid, Senior, Lead. Same decks, different depth. Lead adds Run topics (incidents, post-mortems, SLAs, change freezes).
-- **Scoring**: correct + time bonus (capped, so careful beats fast). **Explanation shown after every answer** - learning is the point.
+- **Levels**: Senior and **Starter (12+)** at M1; Mid and Lead later. Mid, Senior and Lead share the developer decks at different depths; Lead adds Run topics (incidents, post-mortems, SLAs, change freezes). Starter, for teenagers and beginners, has its own decks: Logic puzzle, Read the code, What happens if…, Tech words, AI sense.
+- **Scoring**: grade per question (1, 0.5 for half-right Spot the bug, 0) + a speed bonus of 0.2 for a right answer within the deck's target time, measured on the server. No hard time limit; a "relaxed" setting turns the timer and bonus off (WCAG 2.2.1). **Explanation shown after every answer** - learning is the point.
 - **Streak** like LinkedIn's games; a missed day breaks it (one "freeze" per week).
 - **Share card** (no spoilers):
   ```
@@ -55,6 +55,7 @@ Borrow the mechanics that keep a daily habit going; leave out the ones that feel
 - **Sign-in with a passkey or an e-mail link** (Cognito), no password. Stored: e-mail and a display name, nothing else.
 - **Leaderboard** (later, not at launch: streaks and private groups come first): weekly, per level, by display name. Opt-in.
 - **Delete my account** button, with all data (nFADP / GDPR).
+- **Players under 16** need a parent's consent to create an account (GDPR art. 8, nFADP); Starter stays fully playable without an account.
 
 ### 2.5 Not in v1
 - Free-text answers graded by a model (cost, abuse, unpredictability). The game is **graded deterministically**; the model is used only *before* publication, to draft content a person approves.

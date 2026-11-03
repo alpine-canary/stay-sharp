@@ -6,6 +6,19 @@
 
 **Status**: Draft
 
+## Clarifications
+
+### Session 2026-11-03
+
+- Q: Which levels are playable at M1 launch? -> A: Senior and Starter (12+). Starter is a
+  separate level for teenagers with its own five decks (logic and everyday technology). Mid and
+  Lead come later.
+- Q: Does time count? -> A: Yes, as a bonus, not a hard limit. The server measures time per
+  question; a right answer within the deck's target time earns a speed bonus. A hard 20-second
+  cutoff was rejected: it does not stop look-ups, is too short for reading code, and WCAG 2.2.1
+  requires that time limits can be turned off. A "relaxed" setting hides the timer and plays
+  without bonus.
+
 **Input**: User description: "M1 of Stay Sharp: public web app without accounts. Daily set of 5
 questions (one per deck: spot the bug, could do better, what if it fails, acronym or tool, AI this
 week), same for everyone at a level, unlocked at 00:00 Europe/Zurich. Practice mode from the
@@ -22,7 +35,8 @@ back by itself."
 
 Actors:
 
-- **Player**: anyone with a browser. No account, no sign-in.
+- **Player**: anyone with a browser. No account, no sign-in. Plays at the Senior level (developers
+  who work with coding agents) or the Starter level (teenagers from 12, and beginners).
 - **Challenged player**: a player who arrives through a colleague's challenge link.
 - **Maintainer**: the one person who writes and approves questions, deploys and operates the game.
 
@@ -32,7 +46,7 @@ A player opens the site, picks a level, and plays today's five questions: one pe
 order. For each question they choose an answer (for Spot the bug: first the line, then what is
 wrong), submit it, and see straight away whether it was right, the right answer, and a short
 explanation. After the fifth question they see their result: one square per question, the score
-out of 5 and the time taken.
+out of 5, the speed bonus and the time taken.
 
 **Why this priority**: this is the game. Without it nothing else has a reason to exist.
 
@@ -49,6 +63,12 @@ check that each answer is graded, explained, and that the final result matches t
 3. **Given** a player submits an answer, **When** the grade comes back, **Then** they see right,
    half right (Spot the bug only: line or problem correct, not both) or wrong, the correct answer,
    and the explanation, and for AI this week also the date and a link to the source.
+3a. **Given** the timer is on, **When** a question is shown, **Then** a timer shows the time used
+   against the deck's target; **When** a right answer arrives within the target (measured by the
+   server from the moment it sent the question), **Then** the player earns a speed bonus; a wrong
+   or half-right answer never earns one.
+3b. **Given** a player switched on "relaxed", **When** they play, **Then** no timer is shown, there
+   is no time pressure and no bonus, and the result is marked "relaxed".
 4. **Given** a player submitted an answer, **When** the same submission is sent again (double
    click, network retry, page reload, a replayed request), **Then** it is counted once and the
    score shown does not change.
@@ -105,7 +125,8 @@ format; check that it contains no question text, answer or deck-specific hint.
 
 1. **Given** a player finished today's daily, **When** they press "Copy result", **Then** the
    clipboard holds a card in the format:
-   `Stay Sharp #<n> · <Level>` / `<5 squares>  <score>/5 · <m>m<ss>s · streak <k>` / `<site address>`.
+   `Stay Sharp #<n> · <Level>` / `<5 squares>  <score>/5 · speed +<bonus> · <m>m<ss>s · streak <k>`
+   / `<site address>`; a relaxed play shows `relaxed` instead of the speed bonus.
 2. **Given** the squares use colour, **When** the card is read as text or by a screen reader,
    **Then** each result is still distinguishable (distinct symbols, and the on-screen version has
    a text label per question).
@@ -237,6 +258,14 @@ rejects the invalid one with a clear reason and accepts the rest.
 - The service is down: the player sees a plain message and a retry button, never a blank page.
 - A spot-the-bug snippet is long or wide: it scrolls inside its box on a 390 px screen; the page
   itself never scrolls sideways.
+- A player reloads the page or closes the tab during a question: the timer keeps running from the
+  moment the server first sent that question, so reloading never resets the clock; a question
+  resumed after its target time has passed can still be answered and graded, without bonus.
+- A right answer arrives implausibly fast (under 3 seconds, under 5 for Spot the bug and Logic
+  puzzle): it is graded normally and counted as "suspiciously fast" for later review; in M1
+  nothing else happens.
+- A teenager on Starter opens a source link: links in Starter questions point only to sources
+  suitable for 12+ readers.
 - Keyboard only: every step (choose line, choose answer, submit, next, copy, challenge) works
   with the keyboard, with visible focus.
 - A challenge link is opened by the challenger themselves: they see their own result and a prompt
@@ -249,8 +278,9 @@ rejects the invalid one with a clear reason and accepts the rest.
 **Daily set**
 
 - **FR-001**: The system MUST publish one daily set per date and level, unlocked at 00:00
-  Europe/Zurich, made of exactly five questions in this order: Spot the bug, Could do better, What
-  if it fails?, Acronym or tool, AI this week.
+  Europe/Zurich, made of exactly five questions, one per deck of that level, in a fixed order:
+  - Senior: Spot the bug, Could do better, What if it fails?, Acronym or tool, AI this week.
+  - Starter (12+): Logic puzzle, Read the code, What happens if…, Tech words, AI sense.
 - **FR-002**: The system MUST serve the same daily set to every player of a level on a given date.
 - **FR-003**: The system MUST NOT send the correct answer, the explanation, or anything from which
   they can be derived (for example, the order of choices revealing the answer) to the browser
@@ -258,8 +288,23 @@ rejects the invalid one with a clear reason and accepts the rest.
 - **FR-004**: The system MUST grade every answer on the server, deterministically: the same
   submission for the same question always gets the same grade.
 - **FR-005**: Grades MUST be 1 (right), 0.5 (Spot the bug only: right line or right problem, not
-  both) or 0 (wrong). The daily score is the sum, out of 5. Time taken is recorded and shown but
-  does not change the score.
+  both) or 0 (wrong). The daily score is the sum of grades, out of 5.
+- **FR-005a**: The system MUST measure the time per question on the server, from the first time it
+  sent that question to that player for that date and mode, to the arrival of the answer. The
+  browser clock is never used for scoring.
+- **FR-005b**: A right answer (grade 1) received within the deck's target time MUST earn a speed
+  bonus of 0.2; otherwise the bonus is 0. The total for a day is score + bonus, at most 6.0.
+  Initial target times (adjustable by the maintainer, recorded with each daily set so a change
+  never alters past results):
+  - Senior: Spot the bug 60 s, Could do better 45 s, What if it fails? 45 s, Acronym or tool 20 s,
+    AI this week 30 s.
+  - Starter: Logic puzzle 60 s, Read the code 45 s, What happens if… 30 s, Tech words 20 s, AI
+    sense 30 s.
+- **FR-005c**: There MUST be no hard time limit. A "relaxed" setting, remembered on the browser,
+  hides the timer and turns the bonus off; the result is marked relaxed (WCAG 2.2.1).
+- **FR-005d**: Right answers received faster than 3 seconds (5 seconds for Spot the bug and Logic
+  puzzle) MUST be counted as "suspiciously fast" in an aggregate metric, without personal data and
+  without changing the grade.
 - **FR-006**: The system MUST record each player's answer to a question at most once per date and
   mode: a repeated or concurrent submission of the same answer returns the stored grade and does
   not count again; a different answer to an already-graded question is refused.
@@ -268,8 +313,8 @@ rejects the invalid one with a clear reason and accepts the rest.
 - **FR-008**: A partly played daily MUST resume at the first unanswered question on the same day.
 - **FR-009**: A daily can be replayed after it is finished; replays are graded and explained but
   marked "not scored" and change nothing.
-- **FR-010**: The player MUST be able to choose a level among those available at launch, change it
-  later, and the choice is remembered on the browser.
+- **FR-010**: The player MUST be able to choose Senior or Starter (12+), change it later, and the
+  choice is remembered on the browser. Each level has its own streak, skill view and game history.
 
 **Anonymous identity**
 
@@ -316,6 +361,10 @@ rejects the invalid one with a clear reason and accepts the rest.
   correct choice (and correct lines for Spot the bug), an explanation, and for AI this week a
   publication date and a source link; questions MUST be validated before publication and an
   invalid batch is refused as a whole.
+- **FR-024a**: Starter questions MUST be suitable for readers from 12: plain words, no violent or
+  adult content, no brand or product promotion, and source links only to sites suitable for that
+  age. The AI sense deck teaches safe use (what not to share with a chatbot, how to check an
+  answer), never how to get around safety rules.
 - **FR-025**: Only questions marked approved by the maintainer can be published. In M1 all
   questions are written by a person; no question text is generated by a model.
 - **FR-026**: The maintainer MUST be warned when fewer than 7 future days have a complete set.
@@ -341,21 +390,26 @@ rejects the invalid one with a clear reason and accepts the rest.
   information by colour alone, and respect reduced motion.
 - **FR-034**: Every page MUST score 100 in Lighthouse Performance, Accessibility, Best Practices
   and SEO on mobile and on desktop.
-- **FR-035**: The site MUST have a short page that says what is stored, where (Switzerland or EU),
-  and that clearing the browser removes local progress.
+- **FR-035**: The site MUST have a short page, in words a 12-year-old can follow, that says what is
+  stored, where (Switzerland or EU), and that clearing the browser removes local progress.
+- **FR-036**: The game MUST collect no personal data from any player in M1, so children can play
+  without a parent's consent being needed. (Accounts for players under 16 will need a parent's
+  consent in M2; recorded in docs/spec.md.)
 
 ### Key Entities
 
 - **Question**: one item of content. Deck, level, prompt, optional code or diagram, four choices,
   correct choice, correct lines (Spot the bug), explanation, source and date (AI this week),
-  approval status, version.
-- **Daily set**: a date and a level, with five question references in deck order. Has a game
-  number (#n) counted from launch day.
+  approval status, version, and the deck's target time.
+- **Level**: Senior or Starter (12+); each has its own five decks and target times.
+- **Daily set**: a date and a level, with five question references in deck order and the target
+  time per deck in force that day. Has a game number (#n) counted from launch day.
 - **Anonymous player**: a random id per browser. No personal data.
 - **Answer record**: player id, date, mode (daily, replay, practice, challenge), question id,
-  submitted choice and line, grade, time of submission. At most one per player, date, mode and
-  question.
-- **Daily result**: player id, date, level, five grades, score, time taken.
+  submitted choice and line, grade, time the question was first sent, time the answer arrived,
+  speed bonus, relaxed or not. At most one per player, date, mode and question.
+- **Daily result**: player id, date, level, five grades, score, speed bonus, time taken, relaxed
+  or not.
 - **Challenge**: random id, the daily result it points to, the date and level of the set, the
   results of players who answered it, expiry date.
 - **Local progress** (browser only): current and longest streak, freeze, played days, skill view
@@ -381,7 +435,10 @@ rejects the invalid one with a clear reason and accepts the rest.
   passes keyboard-only play of a full daily.
 - **SC-007**: A page and the first question are usable within 2 seconds on a mid-range phone on a
   4G connection.
-- **SC-008**: At launch, approved daily sets exist for at least 14 future days, and the stock
+- **SC-007a**: A tester using only the keyboard, and a tester using a screen reader, can finish a
+  daily in relaxed mode without any time pressure.
+- **SC-008**: At launch, approved daily sets exist for at least 14 future days at each level
+  (140 questions), and the stock
   warning has never been missed by the time it is needed.
 - **SC-009**: Monthly cost stays under USD 20, and the real figure is published in the README with
   its date after the first full month.
@@ -391,17 +448,14 @@ rejects the invalid one with a clear reason and accepts the rest.
 
 ## Assumptions
 
-- **Levels at launch**: [NEEDS CLARIFICATION: Which levels are playable at M1 launch? The
-  prototype has only Senior, and every extra level needs its own daily stock (5 questions a day
-  per level).]
-- **Time bonus**: [NEEDS CLARIFICATION: docs/spec.md mentions a capped time bonus; the prototype
-  has none. This spec assumes no time bonus (time is shown, not scored). Keep it that way, or add
-  a capped bonus?]
+- **Levels at launch**: Senior and Starter (12+). Mid and Lead come later, with their own stock.
+- **Time**: a speed bonus, never a hard limit (see Clarifications).
 - **Game number**: #1 is the M1 launch day for everyone; the number is the same at every level.
 - **AI this week** questions are written by hand in M1 from public, dated sources; the automated
   news pipeline is M3.
-- **Content stock**: 14 days of approved sets at launch (the prototype's stock, reviewed); the 60
-  days in docs/spec.md are for the public launch (M4).
+- **Content stock**: 14 days of approved sets per level at launch: Senior reuses the prototype's
+  stock after review, Starter is written new (70 questions); the 60 days in docs/spec.md are for
+  the public launch (M4).
 - **Anonymous id**: kept in the browser; the server stores answers under it to enforce
   "count once" and to allow an account to adopt the history in M2.
 - **Retention**: anonymous answer records and challenges are deleted after 90 days and 30 days

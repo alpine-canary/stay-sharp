@@ -13,7 +13,7 @@
 
 ## Requirement Completeness
 
-- [ ] No [NEEDS CLARIFICATION] markers remain
+- [x] No [NEEDS CLARIFICATION] markers remain
 - [x] Requirements are testable and unambiguous
 - [x] Success criteria are measurable
 - [x] Success criteria are technology-agnostic (no implementation details)
@@ -34,4 +34,5 @@
 - The stack (React 19, Vite, Tailwind, Python Lambda, DynamoDB, CDK, canary) is a project decision
   recorded in the constitution and docs/spec.md. It appears once, under Assumptions, as a fixed
   constraint; requirements and success criteria stay technology-agnostic.
-- Open: 2 clarifications (levels at launch, time bonus).
+- Clarifications resolved on 2026-11-03: levels (Senior + Starter 12+), time (server-measured
+  speed bonus, no hard limit, relaxed setting). All items pass.
