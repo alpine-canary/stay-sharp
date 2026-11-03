@@ -274,10 +274,17 @@ deploy** are facts not confirmed from an AWS primary source on 2026-11-03. Audit
   `cross_region_references=True` for the certificate and web ACL; the edge stack is deployed first
   and destroyed last. DNS stays at Infomaniak: the ACM validation CNAME and the site CNAME are
   added by the maintainer **in delivery step 1** (W16), so the wait is off the critical path.
-- **Verify before first deploy** (step 1): availability in `eu-central-2` of API Gateway HTTP API,
-  Lambda `python3.13` arm64, CodeDeploy, DynamoDB TTL, with the free SSM public parameters
-  (`/aws/service/global-infrastructure/regions/eu-central-2/services/<service>`). Fallback:
-  `eu-central-1`, recorded as an exception under Principle VI.
+- **Verified 2026-11-03** (SSM public parameters, queried from `us-east-1` because the catalogue
+  is not served from `eu-central-2`): Lambda, API Gateway, CodeDeploy, DynamoDB, CloudFront, SNS,
+  CloudWatch, EventBridge and SSM are available in `eu-central-2`. WAFv2 and Budgets are not
+  listed there, as expected: the CloudFront web ACL lives in `us-east-1` (already planned) and
+  Budgets is a global service. Still to confirm at the first deploy: the `python3.13` arm64
+  runtime and HTTP API specifically (the catalogue lists services, not runtimes or API types).
+- **Account set-up done 2026-11-03**: `stay-sharp` member account in the existing Organization;
+  access through the existing IAM Identity Center instance (`us-east-1`; it holds only the
+  maintainers' sign-in identities, no game data) with a 4-hour admin permission set assigned to
+  this account only. Account ids and portal URL are kept out of this public repository; CDK reads
+  the account from the SSO profile at deploy time.
 - **Sources**: <https://aws.amazon.com/blogs/aws/a-new-aws-region-opens-in-switzerland/>,
   <https://aws.amazon.com/blogs/alps/3-year-anniversary-news-about-aws-europe-zurich-region>
 
