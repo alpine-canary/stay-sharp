@@ -1,0 +1,9 @@
+{
+  "app": "uv run python app.py",
+  "requireApproval": "broadening",
+  "watch": { "exclude": ["tests", "cdk.out", ".venv"] },
+  "context": {
+    "@aws-cdk/core:checkSecretUsage": true,
+    "@aws-cdk/core:target-partitions": ["aws"]
+  }
+}

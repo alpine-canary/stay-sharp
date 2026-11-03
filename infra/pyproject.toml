@@ -1,0 +1,38 @@
+[project]
+name = "staysharp-infra"
+version = "0.1.0"
+description = "Stay Sharp infrastructure (AWS CDK v2, Python)"
+requires-python = ">=3.13,<3.14"
+dependencies = [
+    "aws-cdk-lib>=2.275.0",
+    "constructs>=10.8.1",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra --strict-markers"
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S", "SIM"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+files = ["app.py", "stacks", "tests"]
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.1",
+    "pytest>=9.2.0",
+    "ruff>=0.17.3",
+]
