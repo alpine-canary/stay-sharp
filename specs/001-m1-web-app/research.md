@@ -236,7 +236,8 @@ deploy** are facts not confirmed from an AWS primary source on 2026-11-03. Audit
   (W8); `SelfCheckFailures`; dev fault-injection left on. Rollback alarms also notify the topic,
   and CodeDeploy sends `DeploymentFailure` and `DeploymentRollback` events to it. Stock counts days strictly after today.
 - **Budget**: one AWS Budget for the project account, USD 20 actual and USD 16 forecast, in the
-  ops stack (deployed once, not per stage; W9).
+  `us-east-1` edge stack (deployed once, not per stage; W9). `AWS::Budgets::Budget` is not
+  available in `eu-central-2` (CloudFormation validation, 2026-11-03).
 - **Logs**: API Gateway access logs without `sourceIp`; CloudFront standard logs off; retention
   30 days.
 
