@@ -21,7 +21,7 @@ from collections.abc import Sequence
 from pathlib import Path
 from typing import Any
 
-from staysharp import aws
+from staysharp import aws, config
 from staysharp.domain import calendar
 from staysharp.domain.models import DECKS, DailyItem, DailySet, Deck, Level, Question
 from staysharp.store import table
@@ -146,7 +146,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--stage", default=os.environ.get("STAGE", "local"))
     parser.add_argument("--days", type=int, default=3)
     parser.add_argument("--create-table", action="store_true")
-    parser.add_argument("--launch", type=dt.date.fromisoformat, default=None)
+    parser.add_argument(
+        "--launch", type=dt.date.fromisoformat, default=None, help="default: LAUNCH_DATE"
+    )
     args = parser.parse_args(argv)
 
     if args.stage not in ALLOWED_STAGES or os.environ.get("STAGE") == "prod":
@@ -157,13 +159,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         os.environ.setdefault("AWS_ACCESS_KEY_ID", "local")
         os.environ.setdefault("AWS_SECRET_ACCESS_KEY", "local")
     os.environ.setdefault("TABLE_NAME", f"staysharp-{args.stage}")
+    os.environ["STAGE"] = args.stage
     if args.stage == "dev" and os.environ.get("DYNAMODB_ENDPOINT"):
         print("refused: dev must not use DYNAMODB_ENDPOINT", file=sys.stderr)
         return 2
     aws.reset()
 
     today = calendar.zurich_today(dt.datetime.now(dt.UTC))
-    launch = args.launch or today - dt.timedelta(days=1)
+    launch = args.launch or config.launch_date()
     if args.create_table:
         if args.stage != "local":
             print("refused: --create-table is for DynamoDB Local only", file=sys.stderr)

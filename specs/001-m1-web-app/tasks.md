@@ -97,9 +97,9 @@ dev. No user story can start before this phase ends.
 
 ### API skeleton, observability and secrets
 
-- [ ] T038 Implement `api/src/staysharp/handlers/api.py`: Powertools `APIGatewayHttpResolver` under `/api/v1`, Logger with `POWERTOOLS_LOGGER_LOG_EVENT=false`, Metrics (namespace `StaySharp`, dimension `Stage`), `X-Player-Id` UUIDv4 check, body size refused over 2 KB, validation errors logged as field names and error types only, `Cache-Control: no-store` on every response, JSON error bodies `{code, message}`; route the synthetic `selfcheck` event to the self-check (R8, R10)
+- [x] T038 Implement `api/src/staysharp/handlers/api.py`: Powertools `APIGatewayHttpResolver` under `/api/v1`, Logger with `POWERTOOLS_LOGGER_LOG_EVENT=false`, Metrics (namespace `StaySharp`, dimension `Stage`), `X-Player-Id` UUIDv4 check, body size refused over 2 KB, validation errors logged as field names and error types only, `Cache-Control: no-store` on every response, JSON error bodies `{code, message}`; route the synthetic `selfcheck` event to the self-check (R8, R10)
 - [x] T039 Implement `api/src/staysharp/obs.py`: `player_hash = HMAC-SHA256(pepper, playerId)` with the pepper read once at cold start from Secrets Manager and cached; helpers that log with `request_id`, `question_id`, `player_hash` only (R3, R16)
-- [ ] T040 Implement `GET /health` and `GET /today` in `api/src/staysharp/handlers/routes_today.py` (server date in Europe/Zurich, game number, levels with a set) per `contracts/openapi.yaml`
+- [x] T040 Implement `GET /health` and `GET /today` in `api/src/staysharp/handlers/routes_today.py` (server date in Europe/Zurich, game number, levels with a set) per `contracts/openapi.yaml`
 - [ ] T041 [P] Contract test harness in `api/tests/contract/conftest.py` and `api/tests/contract/test_today.py`: every response validated against `contracts/openapi.yaml`, unknown fields fail
 - [ ] T042 Implement `api/src/staysharp/local.py` (`python -m staysharp.local`): run the resolver on port 3001 against DynamoDB Local for front-end work
 
