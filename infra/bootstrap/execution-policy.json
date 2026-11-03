@@ -1,0 +1,93 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Sid": "ProjectServices",
+      "Effect": "Allow",
+      "Action": [
+        "acm:*",
+        "apigateway:*",
+        "budgets:*",
+        "cloudfront:*",
+        "cloudwatch:*",
+        "codedeploy:*",
+        "dynamodb:*",
+        "events:*",
+        "lambda:*",
+        "logs:*",
+        "s3:*",
+        "scheduler:*",
+        "secretsmanager:*",
+        "sns:*",
+        "ssm:*",
+        "wafv2:*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Sid": "ProjectRolesOnly",
+      "Effect": "Allow",
+      "Action": [
+        "iam:AttachRolePolicy",
+        "iam:CreateRole",
+        "iam:DeleteRole",
+        "iam:DeleteRolePolicy",
+        "iam:DetachRolePolicy",
+        "iam:GetRole",
+        "iam:GetRolePolicy",
+        "iam:ListAttachedRolePolicies",
+        "iam:ListRolePolicies",
+        "iam:PassRole",
+        "iam:PutRolePolicy",
+        "iam:TagRole",
+        "iam:UntagRole",
+        "iam:UpdateAssumeRolePolicy",
+        "iam:UpdateRole",
+        "iam:UpdateRoleDescription"
+      ],
+      "Resource": [
+        "arn:aws:iam::*:role/staysharp-*"
+      ]
+    },
+    {
+      "Sid": "GitHubOidcProvider",
+      "Effect": "Allow",
+      "Action": [
+        "iam:CreateOpenIDConnectProvider",
+        "iam:DeleteOpenIDConnectProvider",
+        "iam:GetOpenIDConnectProvider",
+        "iam:TagOpenIDConnectProvider",
+        "iam:UpdateOpenIDConnectProviderThumbprint",
+        "iam:AddClientIDToOpenIDConnectProvider",
+        "iam:RemoveClientIDFromOpenIDConnectProvider"
+      ],
+      "Resource": "arn:aws:iam::*:oidc-provider/token.actions.githubusercontent.com"
+    },
+    {
+      "Sid": "ServiceLinkedRolesForProjectServices",
+      "Effect": "Allow",
+      "Action": "iam:CreateServiceLinkedRole",
+      "Resource": "*",
+      "Condition": {
+        "StringEquals": {
+          "iam:AWSServiceName": [
+            "ops.apigateway.amazonaws.com",
+            "replication.dynamodb.amazonaws.com"
+          ]
+        }
+      }
+    },
+    {
+      "Sid": "NoModelAccess",
+      "Effect": "Deny",
+      "Action": [
+        "bedrock:*",
+        "iam:CreateUser",
+        "iam:CreateAccessKey",
+        "organizations:*",
+        "account:*"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
