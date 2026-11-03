@@ -169,11 +169,15 @@ deploy** are facts not confirmed from an AWS primary source on 2026-11-03. Audit
   managed common rule set. API Gateway throttling: burst 50, rate 20 per second. Lambda reserved
   concurrency 20: a flood gives 5xx to real players instead of a bill; recorded as a deliberate
   availability trade-off. WAF logging off (it would store IPs).
-- **Cost**: **Verify before first deploy** whether the CloudFront flat-rate Free plan (1M requests
-  and 100 GB a month, WAF included per AWS pricing pages; rule limits unconfirmed) is available to
-  the account and covers these rules. Fallback: standard WAF, estimated at about USD 7 a month
-  (web ACL + 3 rules). Estimate, not measured.
+- **Cost (checked 2026-11-03, T015)**: the CloudFront flat-rate Free plan does not fit. Per the
+  CloudFront developer guide ("Features by pricing plan tier"), the Free plan has no custom origin
+  request policies (we forward only `X-Player-Id` and `Content-Type`), no custom response header
+  policies (our strict CSP), and no custom WAF response (our JSON 429); those start at the
+  Business plan (USD 200 a month). The Free plan also allows only 5 WAF rules and no rule groups.
+  Decision: standard pay-as-you-go CloudFront and WAF, estimated at about USD 7 a month for the
+  web ACL and 3 rules. Estimate, not measured.
 - **Sources**: <https://aws.amazon.com/cloudfront/pricing/>,
+  <https://docs.aws.amazon.com/AmazonCloudFront/latest/DeveloperGuide/flat-rate-pricing-plan.html>,
   <https://docs.aws.amazon.com/PricingPlanManager/latest/UserGuide/plans.html>
 
 ## R10. Canary, pre-traffic self-check, rollback
@@ -289,8 +293,10 @@ deploy** are facts not confirmed from an AWS primary source on 2026-11-03. Audit
   is not served from `eu-central-2`): Lambda, API Gateway, CodeDeploy, DynamoDB, CloudFront, SNS,
   CloudWatch, EventBridge and SSM are available in `eu-central-2`. WAFv2 and Budgets are not
   listed there, as expected: the CloudFront web ACL lives in `us-east-1` (already planned) and
-  Budgets is a global service. Still to confirm at the first deploy: the `python3.13` arm64
-  runtime and HTTP API specifically (the catalogue lists services, not runtimes or API types).
+  Budgets is a global service. Checked in the account on 2026-11-03 (T015): the HTTP API
+  endpoint (`apigatewayv2`) answers in `eu-central-2`; the Lambda concurrency quota is 400, so
+  reserving 20 per stage leaves more than the 100 AWS keeps unreserved. The `python3.13` arm64
+  runtime is confirmed by the first dev deploy (T050).
 - **Opt-in region**: `eu-central-2` is disabled by default in a new account (calls fail with
   `InvalidClientTokenId`). It was enabled on 2026-11-03 with `aws account enable-region`; the
   account set-up runbook (delivery step 1) must list it first, before CDK bootstrap.
