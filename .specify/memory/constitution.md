@@ -71,8 +71,9 @@ project exists to get right.
   `cdk synth` and `cdk diff` against the target environment.
 - Production deploys of API functions MUST use Lambda aliases with a canary (CodeDeploy) gated by
   error alarms and by a scoring-failure metric, with automatic rollback when an alarm fires.
-- At least two environments (dev and prod), each in a dedicated AWS account inside an AWS
-  Organization.
+- Two environments (dev and prod) as separate stacks, with separate names, roles and alarms, in
+  one AWS account dedicated to the project, inside an AWS Organization. Nothing else runs in that
+  account.
 
 Rationale: a change that cannot be reviewed, repeated or rolled back is a risk, not a feature.
 
@@ -156,4 +157,4 @@ Rationale: a side project that can surprise its owner with a bill will be switch
 - Compliance is checked at three points: the plan's Constitution Check, the pull request review
   against the checklist above, and CI gates.
 
-**Version**: 1.0.0 | **Ratified**: 2026-11-03 | **Last Amended**: 2026-11-03
+**Version**: 1.0.1 | **Ratified**: 2026-11-03 | **Last Amended**: 2026-11-03

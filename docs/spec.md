@@ -1,5 +1,7 @@
 # Stay Sharp - product and technical spec (v0.1, 23.10.2026)
 
+> M1 is specified in detail in `specs/001-m1-web-app/` (spec, plan, contracts). Where this document and the M1 files differ, the M1 files are current.
+
 > Working name. "Agents write the code. Don't lose your touch." A daily 5-minute game for developers: spot the bug, name the acronym, survive the outage, know this week's AI news.
 
 ## 1. Why
@@ -151,7 +153,7 @@ Lambda (Python 3.13, AWS Lambda Powertools) ─► DynamoDB (single table)
    - DELETE /me                  account + data
 News pipeline (section 4) ─► same table, "drafts" items
 Admin (same app, admin group in Cognito) ─► approve / edit / schedule questions
-Everything in AWS CDK (Python), 2 environments (dev, prod), each in its own AWS account inside an AWS Organization, region eu-central-2 (Zurich) where available, Bedrock via EU inference profile.
+Everything in AWS CDK (Python), 2 environments (dev, prod) as separate stacks in one AWS account dedicated to the project, inside an AWS Organization, region eu-central-2 (Zurich) where available, Bedrock via EU inference profile.
 ```
 - **Answers never sent to the browser before submitting** (no cheating via dev tools).
 - **Anonymous players**: random device id; answers scored server-side the same way; can be attached to an account later.
