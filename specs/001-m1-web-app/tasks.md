@@ -70,7 +70,7 @@ dev. No user story can start before this phase ends.
 - [ ] T017 Request the ACM certificate for `stay-sharp.lumineth.com` in `us-east-1` from `infra/stacks/edge_stack.py` (DNS validation), together with the AWS Budget USD 20 actual and USD 16 forecast to an SNS topic (FR-031, R11; `AWS::Budgets::Budget` is not available in `eu-central-2`) and give the maintainer the validation CNAME to add at Infomaniak (maintainer action, W16)
 - [x] T018 [P] Implement `infra/stacks/account_stack.py` (deployed once per account): GitHub OIDC provider, four roles with exact `sub` conditions (read-only diff on `repo:<owner>/stay-sharp:pull_request`, limited to `cloudformation:Describe*`, `cloudformation:GetTemplate*` and assuming the CDK lookup role, no write action; dev deploy on `refs/heads/main`, prod deploy on `environment:production`, content publish on `stay-sharp-content` `refs/heads/main` limited to `Q#`, `DAILY#`, `POOL#`, `STOCK#` keys, the `leak-guard/last-pass` SSM parameter and the fingerprint object) (R13)
 - [x] T019 [P] Implement `infra/stacks/ops_stack.py` per stage: SNS topic with the maintainer e-mail read from an SSM parameter (not committed), one helper to create alarms with explicit `treatMissingData`
-- [ ] T020 [P] CDK assertion tests in `infra/tests/test_account_stack.py`: one budget with actual and forecast notifications (V12), OIDC `sub` conditions exact, no Bedrock action in any policy, the diff role has no write action
+- [x] T020 [P] CDK assertion tests in `infra/tests/test_account_stack.py`: one budget with actual and forecast notifications (V12), OIDC `sub` conditions exact, no Bedrock action in any policy, the diff role has no write action
 
 ### Domain (pure Python, no AWS imports) - tests first
 
