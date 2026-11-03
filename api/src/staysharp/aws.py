@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 CONFIG = Config(
     connect_timeout=2,
     read_timeout=3,
-    retries={"mode": "standard", "max_attempts": 3},
+    retries={"mode": "standard", "total_max_attempts": 3},  # first call + 2 retries
 )
 
 

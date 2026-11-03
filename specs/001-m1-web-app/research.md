@@ -149,8 +149,8 @@ deploy** are facts not confirmed from an AWS primary source on 2026-11-03. Audit
     distribution's origin path points at the current one, so deploying the previous commit is an
     instant revert (W6). A CloudFront Function rewrites `/c/<id>` to `/c/index.html`; other
     unknown paths return a real 404 page (W18).
-  - Every boto3 client: `connect_timeout=2`, `read_timeout=3`, standard retry mode,
-    `max_attempts=3`. Every DynamoDB response checked; unexpected shapes raise and count as
+  - Every boto3 client: `connect_timeout=2`, `read_timeout=3`, standard retry mode, 3 calls in total
+    (`total_max_attempts=3`). Every DynamoDB response checked; unexpected shapes raise and count as
     `ScoringFailures` on scoring paths.
   - `POWERTOOLS_LOGGER_LOG_EVENT=false`; validation errors are logged as field names and error
     types only, never input values or headers (S3).

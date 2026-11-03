@@ -11,7 +11,7 @@ def test_config_has_short_timeouts_and_limited_retries() -> None:
     config: Any = aws.CONFIG  # botocore stubs do not declare these attributes
     assert config.connect_timeout == 2
     assert config.read_timeout == 3
-    assert config.retries == {"mode": "standard", "max_attempts": 3}
+    assert config.retries == {"mode": "standard", "total_max_attempts": 3}
 
 
 def test_dynamodb_endpoint_override(monkeypatch: pytest.MonkeyPatch) -> None:
