@@ -314,6 +314,8 @@ rejects the invalid one with a clear reason and accepts the rest.
 - **FR-006**: The system MUST record each player's answer to a question at most once per date and
   mode: a repeated or concurrent submission of the same answer returns the stored grade and does
   not count again; a different answer to an already-graded question is refused.
+  In practice, where the same question can come back on the same day, "once" applies per practice
+  attempt (each time a question is shown) instead of per date.
 - **FR-007**: After each submission the player MUST see the grade, the correct answer, the
   explanation and, for AI this week, the date and a source link.
 - **FR-008**: A partly played daily MUST resume at the first unanswered question on the same day.

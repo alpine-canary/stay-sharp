@@ -1,0 +1,239 @@
+openapi: 3.1.0
+info:
+  title: Stay Sharp API
+  version: 1.0.0
+  description: |
+    M1 public API. Served under https://stay-sharp.lumineth.com/api/v1 (same origin as the site).
+    Every request except GET /today and GET /health requires the X-Player-Id header.
+    Every response has Cache-Control: no-store.
+    Rule (Principle II): no response before an answer is submitted contains the correct choice,
+    the correct lines, the explanation or the source. Schemas below use
+    additionalProperties: false so a contract test fails if such a field appears.
+servers:
+  - url: /api/v1
+components:
+  parameters:
+    PlayerId:
+      name: X-Player-Id
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+    PlayId:
+      name: playId
+      in: path
+      required: true
+      schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}\.(senior|starter)\.(daily|replay)$' }
+    Index:
+      name: index
+      in: path
+      required: true
+      schema: { type: integer, minimum: 0, maximum: 4 }
+  schemas:
+    Level: { type: string, enum: [senior, starter] }
+    Grade: { type: number, enum: [0, 0.5, 1] }
+    Error:
+      type: object
+      additionalProperties: false
+      required: [code, message]
+      properties:
+        code: { type: string, enum: [invalid_request, not_found, not_ready, conflict, expired, rate_limited, unavailable] }
+        message: { type: string }
+        requestId: { type: string }
+    Choice:
+      type: object
+      additionalProperties: false
+      required: [id, text]
+      properties:
+        id: { type: string, pattern: '^[A-Z2-7]{8}$' }
+        text: { type: string }
+    QuestionView:
+      description: What the browser sees before answering. Nothing that reveals the answer.
+      type: object
+      additionalProperties: false
+      required: [index, deck, prompt, choices, servedAt]
+      properties:
+        index: { type: integer }
+        deck: { type: string }
+        prompt: { type: string }
+        code: { type: string }
+        language: { type: string }
+        choices: { type: array, minItems: 4, maxItems: 4, items: { $ref: '#/components/schemas/Choice' } }
+        targetSeconds: { type: integer, description: Absent when the play is relaxed. }
+        servedAt: { type: string, format: date-time }
+    AnswerRequest:
+      type: object
+      additionalProperties: false
+      required: [choiceId]
+      properties:
+        choiceId: { type: string, pattern: '^[A-Z2-7]{8}$' }
+        line: { type: integer, minimum: 1, maximum: 30, description: Required for spot. }
+    AnswerResult:
+      type: object
+      additionalProperties: false
+      required: [grade, bonus, elapsedMs, correctChoiceId, explanation, duplicate]
+      properties:
+        grade: { $ref: '#/components/schemas/Grade' }
+        bonus: { type: number, enum: [0, 0.2] }
+        elapsedMs: { type: integer }
+        correctChoiceId: { type: string }
+        correctLines: { type: array, items: { type: integer } }
+        explanation: { type: string }
+        sourceUrl: { type: string, format: uri }
+        sourceDate: { type: string, format: date }
+        duplicate: { type: boolean, description: True when this exact answer was already recorded. }
+    PlayState:
+      type: object
+      additionalProperties: false
+      required: [playId, date, level, mode, gameNumber, relaxed, grades, score, bonus, finished]
+      properties:
+        playId: { type: string }
+        date: { type: string, format: date }
+        level: { $ref: '#/components/schemas/Level' }
+        mode: { type: string, enum: [daily, replay] }
+        gameNumber: { type: integer }
+        relaxed: { type: boolean }
+        grades: { type: array, maxItems: 5, items: { oneOf: [ { $ref: '#/components/schemas/Grade' }, { type: 'null' } ] } }
+        score: { type: number }
+        bonus: { type: number }
+        elapsedMs: { type: integer }
+        finished: { type: boolean }
+        challengeId: { type: string }
+    ResultSnapshot:
+      type: object
+      additionalProperties: false
+      required: [grades, score, bonus, elapsedMs, relaxed]
+      properties:
+        grades: { type: array, minItems: 5, maxItems: 5, items: { $ref: '#/components/schemas/Grade' } }
+        score: { type: number }
+        bonus: { type: number }
+        elapsedMs: { type: integer }
+        relaxed: { type: boolean }
+paths:
+  /health:
+    get:
+      responses: { '200': { description: OK } }
+  /today:
+    get:
+      summary: Server date in Europe/Zurich, game number, and which levels have a set.
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [date, gameNumber, levels, weekStart]
+                properties:
+                  date: { type: string, format: date }
+                  gameNumber: { type: integer }
+                  weekStart: { type: string, format: date }
+                  levels: { type: array, items: { type: object, additionalProperties: false, properties: { level: { $ref: '#/components/schemas/Level' }, ready: { type: boolean } } } }
+  /plays:
+    post:
+      summary: Start or resume a play. Idempotent for the same player, date, level and mode.
+      parameters: [ { $ref: '#/components/parameters/PlayerId' } ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [level, mode]
+              properties:
+                level: { $ref: '#/components/schemas/Level' }
+                mode: { type: string, enum: [daily, replay] }
+                date: { type: string, format: date, description: Defaults to today. Past dates only with mode replay or a challengeId. }
+                relaxed: { type: boolean, default: false, description: Ignored when resuming. }
+                challengeId: { type: string }
+      responses:
+        '200': { description: Existing play, content: { application/json: { schema: { $ref: '#/components/schemas/PlayState' } } } }
+        '201': { description: New play, content: { application/json: { schema: { $ref: '#/components/schemas/PlayState' } } } }
+        '400': { content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No set for that date and level (code not_ready). }
+  /plays/{playId}:
+    get:
+      parameters: [ { $ref: '#/components/parameters/PlayerId' }, { $ref: '#/components/parameters/PlayId' } ]
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/PlayState' } } } }
+        '404': { content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+  /plays/{playId}/questions/{index}/open:
+    post:
+      summary: Return question index without its answer; records servedAt the first time only.
+      parameters: [ { $ref: '#/components/parameters/PlayerId' }, { $ref: '#/components/parameters/PlayId' }, { $ref: '#/components/parameters/Index' } ]
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/QuestionView' } } } }
+        '409': { description: Previous question not answered yet. }
+  /plays/{playId}/questions/{index}/answer:
+    post:
+      summary: Grade an answer. The same answer again returns the stored result (duplicate true).
+      parameters: [ { $ref: '#/components/parameters/PlayerId' }, { $ref: '#/components/parameters/PlayId' }, { $ref: '#/components/parameters/Index' } ]
+      requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/AnswerRequest' } } } }
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/AnswerResult' } } } }
+        '400': { description: Unknown choice, missing or out-of-range line, question not opened. }
+        '409': { description: A different answer was already recorded. }
+  /practice/next:
+    post:
+      parameters: [ { $ref: '#/components/parameters/PlayerId' } ]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required: [level]
+              properties:
+                level: { $ref: '#/components/schemas/Level' }
+                deck: { type: string }
+                prefer: { type: array, maxItems: 5, items: { type: string } }
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [attemptId, qid, question]
+                properties:
+                  attemptId: { type: string }
+                  qid: { type: string }
+                  question: { $ref: '#/components/schemas/QuestionView' }
+  /practice/{attemptId}/answer:
+    post:
+      parameters: [ { $ref: '#/components/parameters/PlayerId' }, { name: attemptId, in: path, required: true, schema: { type: string } } ]
+      requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/AnswerRequest' } } } }
+      responses:
+        '200': { content: { application/json: { schema: { $ref: '#/components/schemas/AnswerResult' } } } }
+        '409': { description: A different answer was already recorded for this attempt. }
+  /challenges:
+    post:
+      summary: Create (or return the existing) challenge for a finished play.
+      parameters: [ { $ref: '#/components/parameters/PlayerId' } ]
+      requestBody: { content: { application/json: { schema: { type: object, additionalProperties: false, required: [playId], properties: { playId: { type: string } } } } } }
+      responses:
+        '200': { content: { application/json: { schema: { type: object, additionalProperties: false, required: [challengeId, url], properties: { challengeId: { type: string }, url: { type: string, format: uri } } } } } }
+        '409': { description: Play not finished. }
+  /challenges/{challengeId}:
+    get:
+      summary: |
+        Challenge as seen by the caller. viewer = owner, colleague_before (owner result shown as
+        score only, no squares) or colleague_after (both snapshots).
+      parameters: [ { $ref: '#/components/parameters/PlayerId' }, { name: challengeId, in: path, required: true, schema: { type: string, pattern: '^[A-Z2-7]{12}$' } } ]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: false
+                required: [date, level, gameNumber, viewer, ownerScore]
+                properties:
+                  date: { type: string, format: date }
+                  level: { $ref: '#/components/schemas/Level' }
+                  gameNumber: { type: integer }
+                  viewer: { type: string, enum: [owner, colleague_before, colleague_after] }
+                  ownerScore: { type: number }
+                  owner: { $ref: '#/components/schemas/ResultSnapshot' }
+                  you: { $ref: '#/components/schemas/ResultSnapshot' }
+                  others: { type: integer, description: Number of colleagues who finished. }
+        '404': { description: Unknown, malformed or expired (code expired). }
