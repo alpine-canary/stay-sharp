@@ -88,7 +88,7 @@ dev. No user story can start before this phase ends.
 
 - [x] T030 Implement `api/src/staysharp/aws.py`: one factory for boto3 clients with `connect_timeout=2`, `read_timeout=3`, retry mode `standard`, `total_max_attempts=3` (3 calls in total; botocore reads `max_attempts=3` as 3 retries), endpoint override for DynamoDB Local in tests (R8)
 - [x] T031 Spike in `api/tests/integration/test_dynamodb_local_cancellation.py`: check that DynamoDB Local returns the `ALL_OLD` item inside `CancellationReasons` for `TransactWriteItems`; if not, mark the affected tests to run against the dev table and note it in research.md R2 (W15)
-- [ ] T032 Implement `infra/stacks/data_stack.py`: table `staysharp-<stage>` with string `PK`/`SK`, on-demand, PITR on, deletion protection on in prod, TTL attribute `expiresAt`; pepper secret with `generate_secret_string` and `RemovalPolicy.RETAIN` (R16)
+- [x] T032 Implement `infra/stacks/data_stack.py`: table `staysharp-<stage>` with string `PK`/`SK`, on-demand, PITR on, deletion protection on in prod, TTL attribute `expiresAt`; pepper secret with `generate_secret_string` and `RemovalPolicy.RETAIN` (R16)
 - [ ] T033 [P] CDK assertion tests in `infra/tests/test_data_stack.py`: PITR and TTL on, deletion protection in prod, secret retained (V11)
 - [x] T034 Implement the store base in `api/src/staysharp/store/table.py`: key builders for every access pattern A1 to A8 of data-model.md, response checks (unexpected shapes raise), `expiresAt` compared with now on every read that depends on expiry
 - [x] T035 Implement `api/src/staysharp/store/questions.py`: read daily set (A1) and a question version (A2); a missing set returns a typed "not ready" result, never an exception to the client (Story 7, scenario 2)
