@@ -8,6 +8,10 @@
       name="description"
       content="Five questions a day to keep your judgement sharp while coding agents write the code. Free, no account."
     />
+    <!-- Start GET /today while the script loads, so the home view needs no extra round trip
+         (SC-007, W7). The client reads /today with the same request mode, so the browser can
+         reuse this response. -->
+    <link rel="preload" href="/api/v1/today" as="fetch" crossorigin="anonymous" />
   </head>
   <body>
     <div id="root"></div>
