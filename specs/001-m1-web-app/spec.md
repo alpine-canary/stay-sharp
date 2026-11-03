@@ -499,8 +499,8 @@ rejects the invalid one with a clear reason and accepts the rest.
   recorded, so no consent banner is needed.
 - **Constraints set by the project (not open in this spec)**: React 19 + Vite + Tailwind front end;
   Python Lambda API with AWS Lambda Powertools; DynamoDB; AWS CDK in Python; GitHub Actions CI;
-  canary deploys with automatic rollback; region eu-central-2 (Zurich); a dedicated AWS account
-  per environment; address stay-sharp.lumineth.com. See the constitution.
+  canary deploys with automatic rollback; region eu-central-2 (Zurich); one AWS account
+  dedicated to the project, dev and prod as separate stacks; address stay-sharp.lumineth.com. See the constitution.
 - **Out of M1**: accounts and sign-in, syncing across devices, public leaderboard, private
   groups, badges, reminders, the model-based news pipeline and admin approval screen, mobile store
   app, paid features. Questions are published by the maintainer from files, not from an admin

@@ -141,7 +141,7 @@ which installs `api/` as a package to reuse `publish/` and `domain/views.py`.
 ## Delivery order (input for /speckit-tasks)
 
 0. **Gate before anything is public or in prod** (W17): clean the history of the public
-   repository (decision and method recorded in `docs/`), then make it public.
+   repository, then make it public. Done 2026-11-03: see `docs/decisions/0001-public-history.md`.
 1. **Account and edge prerequisites**: `stay-sharp` account in the Organization (done by the
    maintainer), region and WAF pricing checks (R9, R14), ACM certificate request and Infomaniak
    DNS records, CDK bootstrap with narrowed policies, OIDC roles, budget, SNS topic.
