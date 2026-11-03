@@ -219,7 +219,7 @@ deploy** are facts not confirmed from an AWS primary source on 2026-11-03. Audit
   | `AnswersGraded`, `DuplicateAnswers` | - | health |
   | `SuspiciouslyFast` | `Deck` (10 values) | review |
   | `PlaysStarted`, `PlaysFinished`, `PlayDurationMs` | - | SC-001 (p50 of `PlayDurationMs`), SC-010 support |
-  | `ChallengesCreated`, `ChallengesFinished` | - | SC-010 |
+  | `ChallengesCreated`, `ChallengesOpened`, `ChallengesFinished` | - | SC-010 |
   | `StockDaysAhead` | `Level` | FR-026 |
   | `SelfCheckFailures` | - | R10 |
 
@@ -229,7 +229,8 @@ deploy** are facts not confirmed from an AWS primary source on 2026-11-03. Audit
 - **Alarms** to one SNS topic with the maintainer's e-mail: paging `ScoringFailures`; API 5xx;
   Lambda errors and throttles; CloudFront 5xx rate (W6); `StockDaysAhead < 7` with
   `treatMissingData=breaching`, `stock_check` errors, and `stock_check` `Invocations < 1` per day
-  (W8); `SelfCheckFailures`; dev fault-injection left on. Stock counts days strictly after today.
+  (W8); `SelfCheckFailures`; dev fault-injection left on. Rollback alarms also notify the topic,
+  and CodeDeploy sends `DeploymentFailure` and `DeploymentRollback` events to it. Stock counts days strictly after today.
 - **Budget**: one AWS Budget for the project account, USD 20 actual and USD 16 forecast, in the
   ops stack (deployed once, not per stage; W9).
 - **Logs**: API Gateway access logs without `sourceIp`; CloudFront standard logs off; retention
@@ -248,14 +249,19 @@ deploy** are facts not confirmed from an AWS primary source on 2026-11-03. Audit
 - **Decision**:
   - One AWS account `stay-sharp` in an AWS Organization (constitution 1.0.1), stages `dev` and
     `prod` as separate stacks with stage-prefixed names (`staysharp-dev-*`, `staysharp-prod-*`).
-  - **Pull requests** (C7): no AWS credentials at all. ruff, mypy strict, pytest, eslint,
+  - **Pull requests** (C7): no AWS credentials, except one read-only job (below). ruff, mypy strict, pytest, eslint,
     `tsc --noEmit`, vitest, CDK assertion tests, `cdk synth --no-lookups` with the committed
     `cdk.context.json`, the public leak-guard scan (R4, secret not available to forks).
+    `cdk diff` against dev and prod (constitution V) runs in a separate job, only for pull
+    requests from branches of this repository (fork pull requests get no OIDC token), with a
+    read-only role; the diff is printed in the job log only, never posted to the pull request.
   - **Push to `main`**: `cdk diff` and deploy dev, then API integration tests, Playwright,
     Lighthouse CI and the end-to-end leak scan against dev (fixture content only), then manual
     approval (GitHub environment `production`), then the SC-002a gate (R4), `cdk diff` and
     deploy prod with the canary, then the front-end upload.
   - **OIDC roles**, one per purpose, trust pinned by `sub`:
+    `repo:<owner>/stay-sharp:pull_request` (read-only diff: CloudFormation describe and get
+    template, CDK lookup role; no write action),
     `repo:<owner>/stay-sharp:ref:refs/heads/main` (dev deploy),
     `repo:<owner>/stay-sharp:environment:production` (prod deploy),
     `repo:<owner>/stay-sharp-content:ref:refs/heads/main` (publish prod, write `Q#`, `DAILY#`,
