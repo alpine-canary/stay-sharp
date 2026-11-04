@@ -287,7 +287,7 @@ deploy** are facts not confirmed from an AWS primary source on 2026-11-03. Audit
 - **Decision**: Stateful resources and Lambdas in `eu-central-2`. CloudFront, its ACM certificate
   and the WAF web ACL in `us-east-1` (no game data). `infra/app.py` uses
   `cross_region_references=True` for the certificate and web ACL; the edge stack is deployed first
-  and destroyed last. DNS stays at Infomaniak: the ACM validation CNAME and the site CNAME are
+  and destroyed last. DNS stays in the `lumineth.com` zone (Route 53 in another AWS account, outside this project): the ACM validation CNAME and the site CNAME are
   added by the maintainer **in delivery step 1** (W16), so the wait is off the critical path.
 - **Verified 2026-11-03** (SSM public parameters, queried from `us-east-1` because the catalogue
   is not served from `eu-central-2`): Lambda, API Gateway, CodeDeploy, DynamoDB, CloudFront, SNS,

@@ -139,7 +139,7 @@ EventBridge (daily 05:00) ─► Lambda "fetch" ─► reads an allowlist of RSS
 
 ```
 Browser (React 19 + Vite + Tailwind, PWA)
-   │  static files: S3 + CloudFront (stay-sharp.lumineth.com, CNAME at Infomaniak DNS)
+   │  static files: S3 + CloudFront (stay-sharp.lumineth.com, CNAME in the lumineth.com zone)
    ▼
 API Gateway (HTTP API) ── Cognito authorizer (optional login)
    │

@@ -143,8 +143,8 @@ which installs `api/` as a package to reuse `publish/` and `domain/views.py`.
 0. **Gate before anything is public or in prod** (W17): clean the history of the public
    repository, then make it public. Done 2026-11-03: see `docs/decisions/0001-public-history.md`.
 1. **Account and edge prerequisites**: `stay-sharp` account in the Organization (done by the
-   maintainer), region and WAF pricing checks (R9, R14), ACM certificate request and Infomaniak
-   DNS records, CDK bootstrap with narrowed policies, OIDC roles, budget, SNS topic.
+   maintainer), region and WAF pricing checks (R9, R14), ACM certificate request and DNS
+   records in the `lumineth.com` zone, CDK bootstrap with narrowed policies, OIDC roles, budget, SNS topic.
 2. **Domain**: grading, views allowlist, calendar, cancellation table, models; unit tests,
    including the allowlist test and the R2 table.
 3. **Data, API and a thin edge**: table, store, routes, contract and integration tests on

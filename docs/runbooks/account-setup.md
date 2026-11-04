@@ -56,15 +56,16 @@ npx --yes aws-cdk@2.1147.0 bootstrap --profile stay-sharp \
 policy document changes, publish a new policy version with `aws iam create-policy-version
 --set-as-default` and run the bootstrap command again.
 
-## 4. DNS at Infomaniak
+## 4. DNS records for lumineth.com
 
-The site is `stay-sharp.lumineth.com`. DNS stays at Infomaniak.
+The site is `stay-sharp.lumineth.com`. The `lumineth.com` zone is served by Route 53 in another AWS account,
+not in `stay-sharp`; this project never manages it. Add the records there by hand.
 
 1. Deploy the edge stack once (it requests the certificate in `us-east-1`). The stack waits for
    DNS validation.
 2. In the ACM console (`us-east-1`), or in the stack events, read the validation CNAME name and
-   value. Add that CNAME record at Infomaniak. Keep it: ACM uses it to renew.
-3. After the web stack is deployed, add the site record at Infomaniak: CNAME
+   value. Add that CNAME record in the `lumineth.com` zone. Keep it: ACM uses it to renew.
+3. After the web stack is deployed, add the site record in the `lumineth.com` zone: CNAME
    `stay-sharp` to the CloudFront distribution domain name (`dxxxxxxxx.cloudfront.net`).
 4. Check:
 
