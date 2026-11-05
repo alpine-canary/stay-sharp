@@ -6,7 +6,11 @@ read. ``answer`` runs one transaction:
 
 0. the answer item, condition ``attribute_exists(servedAt) AND attribute_not_exists(grade)``,
    ``ReturnValuesOnConditionCheckFailure=ALL_OLD``;
-1. the play item, purely additive (``ADD`` and ``SET grades.#i``), no condition.
+1. the play item, purely additive (``ADD`` and ``SET grades.#i``), no condition;
+2. and 3., only on the fifth answer of a play started from a challenge link: the colleague's
+   result item (``attribute_not_exists``) and the challenge counter (``results < 50``). When only
+   those fail (cap reached, or the result was already written from the finished play), the
+   transaction is sent again without them: the answer is still graded.
 
 Item 0 alone makes an answer once-only. A cancelled transaction is classified by
 ``domain/cancellation.py``; temporary failures are retried up to three times with backoff and
@@ -29,9 +33,9 @@ from staysharp import aws
 from staysharp.domain import cancellation, grading
 from staysharp.domain.cancellation import Outcome, Reason
 from staysharp.domain.grading import Submission
-from staysharp.domain.models import DailyItem, Deck
-from staysharp.store import table
-from staysharp.store.plays import Play
+from staysharp.domain.models import DailyItem, Deck, ResultSnapshot
+from staysharp.store import challenges, table
+from staysharp.store.plays import QUESTIONS, Play
 
 ATTEMPTS = 3
 BASE_DELAY_S = 0.05
@@ -80,6 +84,7 @@ class Graded:
     outcome: Outcome | None  # None: newly graded; DUPLICATE or CONFLICT otherwise
     suspiciously_fast: bool = False
     finished_play: bool = False
+    challenge_recorded: bool = False
 
 
 def _served(index: int, item: Mapping[str, Any]) -> Served:
@@ -221,6 +226,20 @@ def _transaction(
     ]
 
 
+def _final_snapshot(
+    play: Play, index: int, scored: grading.Scored, elapsed_ms: int
+) -> ResultSnapshot:
+    """The play as it will be once this, its fifth answer, is stored."""
+    grades = {**play.grades, index: scored.grade}
+    return ResultSnapshot(
+        grades=[float(grades[i]) for i in range(QUESTIONS)],
+        score=float(play.score + scored.grade),
+        bonus=float(play.bonus + scored.bonus),
+        elapsed_ms=play.elapsed_ms + elapsed_ms,
+        relaxed=play.relaxed,
+    )
+
+
 def _reasons(error: ClientError) -> list[Reason]:
     raw = error.response.get("CancellationReasons")
     if not isinstance(raw, list):
@@ -269,6 +288,10 @@ def answer(
     )
     name = table_name or table.table_name()
     items = _transaction(player_id, play, served, submission, scored, elapsed_ms, now, name)
+    finishing = served.index not in play.answered and len(play.answered) == QUESTIONS - 1
+    if finishing and play.challenge_id is not None:
+        snap = _final_snapshot(play, served.index, scored, elapsed_ms)
+        items += challenges.result_items(play.challenge_id, player_id, snap, now, name)
     client = client or aws.dynamodb()
     last: Exception | None = None
     for attempt in range(ATTEMPTS):
@@ -282,6 +305,15 @@ def answer(
                 continue
             reasons = _reasons(error)
             outcome = cancellation.classify(reasons, submission)
+            if outcome is Outcome.CHALLENGE_FULL and len(items) > cancellation.CHALLENGE_FROM:
+                # Not a failure: grade the answer without the challenge items, at once.
+                items = items[: cancellation.CHALLENGE_FROM]
+                try:
+                    client.transact_write_items(TransactItems=items)
+                except (ClientError, BotoCoreError) as retry_error:
+                    last = retry_error
+                    continue
+                return _graded(served, submission, scored, elapsed_ms, finishing, False)
             if outcome is Outcome.RETRY:
                 continue
             if outcome is Outcome.NOT_OPENED:
@@ -293,19 +325,30 @@ def answer(
         except BotoCoreError as error:
             last = error
             continue
-        graded = Served(
-            index=served.index,
-            qid=served.qid,
-            version=served.version,
-            deck=served.deck,
-            target_seconds=served.target_seconds,
-            served_at=served.served_at,
-            choice_id=submission.choice_id,
-            line=submission.line,
-            grade=scored.grade,
-            bonus=scored.bonus,
-            elapsed_ms=elapsed_ms,
-        )
-        finished = len(play.answered | {served.index}) == len(play.answered) + 1 == 5
-        return Graded(graded, None, scored.suspiciously_fast, finished)
+        recorded = len(items) > cancellation.CHALLENGE_FROM
+        return _graded(served, submission, scored, elapsed_ms, finishing, recorded)
     raise ScoringFailure("answer not stored after retries") from last
+
+
+def _graded(
+    served: Served,
+    submission: Submission,
+    scored: grading.Scored,
+    elapsed_ms: int,
+    finishing: bool,
+    challenge_recorded: bool,
+) -> Graded:
+    stored = Served(
+        index=served.index,
+        qid=served.qid,
+        version=served.version,
+        deck=served.deck,
+        target_seconds=served.target_seconds,
+        served_at=served.served_at,
+        choice_id=submission.choice_id,
+        line=submission.line,
+        grade=scored.grade,
+        bonus=scored.bonus,
+        elapsed_ms=elapsed_ms,
+    )
+    return Graded(stored, None, scored.suspiciously_fast, finishing, challenge_recorded)
