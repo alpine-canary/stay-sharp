@@ -106,9 +106,10 @@ def test_gives_up_with_503_and_writes_nothing(
     assert body(result)["code"] == "unavailable"
     assert flaky.attempts == answers.ATTEMPTS
 
+    # One per version (rollback alarm) and one per stage (paging alarm), each counted once.
     failures = _scoring_failures(capsys.readouterr().out)
-    assert len(failures) == 1
-    assert failures[0]["FunctionVersion"] == "7"
+    assert sorted(f.get("FunctionVersion", "-") for f in failures) == ["-", "7"]
+    assert all(f["ScoringFailures"] in ([1.0], 1.0) for f in failures)
 
     item = table.get(table.answer_key(game.player, game.play_id, 0), consistent=True)
     assert item is not None and "grade" not in item
