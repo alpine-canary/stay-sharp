@@ -1,3 +1,5 @@
+import { freshPractice, recordPractice, type PracticeAnswer, type PracticeState } from "./progress/boxes";
+
 // Local progress in the browser (data-model.md "Local progress", research R3, R7).
 // One versioned key. Blocked storage falls back to memory; broken data is reset with a visible
 // notice. Nothing here ever throws to the UI.
@@ -34,7 +36,8 @@ export interface Progress {
   freeze: Record<Level, Freeze>;
   longest: Record<Level, number>;
   deckStats: Record<Level, Record<string, DeckStat>>;
-  boxes: Record<string, number>;
+  /** Practice boxes per level (FR-022). Replaced the unused `boxes` map; see `upgrade`. */
+  practice: Record<Level, PracticeState>;
 }
 
 /** Why the stored progress could not be used as is. Shown once to the player. */
@@ -67,7 +70,7 @@ export function freshProgress(playerId: string = newPlayerId()): Progress {
     freeze: perLevel(() => ({ held: 0, earnedWeek: null, usedOn: [] })),
     longest: perLevel(() => 0),
     deckStats: perLevel(() => ({})),
-    boxes: {},
+    practice: perLevel(freshPractice),
   };
 }
 
@@ -116,8 +119,31 @@ function isDeckStats(v: unknown): boolean {
   );
 }
 
-function isBoxes(v: unknown): boolean {
-  return isObject(v) && Object.values(v).every((b) => Number.isInteger(b) && (b as number) >= 1 && (b as number) <= 5);
+function isPractice(v: unknown): boolean {
+  return (
+    isObject(v) &&
+    isCount(v.seen) &&
+    isObject(v.cards) &&
+    Object.values(v.cards).every(
+      (c) =>
+        isObject(c) &&
+        Number.isInteger(c.box) &&
+        (c.box as number) >= 1 &&
+        (c.box as number) <= 5 &&
+        isCount(c.due) &&
+        typeof c.deck === "string",
+    )
+  );
+}
+
+/** Data saved before practice existed has an empty `boxes` map instead of `practice`. Nothing
+ * ever wrote to `boxes`, so it is replaced without losing anything. */
+function upgrade(v: unknown): unknown {
+  if (!isObject(v) || "practice" in v || !("boxes" in v)) return v;
+  if (!isObject(v.boxes) || Object.keys(v.boxes).length > 0) return v;
+  const rest: Json = { ...v };
+  delete rest.boxes;
+  return { ...rest, practice: perLevel(freshPractice) };
 }
 
 export function isProgress(v: unknown): v is Progress {
@@ -132,7 +158,8 @@ export function isProgress(v: unknown): v is Progress {
     everyLevel(v.freeze, isFreeze) &&
     everyLevel(v.longest, isCount) &&
     everyLevel(v.deckStats, isDeckStats) &&
-    isBoxes(v.boxes)
+    everyLevel(v.practice, isPractice) &&
+    !("boxes" in v)
   );
 }
 
@@ -183,12 +210,13 @@ export function createStore(storage: Storage | null = browserStorage()): Progres
       }
       let parsed: unknown;
       try {
-        parsed = JSON.parse(raw);
+        parsed = upgrade(JSON.parse(raw));
       } catch {
         parsed = undefined;
       }
       if (isProgress(parsed)) {
         memory = parsed;
+        this.save(memory);
         return { progress: memory, notice: null };
       }
       // Keep the player id if it survived, so answers already stored on the server stay theirs.
@@ -247,4 +275,12 @@ export function recordAnswer(progress: Progress, answer: GradedAnswer): Progress
     ...progress,
     deckStats: { ...progress.deckStats, [answer.level]: { ...stats, [answer.deck]: after } },
   };
+}
+
+/** Count one practice answer in that level's boxes. A duplicate returns the same object. */
+export function recordPracticeAnswer(progress: Progress, level: Level, answer: PracticeAnswer): Progress {
+  const before = progress.practice[level];
+  const after = recordPractice(before, answer);
+  if (after === before) return progress;
+  return { ...progress, practice: { ...progress.practice, [level]: after } };
 }

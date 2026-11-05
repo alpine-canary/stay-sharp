@@ -67,7 +67,20 @@ describe("store", () => {
     const { progress, notice } = createStore(storage).load();
     expect(notice).toBe("reset");
     expect(progress.playerId).toBe(id);
-    expect(progress.boxes).toEqual({});
+    expect(progress.practice.senior).toEqual({ seen: 0, cards: {} });
+  });
+
+  it("upgrades progress saved before practice existed, without a notice", () => {
+    const storage = new MemoryStorage();
+    const old: Record<string, unknown> = { ...freshProgress(), boxes: {} };
+    delete old.practice;
+    (old.days as ReturnType<typeof freshProgress>["days"]).senior["2026-11-20"] = { score: 4, bonus: 0, relaxed: false };
+    storage.setItem(STORAGE_KEY, JSON.stringify(old));
+    const { progress, notice } = createStore(storage).load();
+    expect(notice).toBeNull();
+    expect(progress.days.senior["2026-11-20"]?.score).toBe(4);
+    expect(progress.practice.starter).toEqual({ seen: 0, cards: {} });
+    expect(JSON.parse(storage.getItem(STORAGE_KEY) ?? "{}")).not.toHaveProperty("boxes");
   });
 
   it("resets another version", () => {
@@ -109,7 +122,7 @@ describe("store", () => {
     p.freeze.senior = { held: 1, earnedWeek: "2026-11-16", usedOn: [] };
     p.longest.senior = 3;
     p.deckStats.senior.spot = { answered: 3, correct: 2 };
-    p.boxes.null_check = 2;
+    p.practice.senior = { seen: 3, cards: { null_check: { box: 2, due: 7, deck: "spot" } } };
     expect(isProgress(JSON.parse(JSON.stringify(p)))).toBe(true);
     expect(isProgress({ ...p, deckStats: { ...p.deckStats, senior: { spot: { answered: 1, correct: 2 } } } })).toBe(false);
   });

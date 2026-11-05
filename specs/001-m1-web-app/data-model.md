@@ -114,7 +114,9 @@ One marker per published complete set.
 
 `{ playerId, level, relaxed, days: {<level>: {<playDate>: {score, bonus, relaxed}}},
 freeze: {<level>: {held, earnedWeek, usedOn[]}}, longest: {<level>: n},
-deckStats: {<level>: {<deck>: {answered, correct}}}, boxes: {<qid>: 1..5} }`. Answers marked
+deckStats: {<level>: {<deck>: {answered, correct}}},
+practice: {<level>: {seen, cards: {<qid>: {box 1..5, due, deck}}}} }`. `practice` replaced an
+empty `boxes: {<qid>: 1..5}` map that nothing wrote; data saved with it is upgraded on load. Answers marked
 `duplicate` are never counted. Streak, longest and freeze are derived from `days` by
 `front/src/progress/streak.ts` (replayed in date order, so they cannot drift); the stored
 `freeze` and `longest` fields are kept for the shape check only. `correct` counts halves. Versioned; broken data is reset with a message, never a crash.
