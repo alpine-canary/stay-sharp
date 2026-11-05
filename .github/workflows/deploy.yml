@@ -67,7 +67,7 @@ jobs:
           pnpm --dir front install --frozen-lockfile
       - name: build the site (no source maps)
         run: |
-          pnpm --dir front exec vite build
+          pnpm --dir front build  # vite build, then one prerendered page per path
           if find front/dist -name '*.map' | grep -q .; then echo "source maps found"; exit 1; fi
       - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:
@@ -161,7 +161,7 @@ jobs:
           pnpm --dir front install --frozen-lockfile
       - name: build the site (no source maps)
         run: |
-          pnpm --dir front exec vite build
+          pnpm --dir front build  # vite build, then one prerendered page per path
           if find front/dist -name '*.map' | grep -q .; then echo "source maps found"; exit 1; fi
       - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
         with:

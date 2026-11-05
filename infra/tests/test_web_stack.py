@@ -103,10 +103,11 @@ def test_router_is_attached_to_the_site_only(template: TemplateOf, stage: str) -
 
 ROUTER_CASES = [
     ("/", "/index.html", None),
-    ("/play", "/index.html", None),
-    ("/practice/", "/index.html", None),
-    ("/privacy", "/index.html", None),
-    ("/c/ABCDEFGHJKLM", "/index.html", None),
+    ("/play", "/play.html", None),
+    ("/result", "/result.html", None),
+    ("/practice/", "/practice.html", None),
+    ("/privacy", "/privacy.html", None),
+    ("/c/ABCDEFGHJKLM", "/c.html", None),
     ("/assets/index-abc123.js", "/assets/index-abc123.js", None),
     ("/fonts/inter.woff2", "/fonts/inter.woff2", None),
     ("/c/short", None, 404),

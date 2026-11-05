@@ -1,5 +1,5 @@
 // Views switched by path, no router library (task T049, research R12).
-// The paths must match APP_PATHS in infra/stacks/site_router.js, which serves index.html for them.
+// The paths must match APP_PATHS in infra/stacks/site_router.js, which serves each with its prerendered page.
 
 import { useEffect, useState } from "react";
 

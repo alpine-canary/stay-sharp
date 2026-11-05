@@ -98,7 +98,7 @@ jobs:
         run: pnpm --dir front test
       - name: build (no source maps)
         run: |
-          pnpm --dir front exec vite build
+          pnpm --dir front build  # vite build, then one prerendered page per path
           if find front/dist -name '*.map' | grep -q .; then echo "source maps found"; exit 1; fi
 
   leak-guard:
