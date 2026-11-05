@@ -38,11 +38,11 @@
     "approved_at": { "type": "string", "format": "date-time" }
   },
   "allOf": [
-    { "if": { "properties": { "deck": { "const": "spot" } } }, "then": { "required": ["code"], "properties": { "answer": { "required": ["choice", "lines"] } } } },
-    { "if": { "properties": { "deck": { "enum": ["better", "readcode"] } } }, "then": { "required": ["code"] } },
-    { "if": { "properties": { "deck": { "const": "news" } } }, "then": { "required": ["source"] } },
-    { "if": { "properties": { "status": { "const": "approved" } } }, "then": { "required": ["approved_by", "approved_at"] } },
-    { "if": { "properties": { "level": { "const": "starter" }, "status": { "const": "approved" } } }, "then": { "required": ["second_reader"] } },
-    { "if": { "properties": { "sample": { "const": true } } }, "then": { "properties": { "daily_eligible": { "const": false } }, "required": ["daily_eligible"] } }
+    { "if": { "properties": { "deck": { "const": "spot" } }, "required": ["deck"] }, "then": { "required": ["code"], "properties": { "answer": { "required": ["choice", "lines"] } } } },
+    { "if": { "properties": { "deck": { "enum": ["better", "readcode"] } }, "required": ["deck"] }, "then": { "required": ["code"] } },
+    { "if": { "properties": { "deck": { "const": "news" } }, "required": ["deck"] }, "then": { "required": ["source"] } },
+    { "if": { "properties": { "status": { "const": "approved" } }, "required": ["status"] }, "then": { "required": ["approved_by", "approved_at"] } },
+    { "if": { "properties": { "level": { "const": "starter" }, "status": { "const": "approved" } }, "required": ["level", "status"] }, "then": { "required": ["second_reader"] } },
+    { "if": { "properties": { "sample": { "const": true } }, "required": ["sample"] }, "then": { "properties": { "daily_eligible": { "const": false } }, "required": ["daily_eligible"] } }
   ]
 }
