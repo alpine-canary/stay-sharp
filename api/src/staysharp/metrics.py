@@ -70,4 +70,5 @@ def emit(name: str, value: float = 1, *, dimension: tuple[str, str] | None = Non
         namespace=metrics.namespace,
         default_dimensions=metrics.default_dimensions,
     ) as metric:
+        metric.service = ""  # single_metric reads POWERTOOLS_SERVICE_NAME on its own
         metric.add_dimension(name=dimension[0], value=dimension[1])

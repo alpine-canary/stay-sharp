@@ -91,6 +91,8 @@ def test_logs_carry_the_player_hash_never_the_raw_id_or_ip() -> None:
     assert PLAYER not in logs.text
     assert "192.0.2.1" not in logs.text
     assert "pytest" not in logs.text  # user agent
+    assert "function_arn" not in logs.text  # the ARN holds the account id
+    assert "000000000000" not in logs.text
 
 
 def test_unexpected_error_is_a_json_500(monkeypatch: pytest.MonkeyPatch) -> None:

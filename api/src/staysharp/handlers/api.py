@@ -123,6 +123,8 @@ def _no_store(result: dict[str, Any]) -> dict[str, Any]:
 @metrics.log_metrics
 @logger.inject_lambda_context(log_event=False, clear_state=True)
 def handler(event: dict[str, Any], context: LambdaContext) -> dict[str, Any]:
+    # The function ARN carries the account id: never in logs (AGENTS.md hard limits).
+    logger.remove_keys(["function_arn"])
     if metrics.default_dimensions.get("Stage") != config.stage():
         metrics.set_default_dimensions(Stage=config.stage())
     if event.get("selfcheck") is True:

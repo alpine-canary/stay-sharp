@@ -219,3 +219,30 @@ def test_prod_refuses_drills() -> None:
             topic=topic,
             drill="fail-traffic",
         )
+
+
+@pytest.mark.parametrize("stage", STAGES)
+def test_alias_waits_for_codedeploy_permissions(template: TemplateOf, stage: str) -> None:
+    t = api(template, stage)
+    (alias,) = resources(t, "AWS::Lambda::Alias").values()
+    policies = resources(t, "AWS::IAM::Policy")
+    waits_for = set(alias.get("DependsOn", []))
+    invoke_hook = [
+        k
+        for k, p in policies.items()
+        if any(
+            "lambda:InvokeFunction" in actions_of(s)
+            for s in p["Properties"]["PolicyDocument"]["Statement"]
+        )
+        and k.startswith("DeploymentServiceRole")
+    ]
+    assert invoke_hook
+    assert set(invoke_hook) <= waits_for
+
+
+@pytest.mark.parametrize("stage", STAGES)
+def test_no_powertools_service_variable(template: TemplateOf, stage: str) -> None:
+    """It would add a "service" dimension and the alarms would never match (fault drill V8)."""
+    for fn in resources(api(template, stage), "AWS::Lambda::Function").values():
+        variables = fn["Properties"].get("Environment", {}).get("Variables", {})
+        assert "POWERTOOLS_SERVICE_NAME" not in variables

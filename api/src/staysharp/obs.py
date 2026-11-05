@@ -17,7 +17,9 @@ from aws_lambda_powertools import Logger, Metrics
 from staysharp import aws, config
 
 logger = Logger(service="staysharp")
-metrics = Metrics(namespace="StaySharp")
+# No "service" dimension: alarms match metrics by their exact dimension set (R11), and Powertools
+# would add one from POWERTOOLS_SERVICE_NAME. An empty service turns it off.
+metrics = Metrics(namespace="StaySharp", service="")
 
 # Only for STAGE=local and tests, where no secret exists. Refused anywhere else.
 LOCAL_PEPPER = b"local-pepper-not-secret"

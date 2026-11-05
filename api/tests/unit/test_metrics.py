@@ -75,3 +75,21 @@ def test_scoring_failures_also_per_stage_for_paging(capsys: pytest.CaptureFixtur
     ]
     assert ["FunctionVersion", "Stage"] in dimension_sets
     assert ["Stage"] in dimension_sets
+
+
+def test_no_service_dimension_even_with_the_lambda_variable(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Alarms match exact dimension sets: Powertools must not add "service" (fault drill V8)."""
+    monkeypatch.setenv("POWERTOOLS_SERVICE_NAME", "staysharp")
+    metrics.emit("AnswersGraded")
+    metrics.emit("ScoringFailures", dimension=("FunctionVersion", "7"))
+    powertools_metrics.flush_metrics()
+    blobs = [
+        json.loads(line) for line in capsys.readouterr().out.splitlines() if line.startswith("{")
+    ]
+    dimension_sets = [
+        d for b in blobs for m in b["_aws"]["CloudWatchMetrics"] for d in m["Dimensions"]
+    ]
+    assert dimension_sets
+    assert all("service" not in d for d in dimension_sets), dimension_sets

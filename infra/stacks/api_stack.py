@@ -109,7 +109,6 @@ class ApiStack(Stack):
             "STAGE": stage,
             "TABLE_NAME": table.table_name,
             "PEPPER_SECRET_ARN": pepper.secret_arn,
-            "POWERTOOLS_SERVICE_NAME": "staysharp",
             "POWERTOOLS_METRICS_NAMESPACE": "StaySharp",
             "POWERTOOLS_LOGGER_LOG_EVENT": "false",
         }
@@ -263,7 +262,6 @@ class ApiStack(Stack):
             environment={
                 "TARGET_FUNCTION_ARN": self.version.function_arn,
                 "STAGE": stage,
-                "POWERTOOLS_SERVICE_NAME": "staysharp-pre-traffic",
             },
             log_group=hook_logs,
             logging_format=lambda_.LoggingFormat.JSON,
@@ -301,10 +299,26 @@ class ApiStack(Stack):
                 failed_deployment=True, stopped_deployment=True, deployment_in_alarm=True
             ),
         )
-        topic.grant_publish(group.role)
         cfn_group = group.node.default_child
         if not isinstance(cfn_group, codedeploy.CfnDeploymentGroup):
             raise TypeError("expected the CloudFormation deployment group")
+        # CodeDeploy checks it may publish when the group is created, so the permission must
+        # exist first. A policy of its own avoids a cycle through the role's default policy
+        # (which also lets CodeDeploy invoke the hook).
+        publish = iam.Policy(
+            self,
+            "DeploymentTriggerPublish",
+            roles=[group.role],
+            statements=[iam.PolicyStatement(actions=["sns:Publish"], resources=[topic.topic_arn])],
+        )
+        cfn_group.node.add_dependency(publish)
+        # The alias update starts the CodeDeploy deployment at once; CodeDeploy must already be
+        # allowed to invoke the hook, or the deployment dies with an internal error.
+        role_policy = group.role.node.try_find_child("DefaultPolicy")
+        alias_resource = self.alias.node.default_child
+        if role_policy is None or not isinstance(alias_resource, lambda_.CfnAlias):
+            raise TypeError("expected the deployment role policy and the alias resource")
+        alias_resource.node.add_dependency(role_policy, publish)
         cfn_group.trigger_configurations = [
             codedeploy.CfnDeploymentGroup.TriggerConfigProperty(
                 trigger_name="maintainer",
