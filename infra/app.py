@@ -66,6 +66,8 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
 
     launch_dates: dict[str, str | None] = _context(app, "launchDate") or {}
     site_commit = _context(app, "siteCommit") or "initial"
+    # Path of the built front end (front/dist); only the deploy workflow sets it.
+    site_dist = _context(app, "siteDist")
     for stage in STAGES:
         prefix = f"staysharp-{stage}"
         prod = stage == "prod"
@@ -89,6 +91,7 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
             stage=stage,
             api_domain=api.api_domain,
             site_commit=site_commit,
+            site_dist=site_dist,
             domain_name=SITE_DOMAIN if prod else None,
             certificate=edge.certificate if prod else None,
             env=main_env,

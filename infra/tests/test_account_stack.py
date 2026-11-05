@@ -112,6 +112,17 @@ def test_content_role_writes_content_keys_only(template: TemplateOf) -> None:
     assert "dynamodb:DeleteItem" not in actions_of(dynamo)
 
 
+def test_dev_deploy_role_seeds_dev_content_keys_only(template: TemplateOf) -> None:
+    statements = statements_of_role(template, "staysharp-github-devdeploy")
+    (dynamo,) = [s for s in statements if any(a.startswith("dynamodb:") for a in actions_of(s))]
+    leading = dynamo["Condition"]["ForAllValues:StringLike"]["dynamodb:LeadingKeys"]
+    assert sorted(leading) == ["DAILY#*", "POOL#*", "Q#*", "STOCK#*"]
+    assert "table/staysharp-dev" in json.dumps(dynamo["Resource"])
+    assert "staysharp-prod" not in json.dumps(dynamo["Resource"])
+    prod = statements_of_role(template, "staysharp-github-proddeploy")
+    assert not [s for s in prod if any(a.startswith("dynamodb:") for a in actions_of(s))]
+
+
 @pytest.mark.parametrize(
     "stack",
     [

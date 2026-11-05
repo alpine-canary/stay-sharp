@@ -18,6 +18,7 @@ from aws_cdk import aws_certificatemanager as acm
 from aws_cdk import aws_cloudfront as cloudfront
 from aws_cdk import aws_cloudfront_origins as origins
 from aws_cdk import aws_s3 as s3
+from aws_cdk import aws_s3_deployment as s3deploy
 from constructs import Construct
 
 ROUTER_JS = Path(__file__).with_name("site_router.js")
@@ -50,6 +51,7 @@ class WebStack(Stack):
         stage: str,
         api_domain: str,
         site_commit: str,
+        site_dist: str | None = None,
         domain_name: str | None = None,
         certificate: acm.ICertificate | None = None,
         **kwargs: Any,
@@ -161,3 +163,39 @@ class WebStack(Stack):
                 )
             },
         )
+        if site_dist:
+            self._upload_site(site_dist, site_commit)
+
+    def _upload_site(self, site_dist: str, site_commit: str) -> None:
+        """Upload the built site under ``site/<commit>/`` before the origin path points there.
+
+        Hashed files under ``assets/`` never change: cached for a year. Everything else (the
+        HTML) is revalidated on each request, so a new release is seen at once. Older commits
+        stay in the bucket, so pointing back at one is an instant revert (W6).
+        """
+        prefix = f"site/{site_commit}/"
+        common: dict[str, Any] = {
+            "destination_bucket": self.bucket,
+            "prune": False,
+            "memory_limit": 256,
+        }
+        assets = s3deploy.BucketDeployment(
+            self,
+            "SiteAssets",
+            sources=[s3deploy.Source.asset(str(Path(site_dist) / "assets"))],
+            destination_key_prefix=f"{prefix}assets/",
+            cache_control=[
+                s3deploy.CacheControl.from_string("public, max-age=31536000, immutable")
+            ],
+            **common,
+        )
+        pages = s3deploy.BucketDeployment(
+            self,
+            "SitePages",
+            sources=[s3deploy.Source.asset(site_dist, exclude=["assets", "assets/**"])],
+            destination_key_prefix=prefix,
+            cache_control=[s3deploy.CacheControl.from_string("public, max-age=0, must-revalidate")],
+            **common,
+        )
+        pages.node.add_dependency(assets)
+        self.distribution.node.add_dependency(pages)

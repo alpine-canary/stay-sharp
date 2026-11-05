@@ -132,6 +132,21 @@ class AccountStack(Stack):
                 iam.PolicyStatement(actions=["s3:GetObject"], resources=[fingerprint_object])
             )
 
+        # Dev only: the deploy workflow seeds the sample questions into the dev table so the
+        # end-to-end tests always have a set for today. Content keys only, never player data.
+        dev_table = (
+            f"arn:{Aws.PARTITION}:dynamodb:{MAIN_REGION}:{Aws.ACCOUNT_ID}:table/staysharp-dev"
+        )
+        self.dev_deploy_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["dynamodb:BatchWriteItem", "dynamodb:PutItem"],
+                resources=[dev_table],
+                conditions={
+                    "ForAllValues:StringLike": {"dynamodb:LeadingKeys": list(CONTENT_KEY_PREFIXES)}
+                },
+            )
+        )
+
         # The prod release gate reads the leak-guard timestamp (R4, SC-002a).
         leak_guard = (
             f"arn:{Aws.PARTITION}:ssm:{MAIN_REGION}:{Aws.ACCOUNT_ID}"

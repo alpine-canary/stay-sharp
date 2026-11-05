@@ -9,8 +9,10 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from aws_cdk import assertions
 
-from tests.conftest import TemplateOf, resources
+from app import build_app
+from tests.conftest import TemplateOf, cdk_context, resources
 
 STAGES = ("dev", "prod")
 CACHING_DISABLED = "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
@@ -127,3 +129,42 @@ def test_router_function(uri: str, rewritten: str | None, status: int | None) ->
     else:
         assert result["statusCode"] == status
         assert "Page not found" in result["body"]["data"]
+
+
+def test_site_upload_splits_assets_and_pages_and_comes_before_the_switch(tmp_path: Path) -> None:
+    """The deploy workflow passes siteDist: files first, then the origin path (W6)."""
+    dist = tmp_path / "dist"
+    (dist / "assets").mkdir(parents=True)
+    (dist / "index.html").write_text("<!doctype html>")
+    (dist / "assets" / "index-abc.js").write_text("x")
+    context = {**cdk_context(), "siteCommit": "abc123", "siteDist": str(dist)}
+    assembly = build_app(context).synth()
+    artifact = assembly.get_stack_by_name("staysharp-dev-web")
+    t = assertions.Template.from_json(artifact.template)
+    uploads = {
+        k: v["Properties"] for k, v in t.find_resources("Custom::CDKBucketDeployment").items()
+    }
+    assert len(uploads) == 2
+    prefixes = sorted(p["DestinationBucketKeyPrefix"] for p in uploads.values())
+    assert prefixes == ["site/abc123/", "site/abc123/assets/"]
+    assert all(p["Prune"] is False for p in uploads.values())
+    controls = sorted(json.dumps(p.get("SystemMetadata", {})) for p in uploads.values())
+    assert any("immutable" in c for c in controls)
+    assert any("must-revalidate" in c for c in controls)
+    (dist_key,) = t.find_resources("AWS::CloudFront::Distribution")
+    depends = set(t.to_json()["Resources"][dist_key].get("DependsOn", []))
+    assert any(k.startswith("SitePages") for k in depends)
+
+    contents = {}
+    for asset in Path(assembly.directory).glob("asset.*"):
+        if asset.is_dir():
+            contents[asset.name] = sorted(
+                str(p.relative_to(asset)) for p in asset.rglob("*") if p.is_file()
+            )
+    site_sets = [files for files in contents.values() if any("index" in f for f in files)]
+    assert ["index-abc.js"] in contents.values()
+    assert ["index.html"] in site_sets
+
+
+def test_no_upload_without_site_dist(template: TemplateOf) -> None:
+    assert not template("staysharp-dev-web").find_resources("Custom::CDKBucketDeployment")

@@ -1,0 +1,181 @@
+# Deploy on push to main (task T080, research R10, R13, constitution V).
+#
+#   dev:   cdk diff and deploy the dev API (CodeDeploy, all at once), seed the sample questions,
+#          deploy the dev site, then integration tests, Playwright (daily and leak scan) and
+#          Lighthouse CI against dev.
+#   prod:  manual approval (GitHub environment "production"), the SC-002a release gate, cdk diff,
+#          deploy the prod API with the canary, and only after the canary has completed, upload
+#          the site and switch the origin path (W6).
+#
+# OIDC roles from the staysharp-account stack, one per purpose, trusted by one exact `sub`:
+#   vars.AWS_DEVDEPLOY_ROLE_ARN   (repo:<owner>/stay-sharp:ref:refs/heads/main)
+#   vars.AWS_PRODDEPLOY_ROLE_ARN  (repo:<owner>/stay-sharp:environment:production)
+# The ARNs live in GitHub variables, never in this file. Every third-party action is pinned to a
+# commit SHA; the default token is read-only; no artefacts are uploaded; diffs stay in the log.
+
+name: deploy
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+env:
+  CDK_VERSION: "2.1147.0"
+  AWS_REGION: eu-central-2
+  CDK: npx --yes aws-cdk@2.1147.0
+
+jobs:
+  dev:
+    name: dev (deploy and test)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+      id-token: write
+    services:
+      dynamodb:
+        image: amazon/dynamodb-local:3.3.2
+        ports:
+          - 8000:8000
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: "3.13"
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: front/package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: front/pnpm-lock.yaml
+      - name: install
+        run: |
+          uv sync --directory api --locked
+          uv sync --directory infra --locked
+          pnpm --dir front install --frozen-lockfile
+      - name: build the site (no source maps)
+        run: |
+          pnpm --dir front exec vite build
+          if find front/dist -name '*.map' | grep -q .; then echo "source maps found"; exit 1; fi
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_DEVDEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: staysharp-deploy-dev
+      - name: cdk diff dev
+        working-directory: infra
+        run: |
+          $CDK diff -c siteCommit=${GITHUB_SHA::12} -c siteDist=../front/dist \
+            staysharp-dev-ops staysharp-dev-data staysharp-dev-api staysharp-dev-web staysharp-dev-cdn-alarms
+      - name: deploy the dev API (CodeDeploy runs the self-check before traffic)
+        working-directory: infra
+        run: |
+          $CDK deploy --require-approval never --exclusively \
+            staysharp-dev-ops staysharp-dev-data staysharp-dev-api
+      - name: seed the sample questions into dev
+        run: uv run --directory api python -m staysharp.tools.seed --fixtures --stage dev --launch 2026-11-01
+      - name: deploy the dev site
+        working-directory: infra
+        run: |
+          $CDK deploy --require-approval never --exclusively \
+            -c siteCommit=${GITHUB_SHA::12} -c siteDist=../front/dist \
+            staysharp-dev-web staysharp-dev-cdn-alarms
+      - name: find the dev URL
+        id: dev
+        run: |
+          dist=$(aws cloudformation describe-stack-resources --stack-name staysharp-dev-web \
+            --query "StackResources[?ResourceType=='AWS::CloudFront::Distribution'].PhysicalResourceId" --output text)
+          echo "url=https://$(aws cloudfront get-distribution --id "$dist" --query Distribution.DomainName --output text)" >> "$GITHUB_OUTPUT"
+      - name: API integration tests (DynamoDB Local)
+        run: uv run --directory api pytest -m integration
+      - name: Playwright against dev (daily by keyboard, leak scan before each answer)
+        env:
+          BASE_URL: ${{ steps.dev.outputs.url }}
+        run: |
+          pnpm --dir front exec playwright install --with-deps chromium
+          pnpm --dir front exec playwright test
+      - name: Lighthouse CI against dev
+        env:
+          LHCI_URL: ${{ steps.dev.outputs.url }}
+        run: |
+          if [ -f front/lighthouserc.json ]; then
+            pnpm --dir front exec lhci autorun --collect.url="$LHCI_URL/" --upload.target=filesystem --upload.outputDir=/tmp/lhci
+          else
+            echo "front/lighthouserc.json arrives with the Lighthouse budget task; skipped"
+          fi
+
+  prod:
+    name: prod (approval, gate, canary, site)
+    needs: [dev]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: "3.13"
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0
+        with:
+          package_json_file: front/package.json
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: front/pnpm-lock.yaml
+      - name: install
+        run: |
+          uv sync --directory infra --locked
+          pnpm --dir front install --frozen-lockfile
+      - name: build the site (no source maps)
+        run: |
+          pnpm --dir front exec vite build
+          if find front/dist -name '*.map' | grep -q .; then echo "source maps found"; exit 1; fi
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          role-to-assume: ${{ vars.AWS_PRODDEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-session-name: staysharp-deploy-prod
+      - name: release gate (SC-002a)
+        # The private content repository records each passing leak-guard run; refuse to release
+        # when the last pass is missing or older than 24 hours (research R4).
+        run: |
+          set -euo pipefail
+          last=$(aws ssm get-parameter --name /staysharp/prod/leak-guard/last-pass \
+            --query Parameter.Value --output text 2>/dev/null || echo "")
+          if [ -z "$last" ]; then echo "refused: no leak-guard pass recorded"; exit 1; fi
+          age=$(( $(date -u +%s) - $(date -u -d "$last" +%s) ))
+          if [ "$age" -gt 86400 ]; then echo "refused: last leak-guard pass is ${age}s old"; exit 1; fi
+          echo "leak guard passed $((age / 60)) minutes ago"
+      - name: cdk diff prod
+        working-directory: infra
+        run: |
+          $CDK diff -c siteCommit=${GITHUB_SHA::12} -c siteDist=../front/dist \
+            staysharp-prod-ops staysharp-prod-data staysharp-prod-api staysharp-prod-web staysharp-prod-cdn-alarms
+      - name: deploy the prod API with the canary (rolls back by itself on alarm)
+        working-directory: infra
+        run: |
+          $CDK deploy --require-approval never --exclusively \
+            staysharp-prod-ops staysharp-prod-data staysharp-prod-api
+      - name: upload the site and switch the origin path (after the canary, W6)
+        working-directory: infra
+        run: |
+          $CDK deploy --require-approval never --exclusively \
+            -c siteCommit=${GITHUB_SHA::12} -c siteDist=../front/dist \
+            staysharp-prod-web staysharp-prod-cdn-alarms
