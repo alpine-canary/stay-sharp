@@ -77,10 +77,16 @@ def _play(play_id: str, now: dt.datetime) -> Play:
     return play
 
 
+def _past_challenge(play: Play) -> bool:
+    """Only a replay started from a link may be played on any past date. A daily started from a
+    link keeps the D+1 deadline, or a replay could become its answer key (C3)."""
+    return play.ref.mode == "replay" and play.challenge_id is not None
+
+
 def _still_open(play: Play, now: dt.datetime) -> None:
     today = calendar.zurich_today(now)
     if not calendar.play_date_allowed(
-        play.ref.mode, play.ref.date, today, challenge=play.challenge_id is not None
+        play.ref.mode, play.ref.date, today, challenge=_past_challenge(play)
     ):
         raise ApiError(
             HTTPStatus.BAD_REQUEST, "invalid_request", "This set can no longer be played."
@@ -164,9 +170,7 @@ def scoring_failure(reason: str) -> ApiError:
     )
 
 
-def _check_challenge(
-    challenge_id: str, level: str, mode: str, day: dt.date, today: dt.date
-) -> None:
+def _check_challenge(challenge_id: str, level: str, mode: str, day: dt.date, today: dt.date) -> int:
     """A challenge play is the challenge's set: same date and level; today's set is played as
     the daily, a past one as a replay that does not count for the streak (Story 4, 3)."""
     challenge = routes_challenges.load(challenge_id)
@@ -175,6 +179,7 @@ def _check_challenge(
         raise ApiError(
             HTTPStatus.BAD_REQUEST, "invalid_request", "This play does not match the challenge."
         )
+    return challenge.expires_at
 
 
 # --- Routes ----------------------------------------------------------------------------------
@@ -187,8 +192,11 @@ def start_play() -> Response[str]:
     today = calendar.zurich_today(now)
     day = request.date or today
     challenge = request.challenge_id is not None
+    challenge_expires_at = None
     if request.challenge_id is not None:
-        _check_challenge(request.challenge_id, request.level, request.mode, day, today)
+        challenge_expires_at = _check_challenge(
+            request.challenge_id, request.level, request.mode, day, today
+        )
     if not calendar.start_date_allowed(request.mode, day, today, challenge=challenge):
         raise ApiError(HTTPStatus.BAD_REQUEST, "invalid_request", "This date cannot be played.")
 
@@ -207,6 +215,7 @@ def start_play() -> Response[str]:
             lock_replay=calendar.play_date_allowed("daily", day, today, challenge=False),
             now=now,
             challenge_id=request.challenge_id,
+            challenge_expires_at=challenge_expires_at,
         )
     except plays.ReplayLocked as error:
         raise ApiError(
@@ -217,7 +226,7 @@ def start_play() -> Response[str]:
 
     question = None
     if play.next_index is not None and calendar.play_date_allowed(
-        ref.mode, day, today, challenge=play.challenge_id is not None
+        ref.mode, day, today, challenge=_past_challenge(play)
     ):
         question = _view(play, daily, play.next_index, now)
     status = HTTPStatus.CREATED if created else HTTPStatus.OK

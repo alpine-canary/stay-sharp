@@ -52,7 +52,9 @@ the copy tool's dry run below, which reads the whole snapshot.
 ## 4. Copy the snapshot back into the live table
 
 The live table keeps everything CDK set (TTL, PITR, alarms, permissions); only items are put
-back. Items written after the restore point and absent from the snapshot stay.
+back, as they were at the restore point. Items changed after it go back to that state too (a
+play finished since then loses those answers); items created after it stay. Running the copy
+again is safe: it only puts the same snapshot again.
 
 ```sh
 AWS_PROFILE=stay-sharp AWS_REGION=eu-central-2 uv run --directory api \

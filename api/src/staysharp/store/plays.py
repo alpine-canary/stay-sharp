@@ -64,6 +64,8 @@ class Play:
     challenge_id: str | None = None
     # The challenge this play created (store/challenges.py), not the one it was started from.
     created_challenge_id: str | None = None
+    # Copied from the challenge at start, so the fifth answer needs no extra read.
+    challenge_expires_at: int | None = None
 
     @property
     def play_id(self) -> str:
@@ -110,6 +112,9 @@ def from_item(item: dict[str, Any]) -> Play:
             elapsed_ms=int(_number(item, "elapsedMs")),
             challenge_id=item.get("challengeId"),
             created_challenge_id=item.get("createdChallengeId"),
+            challenge_expires_at=(
+                None if item.get("challengeExpiresAt") is None else int(item["challengeExpiresAt"])
+            ),
         )
     except (KeyError, TypeError, ValueError) as error:
         raise table.StoreError("play item is malformed") from error
@@ -131,6 +136,7 @@ def start(
     lock_replay: bool,
     now: dt.datetime,
     challenge_id: str | None = None,
+    challenge_expires_at: int | None = None,
 ) -> tuple[Play, bool]:
     """Create the play, or return the existing one. ``True`` when created.
 
@@ -166,6 +172,8 @@ def start(
         item["relaxedFrom"] = 0
     if challenge_id is not None:
         item["challengeId"] = challenge_id
+        if challenge_expires_at is not None:
+            item["challengeExpiresAt"] = challenge_expires_at
     key = table.play_key(player_id, ref.play_id)
     try:
         aws.dynamodb().put_item(

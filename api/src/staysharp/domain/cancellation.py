@@ -55,7 +55,9 @@ def classify(reasons: Sequence[Reason], submitted: Submission) -> Outcome:
         return Outcome.RETRY
 
     if ANSWER_POSITION in failed:
-        if failed != {ANSWER_POSITION}:
+        # The challenge items also fail when the same fifth answer is sent twice: the answer item
+        # (the once-only one) decides. Any other mix is unknown.
+        if any(i != ANSWER_POSITION and i < CHALLENGE_FROM for i in failed):
             return Outcome.RETRY
         stored = reasons[ANSWER_POSITION].item
         if not stored or "servedAt" not in stored:

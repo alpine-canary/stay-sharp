@@ -19,7 +19,7 @@ from dataclasses import dataclass
 from decimal import Decimal
 from typing import Any
 
-from botocore.exceptions import ClientError
+from botocore.exceptions import BotoCoreError, ClientError
 
 from staysharp import aws
 from staysharp.domain.models import Level, ResultSnapshot
@@ -137,6 +137,21 @@ def create(player_id: str, play: Play, now: dt.datetime) -> str:
         "expiresAt": table.epoch_seconds(now + dt.timedelta(days=CHALLENGE_DAYS)),
     }
     name = table.table_name()
+    from staysharp.store import answers as answers_retry  # noqa: PLC0415 - answers imports this module
+
+    for attempt in range(answers_retry.ATTEMPTS):
+        if attempt:
+            answers_retry.sleep(answers_retry.backoff(attempt))
+        outcome = _create_once(player_id, play, challenge_id, meta, name)
+        if outcome is not None:
+            return outcome
+    raise table.StoreError("challenge not created after retries")
+
+
+def _create_once(
+    player_id: str, play: Play, challenge_id: str, meta: dict[str, Any], name: str
+) -> str | None:
+    """The new id, the id that won a race, or ``None`` after a temporary failure."""
     try:
         aws.dynamodb().transact_write_items(
             TransactItems=[
@@ -163,12 +178,21 @@ def create(player_id: str, play: Play, now: dt.datetime) -> str:
     except ClientError as error:
         if error.response.get("Error", {}).get("Code") != "TransactionCanceledException":
             raise
+        codes = {
+            r.get("Code")
+            for r in error.response.get("CancellationReasons") or []
+            if isinstance(r, dict)
+        }
+        if not codes <= {"None", "ConditionalCheckFailed"}:
+            return None  # conflict or throttling: retried with backoff (R2)
         # Lost a race with a second click: the play now names the challenge that won.
         item = table.get(table.play_key(player_id, play.play_id), consistent=True)
         existing = None if item is None else item.get("createdChallengeId")
         if not isinstance(existing, str):
             raise table.StoreError("challenge create cancelled without a winner") from error
         return existing
+    except BotoCoreError:
+        return None
     return challenge_id
 
 
@@ -197,15 +221,16 @@ def results(challenge_id: str) -> list[ResultSnapshot]:
 
 
 def result_items(
-    challenge_id: str, player_id: str, snap: ResultSnapshot, now: dt.datetime, name: str
+    challenge_id: str,
+    player_id: str,
+    snap: ResultSnapshot,
+    now: dt.datetime,
+    name: str,
+    expires_at: int,
 ) -> list[dict[str, Any]]:
-    """Transaction items 2 and 3 (research R2): the result put and the capped counter."""
-    item = {
-        **_snapshot_item(snap),
-        "finishedAt": table.iso_ms(now),
-        # Never longer than the challenge itself, which lives at most 30 days from now.
-        "expiresAt": table.epoch_seconds(now + dt.timedelta(days=CHALLENGE_DAYS)),
-    }
+    """Transaction items 2 and 3 (research R2): the result put and the capped counter. The
+    result expires with the challenge (``expires_at`` of its ``META``)."""
+    item = {**_snapshot_item(snap), "finishedAt": table.iso_ms(now), "expiresAt": expires_at}
     return [
         {
             "Put": {
@@ -232,11 +257,13 @@ def result_items(
     ]
 
 
-def record(challenge_id: str, player_id: str, snap: ResultSnapshot, now: dt.datetime) -> bool:
+def record(challenge: Challenge, player_id: str, snap: ResultSnapshot, now: dt.datetime) -> bool:
     """Write a colleague's result outside an answer (Story 4, 3a). ``False`` when the cap is
     reached or it already exists; nothing is written then."""
     try:
-        items: Any = result_items(challenge_id, player_id, snap, now, table.table_name())
+        items: Any = result_items(
+            challenge.challenge_id, player_id, snap, now, table.table_name(), challenge.expires_at
+        )
         aws.dynamodb().transact_write_items(TransactItems=items)
     except ClientError as error:
         if error.response.get("Error", {}).get("Code") != "TransactionCanceledException":

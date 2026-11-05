@@ -106,7 +106,7 @@ def view(challenge_id: str) -> Response[str]:
         play = _own_finished_play(challenge)
         if play is not None:
             you = challenges.snapshot(play)
-            if challenges.record(challenge.challenge_id, _player(), you, clock.now()):
+            if challenges.record(challenge, _player(), you, clock.now()):
                 metrics.emit("ChallengesFinished")
                 others += 1
     if you is None:

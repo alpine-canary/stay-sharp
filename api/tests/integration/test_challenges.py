@@ -276,3 +276,69 @@ def test_two_colleagues_are_counted_apart(game: Game) -> None:  # noqa: F811
     assert sorted(c["score"] for c in owner_view["colleagues"]) == [0, 5]
     assert owner_view["others"] == 2
     assert body(view(THIRD, challenge_id))["you"]["score"] == 5
+
+
+def test_a_daily_from_a_link_keeps_its_deadline(game: Game) -> None:  # noqa: F811
+    """Review finding: a daily started from a link must not stay open past D+1 (C3)."""
+    challenge_id = owner_challenge(game)
+    g = colleague(game, challenge_id)
+    g.open(0)
+    game.later(3 * 24 * 3600)
+    late_replay = Game(now=game.now, player=COLLEAGUE, day=TODAY, mode="replay")
+    late_replay.start()
+    assert g.answer(0, g.right(0))["statusCode"] == 400
+    assert g.open(1)["statusCode"] == 400
+
+
+def test_a_double_fifth_answer_is_a_duplicate_not_a_failure(game: Game) -> None:  # noqa: F811
+    """Review finding: item 0 and the result item both fail on a resent fifth answer."""
+    from staysharp.store import answers, plays
+    from staysharp.store.plays import PlayRef
+
+    challenge_id = owner_challenge(game)
+    g = colleague(game, challenge_id)
+    for index in range(4):
+        g.open(index)
+        g.answer(index, g.wrong(index))
+    g.open(4)
+    before = plays.get(COLLEAGUE, PlayRef(TODAY, "senior", "daily"), game.now)
+    assert before is not None
+    assert g.answer(4, g.right(4))["statusCode"] == 200
+    # A second request that read the play before the first one finished.
+    served = answers.read(COLLEAGUE, before, 4)
+    assert served is not None
+    stale = answers.Served(
+        **{
+            **served.__dict__,
+            "choice_id": None,
+            "line": None,
+            "grade": None,
+            "bonus": None,
+            "elapsed_ms": None,
+        }
+    )
+    q = g.question(4)
+    from staysharp.domain import grading
+
+    graded = answers.answer(
+        COLLEAGUE,
+        before,
+        stale,
+        grading.Submission(q.answer_choice_id, q.answer_lines[0] if q.answer_lines else None),
+        grading.AnswerKey(q.answer_choice_id, frozenset(q.answer_lines)),
+        game.now,
+    )
+    assert graded.outcome is not None and graded.outcome.value == "duplicate"
+    assert meta(challenge_id)["results"] == 1
+
+
+def test_a_result_expires_with_its_challenge(game: Game) -> None:  # noqa: F811
+    """Review finding: a colleague finishing on day 29 must not keep a result past day 30."""
+    challenge_id = owner_challenge(game)
+    game.later(29 * 24 * 3600)
+    g = Game(now=game.now, player=COLLEAGUE, day=TODAY, mode="replay")
+    assert g.start(challengeId=challenge_id, date=TODAY.isoformat())["statusCode"] == 201
+    finish(g)
+    written = result_item(challenge_id, COLLEAGUE)
+    assert written is not None
+    assert written["expiresAt"] == meta(challenge_id)["expiresAt"]

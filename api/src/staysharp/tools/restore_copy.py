@@ -3,15 +3,19 @@
     AWS_PROFILE=... python -m staysharp.tools.restore_copy --source TABLE --target TABLE [--write]
 
 Every item of the source (a point-in-time restore of the live table) is put into the target
-(the live table). Items lost or damaged since the restore point come back; items written after it
-and absent from the snapshot stay. Without ``--write`` it only counts. Prints counts only, never
-keys or values. The live table keeps its CDK settings (TTL, PITR, alarms, permissions).
+(the live table). Items lost or damaged since the restore point come back as they were then;
+items changed after it are put back to their snapshot state too (a play finished since then loses
+those answers); items created after it and absent from the snapshot stay. Without ``--write``
+it only counts. Prints counts only, never keys or values. The live table keeps its CDK settings
+(TTL, PITR, alarms, permissions).
 """
 
 from __future__ import annotations
 
 import argparse
+import random
 import sys
+import time
 from collections.abc import Iterator, Mapping, Sequence
 from typing import Any
 
@@ -36,12 +40,15 @@ def _scan(name: str) -> Iterator[dict[str, Any]]:
 
 def _write(name: str, items: list[dict[str, Any]]) -> None:
     pending: Any = {name: [{"PutRequest": {"Item": item}} for item in items]}
-    for _ in range(ATTEMPTS):
+    for attempt in range(ATTEMPTS):
+        if attempt:
+            # Full jitter: unprocessed items mean throttling, so back off before resending.
+            time.sleep(random.uniform(0, min(5.0, 0.1 * 2**attempt)))  # noqa: S311
         response = aws.dynamodb().batch_write_item(RequestItems=pending)
         pending = response.get("UnprocessedItems") or {}
         if not pending:
             return
-    raise RuntimeError("items left unprocessed after retries")
+    raise RuntimeError("items left unprocessed after retries; the copy is safe to run again")
 
 
 def copy(source: str, target: str, *, write: bool) -> int:

@@ -99,3 +99,15 @@ def test_no_failing_reason_is_unknown(reasons: list[Reason]) -> None:
 def test_practice_attempt_has_only_the_answer_item() -> None:
     assert classify([Reason(CCF, GRADED_SAME)], SUBMITTED) is Outcome.DUPLICATE
     assert classify([Reason(CCF, None)], SUBMITTED) is Outcome.NOT_OPENED
+
+
+def test_a_resent_fifth_answer_of_a_challenge_play_is_a_duplicate() -> None:
+    """Item 0 and the challenge result item both fail: the answer item decides."""
+    reasons = [Reason(CCF, GRADED_SAME), NONE, Reason(CCF), NONE]
+    assert classify(reasons, SUBMITTED) is Outcome.DUPLICATE
+    other = [Reason(CCF, GRADED_OTHER_CHOICE), NONE, Reason(CCF), Reason(CCF)]
+    assert classify(other, SUBMITTED) is Outcome.CONFLICT
+    assert (
+        classify([Reason(CCF, GRADED_SAME), Reason(CCF), Reason(CCF), NONE], SUBMITTED)
+        is Outcome.RETRY
+    )

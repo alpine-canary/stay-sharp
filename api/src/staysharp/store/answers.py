@@ -291,7 +291,10 @@ def answer(
     finishing = served.index not in play.answered and len(play.answered) == QUESTIONS - 1
     if finishing and play.challenge_id is not None:
         snap = _final_snapshot(play, served.index, scored, elapsed_ms)
-        items += challenges.result_items(play.challenge_id, player_id, snap, now, name)
+        expires_at = play.challenge_expires_at or table.epoch_seconds(
+            now + dt.timedelta(days=challenges.CHALLENGE_DAYS)
+        )
+        items += challenges.result_items(play.challenge_id, player_id, snap, now, name, expires_at)
     client = client or aws.dynamodb()
     last: Exception | None = None
     for attempt in range(ATTEMPTS):
