@@ -22,15 +22,17 @@ export default defineConfig({
       ? []
       : [{ name: "clock", use: { ...devices["Desktop Chrome"] }, testMatch: /midnight/, dependencies: ["mobile", "desktop"] }]),
   ],
-  webServer: remote
-    ? undefined
-    : [
-        {
-          command: "uv run --directory ../api python -m staysharp.local",
-          url: "http://127.0.0.1:3001/api/v1/health",
-          reuseExistingServer: !process.env.CI,
-          env: { STAYSHARP_CLOCK_FILE: CLOCK_FILE },
-        },
-        { command: "corepack pnpm dev --strictPort", url: baseURL, reuseExistingServer: !process.env.CI },
-      ],
+  ...(remote
+    ? {}
+    : {
+        webServer: [
+          {
+            command: "uv run --directory ../api python -m staysharp.local",
+            url: "http://127.0.0.1:3001/api/v1/health",
+            reuseExistingServer: !process.env.CI,
+            env: { STAYSHARP_CLOCK_FILE: CLOCK_FILE },
+          },
+          { command: "corepack pnpm dev --strictPort", url: baseURL, reuseExistingServer: !process.env.CI },
+        ],
+      }),
 });
