@@ -1,0 +1,3 @@
+expect: {id: sen_acronym_birch, reason: "answer"}
+patch:
+  - {question: sen_acronym_birch, op: delete, path: [answer]}

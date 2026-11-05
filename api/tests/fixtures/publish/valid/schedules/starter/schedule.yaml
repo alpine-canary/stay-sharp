@@ -1,0 +1,20 @@
+level: starter
+targets:
+  logic: 60
+  readcode: 45
+  whatif: 30
+  words: 20
+  aisense: 30
+days:
+  '2026-12-01':
+  - sta_logic_amber
+  - sta_readcode_amber
+  - sta_whatif_amber
+  - sta_words_amber
+  - sta_aisense_amber
+  '2026-12-02':
+  - sta_logic_birch
+  - sta_readcode_birch
+  - sta_whatif_birch
+  - sta_words_birch
+  - sta_aisense_birch

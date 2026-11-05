@@ -1,0 +1,3 @@
+expect: {id: "schedule starter", reason: "target"}
+patch:
+  - {schedule: starter, op: delete, path: [targets, words]}

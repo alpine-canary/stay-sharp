@@ -1,0 +1,3 @@
+expect: {id: sen_news_birch, reason: "choices"}
+patch:
+  - {question: sen_news_birch, op: set, path: [choices], value: [one, two, three]}

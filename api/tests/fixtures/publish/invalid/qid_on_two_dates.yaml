@@ -1,0 +1,3 @@
+expect: {id: sen_news_amber, reason: "two dates"}
+patch:
+  - {schedule: senior, op: set, path: [days, "2026-12-02", 4], value: sen_news_amber}

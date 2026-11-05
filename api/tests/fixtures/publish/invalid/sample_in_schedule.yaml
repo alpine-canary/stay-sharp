@@ -1,0 +1,3 @@
+expect: {id: sen_acronym_sample, reason: "daily_eligible"}
+patch:
+  - {schedule: senior, op: set, path: [days, "2026-12-01", 3], value: sen_acronym_sample}

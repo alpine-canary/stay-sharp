@@ -1,0 +1,4 @@
+# A senior question placed in a starter day.
+expect: {id: sen_spot_birch, reason: "level"}
+patch:
+  - {schedule: starter, op: set, path: [days, "2026-12-01", 0], value: sen_spot_birch}

@@ -1,0 +1,4 @@
+# Two decks swapped in a day: FR-001 order is spot, better, fail, acronym, news.
+expect: {id: "senior 2026-12-01", reason: "deck order"}
+patch:
+  - {schedule: senior, op: set, path: [days, "2026-12-01"], value: [sen_better_amber, sen_spot_amber, sen_fail_amber, sen_acronym_amber, sen_news_amber]}

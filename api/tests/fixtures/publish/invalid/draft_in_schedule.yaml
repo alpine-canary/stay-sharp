@@ -1,0 +1,3 @@
+expect: {id: sen_fail_birch, reason: "draft"}
+patch:
+  - {question: sen_fail_birch, op: set, path: [status], value: draft}

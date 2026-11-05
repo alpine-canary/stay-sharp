@@ -1,0 +1,20 @@
+level: senior
+targets:
+  spot: 60
+  better: 45
+  fail: 45
+  acronym: 20
+  news: 30
+days:
+  '2026-12-01':
+  - sen_spot_amber
+  - sen_better_amber
+  - sen_fail_amber
+  - sen_acronym_amber
+  - sen_news_amber
+  '2026-12-02':
+  - sen_spot_birch
+  - sen_better_birch
+  - sen_fail_birch
+  - sen_acronym_birch
+  - sen_news_birch

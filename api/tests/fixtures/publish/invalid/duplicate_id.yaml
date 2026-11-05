@@ -1,0 +1,3 @@
+expect: {id: sen_better_birch, reason: "duplicate"}
+patch:
+  - {question: sen_better_birch, op: copy, path: [id], value: sen_better_birch}

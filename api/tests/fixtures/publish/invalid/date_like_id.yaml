@@ -1,0 +1,3 @@
+expect: {id: sen_words_2026_12, reason: "date"}
+patch:
+  - {question: sen_acronym_sample, op: copy, path: [id], value: sen_words_2026_12}

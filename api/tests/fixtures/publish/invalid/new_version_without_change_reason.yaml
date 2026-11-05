@@ -1,0 +1,5 @@
+# The stored version 1 had another prompt: this edit is version 2 and needs a reason.
+expect: {id: sen_fail_amber, reason: "change_reason"}
+existing:
+  - {question: sen_fail_amber, path: [prompt], value: "The prompt as it was first published, before this edit."}
+patch: []

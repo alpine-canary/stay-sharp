@@ -1,0 +1,3 @@
+expect: {id: sta_logic_amber, reason: "second_reader"}
+patch:
+  - {question: sta_logic_amber, op: delete, path: [second_reader]}

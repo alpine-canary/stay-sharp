@@ -1,0 +1,22 @@
+id: sen_spot_birch
+level: senior
+deck: spot
+prompt: 'Fixture prompt sen_spot_birch: which of these four made up options is the one the publish tests
+  mark as correct today?'
+choices:
+- Fixture choice 0 of sen_spot_birch, written only for the publish tests in this repository
+- Fixture choice 1 of sen_spot_birch, written only for the publish tests in this repository
+- Fixture choice 2 of sen_spot_birch, written only for the publish tests in this repository
+- Fixture choice 3 of sen_spot_birch, written only for the publish tests in this repository
+answer:
+  choice: 2
+  lines:
+  - 4
+explanation: 'Fixture explanation sen_spot_birch: this text exists only for the publish tests and is never
+  shown to a player anywhere.'
+status: approved
+approved_by: maintainer
+approved_at: '2026-11-04T08:00:00Z'
+language: python
+code: "def total(items):\n    result = 0\n    for item in items:\n        result += item.price\n    return\
+  \ result\n"

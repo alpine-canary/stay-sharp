@@ -1,0 +1,21 @@
+id: sta_readcode_amber
+level: starter
+deck: readcode
+prompt: 'Fixture prompt sta_readcode_amber: which of these four made up options is the one the publish
+  tests mark as correct today?'
+choices:
+- Fixture choice 0 of sta_readcode_amber, written only for the publish tests in this repository
+- Fixture choice 1 of sta_readcode_amber, written only for the publish tests in this repository
+- Fixture choice 2 of sta_readcode_amber, written only for the publish tests in this repository
+- Fixture choice 3 of sta_readcode_amber, written only for the publish tests in this repository
+answer:
+  choice: 2
+explanation: 'Fixture explanation sta_readcode_amber: this text exists only for the publish tests and
+  is never shown to a player anywhere.'
+status: approved
+approved_by: maintainer
+approved_at: '2026-11-04T08:00:00Z'
+language: python
+code: "def total(items):\n    result = 0\n    for item in items:\n        result += item.price\n    return\
+  \ result\n"
+second_reader: reviewer

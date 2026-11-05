@@ -1,0 +1,3 @@
+expect: {id: sen_acronym_amber, reason: "daily_eligible"}
+patch:
+  - {question: sen_acronym_amber, op: set, path: [daily_eligible], value: false}
