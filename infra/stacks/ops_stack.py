@@ -3,7 +3,8 @@
 
 Alarms here use metrics found by name (Stage, function name), so this stack needs nothing from
 the API stack: paging ``ScoringFailures`` summed over versions, ``SelfCheckFailures``, Lambda
-errors and throttles, and in dev the fault injection left on. The rollback alarms and the API
+errors and throttles, and in dev the fault injection left on. It also runs the daily stock check
+(T092, FR-026, W8) with its own role and alarms. The rollback alarms and the API
 5xx alarm live in the API stack (they need the version and the API id); the CloudFront 5xx alarm
 lives in us-east-1, where CloudFront metrics are (``CdnAlarmsStack``).
 
@@ -16,14 +17,26 @@ from __future__ import annotations
 
 from typing import Any
 
-from aws_cdk import Aws, Duration, Stack
+from aws_cdk import Aws, Duration, RemovalPolicy, Stack
 from aws_cdk import aws_cloudwatch as cloudwatch
 from aws_cdk import aws_cloudwatch_actions as actions
+from aws_cdk import aws_events as events
+from aws_cdk import aws_events_targets as targets
 from aws_cdk import aws_iam as iam
+from aws_cdk import aws_lambda as lambda_
+from aws_cdk import aws_lambda_destinations as destinations
+from aws_cdk import aws_logs as logs
 from aws_cdk import aws_sns as sns
 from aws_cdk import aws_sns_subscriptions as subscriptions
 from aws_cdk import aws_ssm as ssm
 from constructs import Construct
+
+from stacks.bundling import api_code
+
+MAIN_REGION = "eu-central-2"
+# FR-026: warn below 7 days in prod. Dev only holds a few fixture days, so it checks the
+# mechanism with a threshold of 1 instead of being in alarm all the time.
+STOCK_THRESHOLD = {"prod": 7, "dev": 1}
 
 
 def alarm_email(scope: Construct, path: str) -> str:
@@ -91,6 +104,7 @@ class OpsStack(Stack):
         )
         allow_cloudwatch(self.topic)
         self._alarms(stage)
+        self._stock_check(stage)
 
     def _alarms(self, stage: str) -> None:
         minute = Duration.minutes(1)
@@ -167,6 +181,104 @@ class OpsStack(Stack):
                 treat_missing_data=quiet,
                 description="Dev fault injection has been on for 30 minutes: switch it off.",
             )
+
+    def _stock_check(self, stage: str) -> None:
+        name = f"staysharp-{stage}-stock-check"
+        log_group = logs.LogGroup(
+            self,
+            "StockCheckLogs",
+            log_group_name=f"/aws/lambda/{name}",
+            retention=logs.RetentionDays.ONE_MONTH,
+            removal_policy=RemovalPolicy.DESTROY,
+        )
+        function = lambda_.Function(
+            self,
+            "StockCheck",
+            function_name=name,
+            runtime=lambda_.Runtime.PYTHON_3_13,
+            architecture=lambda_.Architecture.ARM_64,
+            handler="staysharp.handlers.stock_check.handler",
+            code=api_code(stage),
+            memory_size=256,
+            timeout=Duration.seconds(30),
+            environment={"STAGE": stage, "TABLE_NAME": f"staysharp-{stage}"},
+            log_group=log_group,
+            logging_format=lambda_.LoggingFormat.JSON,
+            retry_attempts=2,
+            max_event_age=Duration.hours(2),
+            on_failure=destinations.SnsDestination(self.topic),
+        )
+        # Its own role: future-day markers only, nothing else of the table (R8).
+        table_arn = (
+            f"arn:{Aws.PARTITION}:dynamodb:{MAIN_REGION}:{Aws.ACCOUNT_ID}:table/staysharp-{stage}"
+        )
+        function.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["dynamodb:Query"],
+                resources=[table_arn],
+                conditions={"ForAllValues:StringLike": {"dynamodb:LeadingKeys": ["STOCK#*"]}},
+            )
+        )
+        # Once a day, early morning in Zurich. An EventBridge rule invokes asynchronously, so
+        # retries and the on-failure destination apply.
+        events.Rule(
+            self,
+            "StockCheckDaily",
+            schedule=events.Schedule.cron(minute="0", hour="5"),
+            targets=[targets.LambdaFunction(function, retry_attempts=2)],
+        )
+
+        day = Duration.days(1)
+        breaching = cloudwatch.TreatMissingData.BREACHING
+
+        def lambda_named(metric: str, period: Duration) -> cloudwatch.Metric:
+            return cloudwatch.Metric(
+                namespace="AWS/Lambda",
+                metric_name=metric,
+                dimensions_map={"FunctionName": name},
+                statistic="Sum",
+                period=period,
+            )
+
+        for level in ("senior", "starter"):
+            make_alarm(
+                self,
+                f"StockLow{level.capitalize()}",
+                topic=self.topic,
+                metric=cloudwatch.Metric(
+                    namespace="StaySharp",
+                    metric_name="StockDaysAhead",
+                    dimensions_map={"Stage": stage, "Level": level},
+                    statistic="Minimum",
+                    period=day,
+                ),
+                threshold=STOCK_THRESHOLD[stage],
+                comparison=cloudwatch.ComparisonOperator.LESS_THAN_THRESHOLD,
+                treat_missing_data=breaching,
+                description=(
+                    f"Fewer than {STOCK_THRESHOLD[stage]} days of {level} sets ahead, or no "
+                    "stock value today. Publish more days (docs/runbooks/publish.md)."
+                ),
+            )
+        make_alarm(
+            self,
+            "StockCheckErrors",
+            topic=self.topic,
+            metric=lambda_named("Errors", Duration.minutes(5)),
+            threshold=1,
+            treat_missing_data=cloudwatch.TreatMissingData.NOT_BREACHING,
+            description="The stock check failed: the stock value may be missing or stale.",
+        )
+        make_alarm(
+            self,
+            "StockCheckMissed",
+            topic=self.topic,
+            metric=lambda_named("Invocations", day),
+            threshold=1,
+            comparison=cloudwatch.ComparisonOperator.LESS_THAN_THRESHOLD,
+            treat_missing_data=breaching,
+            description="The stock check did not run in the last day (schedule broken?).",
+        )
 
     def alarm(
         self,

@@ -104,7 +104,8 @@ def test_paging_alarm_sums_versions_and_is_not_a_rollback_alarm(
 @pytest.mark.parametrize("stage", STAGES)
 def test_stage_alarms(template: TemplateOf, stage: str) -> None:
     names = {a["MetricName"] for a in alarms(template(f"staysharp-{stage}-ops")).values()}
-    expected = {"ScoringFailures", "SelfCheckFailures", "Errors", "Throttles"}
+    expected = {"ScoringFailures", "SelfCheckFailures", "Errors", "Throttles", "StockDaysAhead"}
+    expected.add("Invocations")
     if stage == "dev":
         expected.add("FaultInjectionActive")
     assert names == expected
