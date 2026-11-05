@@ -19,6 +19,7 @@ export type QuestionView = Schemas["QuestionView"];
 export type ChallengeView = Schemas["ChallengeView"];
 export type ChallengeCreated = Schemas["ChallengeCreated"];
 export type ResultSnapshot = Schemas["ResultSnapshot"];
+export type PracticeNext = Json<"/practice/next", "post", 200>;
 export type AnswerResult = Schemas["AnswerResult"];
 export type AnswerRequest = Schemas["AnswerRequest"];
 export type Level = Schemas["Level"];
@@ -166,6 +167,24 @@ export function createClient(options: ClientOptions) {
       const { status, body: data } = await request({
         method: "POST",
         path: `${play(playId)}/questions/${index}/answer`,
+        body,
+        idempotent: true,
+        accept: [409],
+      });
+      if (status === 409) return { result: (data as { recorded: AnswerResult }).recorded, conflict: true };
+      return { result: data as AnswerResult, conflict: false };
+    },
+
+    /** Each call counts against the 200 a day, so a lost reply is not retried. */
+    async practiceNext(body: { level: Level; deck?: string; prefer: string[] }): Promise<PracticeNext> {
+      return (await request({ method: "POST", path: "/practice/next", body, idempotent: false })).body as PracticeNext;
+    },
+
+    /** Same rule as the daily: the same answer twice counts once; a different one is a 409. */
+    async practiceAnswer(attemptId: string, body: AnswerRequest): Promise<{ result: AnswerResult; conflict: boolean }> {
+      const { status, body: data } = await request({
+        method: "POST",
+        path: `/practice/${encodeURIComponent(attemptId)}/answer`,
         body,
         idempotent: true,
         accept: [409],

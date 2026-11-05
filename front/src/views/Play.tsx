@@ -13,6 +13,7 @@ import {
 } from "../api/client";
 import { Choices } from "../components/Choices";
 import { CodeBlock } from "../components/CodeBlock";
+import { Feedback } from "../components/Feedback";
 import { Link } from "../components/Link";
 import { Squares } from "../components/Squares";
 import { Timer } from "../components/Timer";
@@ -203,8 +204,6 @@ export function Play({ client, level, mode, relaxed: relaxedPref, challenge, onF
     }
   };
 
-  const verdict = result ? verdictOf(result, needsLine, line) : null;
-  const correctText = result ? question.choices.find((c) => c.id === result.correctChoiceId)?.text : undefined;
   const label = `${mode === "replay" ? "Replay" : "Daily"} #${play.gameNumber}`;
 
   return (
@@ -281,30 +280,15 @@ export function Play({ client, level, mode, relaxed: relaxedPref, challenge, onF
           </div>
         )}
 
-        {result && verdict && (
-          <div className={`fb ${verdict.className}`} role="status" tabIndex={-1} ref={feedbackRef}>
-            <p className="verdict">
-              {verdict.text}
-              {result.bonus > 0 ? " · +0.2 speed bonus" : ""}
-            </p>
-            {conflict && <p className="hint">You had already answered this question. This is the answer that counts.</p>}
-            {result.grade < 1 && correctText && (
-              <p>
-                <strong>Right answer:</strong> {correctText}
-                {result.correctLines?.length ? ` (line ${result.correctLines.join(", ")})` : ""}
-              </p>
-            )}
-            <p>{result.explanation}</p>
-            {result.sourceUrl && (
-              <p className="hint">
-                Source:{" "}
-                <a href={result.sourceUrl} target="_blank" rel="noopener noreferrer">
-                  {hostOf(result.sourceUrl)}
-                </a>
-                {result.sourceDate ? ` · ${result.sourceDate}` : ""}
-              </p>
-            )}
-          </div>
+        {result && (
+          <Feedback
+            ref={feedbackRef}
+            result={result}
+            question={question}
+            needsLine={needsLine}
+            line={line}
+            conflict={conflict}
+          />
         )}
 
         {result && (
@@ -342,19 +326,4 @@ export function Play({ client, level, mode, relaxed: relaxedPref, challenge, onF
       )}
     </>
   );
-}
-
-function verdictOf(result: AnswerResult, needsLine: boolean, line: number | null) {
-  if (result.grade === 1) return { text: "Right", className: "v1" };
-  if (result.grade === 0) return { text: "Not this time", className: "v0" };
-  const lineRight = needsLine && line !== null && (result.correctLines ?? []).includes(line);
-  return { text: lineRight ? "Half right: right line, wrong problem" : "Half right: right problem, wrong line", className: "v05" };
-}
-
-function hostOf(url: string): string {
-  try {
-    return new URL(url).hostname.replace(/^www\./, "");
-  } catch {
-    return url;
-  }
 }

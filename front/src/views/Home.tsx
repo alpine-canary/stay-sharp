@@ -133,6 +133,19 @@ export function Home({ client, progress, onLevel, onRelaxed }: HomeProps) {
         </label>
       </section>
       {level && <ProgressCard progress={progress} level={level} today={date ?? zurichToday()} />}
+      {level && (
+        <section className="card" aria-labelledby="practice-title">
+          <h2 id="practice-title" className="text-2xl">
+            Practice
+          </h2>
+          <p className="hint">Past questions, by deck. The ones you miss come back sooner. No timer, no streak.</p>
+          <div className="row">
+            <Link href="/practice" className="btn ghost">
+              Practise past questions
+            </Link>
+          </div>
+        </section>
+      )}
       <p className="foot">{level ? "No account." : "No account. Your progress is saved in this browser only."}</p>
     </>
   );

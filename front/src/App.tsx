@@ -10,6 +10,7 @@ import {
   createStore,
   recordAnswer,
   recordDay,
+  recordPracticeAnswer,
   type Level,
   type Notice,
   type Progress,
@@ -18,6 +19,7 @@ import {
 import { Challenge } from "./views/Challenge";
 import { Home } from "./views/Home";
 import { Play } from "./views/Play";
+import { Practice } from "./views/Practice";
 import { Result } from "./views/Result";
 
 export interface AppProps {
@@ -127,7 +129,23 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
           />
         )}
         {route.view === "not-found" && <NotFound />}
-        {(route.view === "practice" || route.view === "privacy") && <ComingSoon />}
+        {route.view === "practice" &&
+          (progress.level ? (
+            <Practice
+              key={progress.level}
+              client={client}
+              level={progress.level}
+              practice={progress.practice[progress.level]}
+              onAnswered={(answer) => {
+                const level = progress.level;
+                // Boxes only: practice never touches the streak, the freeze or the skill view.
+                if (level) update((p) => recordPracticeAnswer(p, level, answer));
+              }}
+            />
+          ) : (
+            <ChooseLevelFirst />
+          ))}
+        {route.view === "privacy" && <ComingSoon />}
       </main>
     </div>
   );

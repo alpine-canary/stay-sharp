@@ -277,11 +277,11 @@ streak or the daily.
 **Independent test**: miss one practice question, answer others right, and check the missed one
 returns within the next 5 (V14 for the server side).
 
-- [ ] T108 [P] [US5] Integration tests in `api/tests/integration/test_practice.py`: questions only from `POOL#<level>#<deck>` with `SK < today`; `prefer` with a future qid, an unknown qid or another level's qid returns a normal past question, never the requested one; at most 200 attempts per player per day (`PRACOUNT#<date>` conditional `ADD`); attempts expire after 14 days; same answer twice on one attempt counted once (C4, V14, FR-006)
-- [ ] T109 [P] [US5] Unit tests in `front/src/progress/boxes.test.ts`: a miss goes to box 1 and returns within 5 questions; each right answer moves up one box; box 5 no longer preferred; at most 5 preferred qids sent (FR-022)
-- [ ] T110 [US5] Implement `api/src/staysharp/store/practice.py` and `POST /practice/next`, `POST /practice/{attemptId}/answer` in `api/src/staysharp/handlers/routes_practice.py`, reusing `domain/views.py`, `domain/grading.py` and the R2 transaction on `PRA#<attemptId>`
+- [X] T108 [P] [US5] Integration tests in `api/tests/integration/test_practice.py`: questions only from `POOL#<level>#<deck>` with `SK < today`; `prefer` with a future qid, an unknown qid or another level's qid returns a normal past question, never the requested one; at most 200 attempts per player per day (`PRACOUNT#<date>` conditional `ADD`); attempts expire after 14 days; same answer twice on one attempt counted once (C4, V14, FR-006)
+- [X] T109 [P] [US5] Unit tests in `front/src/progress/boxes.test.ts`: a miss goes to box 1 and returns within 5 questions; each right answer moves up one box; box 5 no longer preferred; at most 5 preferred qids sent (FR-022)
+- [X] T110 [US5] Implement `api/src/staysharp/store/practice.py` and `POST /practice/next`, `POST /practice/{attemptId}/answer` in `api/src/staysharp/handlers/routes_practice.py`, reusing `domain/views.py`, `domain/grading.py` and the R2 transaction on `PRA#<attemptId>`
 - [X] T111 [US5] Implement `front/src/progress/boxes.ts` to pass T109
-- [ ] T112 [US5] Implement `front/src/views/Practice.tsx`: deck filter or "all decks", same feedback as the daily, never touches streak, freeze or the daily result (FR-023)
+- [X] T112 [US5] Implement `front/src/views/Practice.tsx`: deck filter or "all decks", same feedback as the daily, never touches streak, freeze or the daily result (FR-023)
 
 **Checkpoint**: V14 passes; practice works in dev with the prototype questions.
 
