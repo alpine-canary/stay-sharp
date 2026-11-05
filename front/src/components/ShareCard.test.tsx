@@ -37,7 +37,8 @@ describe("shareText", () => {
   });
 
   it("uses one distinct symbol per grade, so it reads without colour", () => {
-    const squares = [...shareText({ ...BASE, grades: [1, 0.5, 0, 1, 0] }).split("\n")[1]!.split("  ")[0]!];
+    const line = shareText({ ...BASE, grades: [1, 0.5, 0, 1, 0] }).split("\n")[1] ?? "";
+    const squares = [...(line.split("  ")[0] ?? "")];
     expect(squares).toEqual(["🟩", "🟨", "🟥", "🟩", "🟥"]);
     expect(new Set(["🟩", "🟨", "🟥"]).size).toBe(3);
   });

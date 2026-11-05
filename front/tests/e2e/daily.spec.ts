@@ -25,12 +25,23 @@ test("full daily by keyboard, with resume after a reload", async ({ page }) => {
   }
 
   await expect(page).toHaveURL(/\/result\?play=\d{4}-\d{2}-\d{2}\.senior\.daily/);
-  await expect(page.getByRole("heading", { name: "Your result" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your result", exact: true })).toBeVisible();
   const squares = page.getByRole("list", { name: /question by question/ }).getByRole("listitem");
   await expect(squares).toHaveCount(5);
   for (const square of await squares.all()) await expect(square).not.toContainText("not answered");
   const score = await page.locator(".score .big").first().textContent();
   expect(score).toMatch(/^\d(\.5)?\/5$/);
+
+  // Story 3: the share card copies three lines and nothing about the questions.
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.getByRole("button", { name: "Copy result" }).click();
+  await expect(page.getByRole("status").filter({ hasText: /Copied|selected/ })).toBeVisible();
+  const card = await page.locator(".share-text").textContent();
+  const lines = (card ?? "").split("\n");
+  expect(lines).toHaveLength(3);
+  expect(lines[0]).toMatch(/^Stay Sharp #\d+ · Senior$/);
+  expect(lines[1]).toMatch(/^[🟩🟨🟥]{5} {2}\d(\.5)?\/5 · (speed \+\d(\.\d)?|relaxed) · \d+m\d{2}s · streak \d+$/u);
+  expect(lines[2]).toBe(new URL(page.url()).host);
 
   // Home now offers the result, and /play goes back to the same recorded result.
   await page.getByRole("link", { name: "Back to today" }).click();

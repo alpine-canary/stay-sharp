@@ -686,3 +686,26 @@ a {
   border-radius: inherit;
   background: var(--accent);
 }
+
+/* Share card (T100) */
+.share {
+  display: grid;
+  gap: 10px;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.share-text {
+  margin: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--code-bg);
+  font: 500 14px/1.6 var(--mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.share .hint:empty {
+  display: none;
+}

@@ -242,8 +242,8 @@ the browser from the local log, per level.
 **Independent test**: finish a daily, copy the card, check it against the format and that it has
 no question text, answer or deck hint.
 
-- [ ] T099 [P] [US3] Unit tests in `front/src/components/ShareCard.test.tsx`: exact format `Stay Sharp #<n> · <Level>` / `<5 squares>  <score>/5 · speed +<bonus> · <m>m<ss>s · streak <k>` / `<site address>`; `relaxed` instead of the bonus; distinct symbols readable as text; no question content
-- [ ] T100 [US3] Implement `front/src/components/ShareCard.tsx` and the "Copy result" action in `front/src/views/Result.tsx`; when the clipboard is not available, select the text and say so (Story 3, scenario 3)
+- [X] T099 [P] [US3] Unit tests in `front/src/components/ShareCard.test.tsx`: exact format `Stay Sharp #<n> · <Level>` / `<5 squares>  <score>/5 · speed +<bonus> · <m>m<ss>s · streak <k>` / `<site address>`; `relaxed` instead of the bonus; distinct symbols readable as text; no question content
+- [X] T100 [US3] Implement `front/src/components/ShareCard.tsx` and the "Copy result" action in `front/src/views/Result.tsx`; when the clipboard is not available, select the text and say so (Story 3, scenario 3)
 
 **Checkpoint**: Story 3 scenarios pass in Vitest and in one Playwright step of `daily.spec.ts`.
 

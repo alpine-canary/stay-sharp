@@ -99,7 +99,7 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
           ) : (
             <ChooseLevelFirst />
           ))}
-        {route.view === "result" && <Result key={search("play")} client={client} playId={search("play")} />}
+        {route.view === "result" && <Result key={search("play")} client={client} playId={search("play")} progress={progress} />}
         {route.view === "not-found" && <NotFound />}
         {(route.view === "practice" || route.view === "privacy" || route.view === "challenge") && <ComingSoon />}
       </main>

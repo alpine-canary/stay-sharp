@@ -1,16 +1,21 @@
 // The result of a play (task T069): squares, score out of 5, speed bonus or "relaxed", time
-// taken. A replay is marked "not scored".
+// taken. A replay is marked "not scored". A finished daily offers the share card (task T100).
 
 import { useEffect, useState } from "react";
 import { ApiError, type ApiClient, type PlayState } from "../api/client";
 import { Link } from "../components/Link";
+import { ShareCard } from "../components/ShareCard";
 import { Squares } from "../components/Squares";
 import { formatSeconds } from "../components/Timer";
 import { DECK_ORDER, deckName } from "../decks";
+import { streak } from "../progress/streak";
+import type { Progress } from "../storage";
 
 export interface ResultProps {
   client: ApiClient;
   playId: string | null;
+  /** Local progress, for the streak on the share card. */
+  progress: Progress;
 }
 
 type State = { status: "loading" } | { status: "ready"; play: PlayState } | { status: "failed"; message: string };
@@ -19,7 +24,7 @@ export function formatScore(value: number): string {
   return Number.isInteger(value) ? String(value) : value.toFixed(1);
 }
 
-export function Result({ client, playId }: ResultProps) {
+export function Result({ client, playId, progress }: ResultProps) {
   const [state, setState] = useState<State>(
     playId ? { status: "loading" } : { status: "failed", message: "No result to show." },
   );
@@ -109,6 +114,19 @@ export function Result({ client, playId }: ResultProps) {
           </li>
         ))}
       </ol>
+      {play.finished && !replay && (
+        <ShareCard
+          gameNumber={play.gameNumber}
+          level={play.level}
+          grades={play.grades}
+          score={play.score}
+          bonus={play.bonus}
+          relaxed={play.relaxed}
+          elapsedMs={play.elapsedMs ?? 0}
+          streak={streak(Object.keys(progress.days[play.level]), play.date).current}
+          address={window.location.host}
+        />
+      )}
       <div className="row">
         {!play.finished && (
           <Link href={replay ? "/play?mode=replay" : "/play"} className="btn">
