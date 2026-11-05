@@ -10,9 +10,9 @@ content repository installs it as a package.
 ```
 stay-sharp-content/
   pyproject.toml            installs staysharp[publish] from this repository, pinned to a commit
-  questions/<level>/<id>.yaml
-  schedules/<level>/schedule.yaml
-  fixtures/                 fake content for dev, with a .fixtures file at its root
+  content/questions/<level>/<id>.yaml
+  content/schedules/<level>/schedule.yaml
+  fixtures/                 fake content for dev, same layout, with a .fixtures file at its root
   .github/workflows/        validate, leak check, publish
 ```
 
@@ -36,9 +36,9 @@ Set `status: approved`, `approved_by` and `approved_at`. A Starter question also
 
 ## 4. Schedule
 
-`schedules/<level>/schedule.yaml` lists five ids per date in the deck order of FR-001 (senior:
-spot, better, fail, acronym, news; starter: logic, readcode, whatif, words, aisense) and a target
-time in seconds for every deck. A question is scheduled on one date only. Samples and anything
+`content/schedules/<level>/schedule.yaml` lists five ids per date in the deck order of FR-001
+(senior: spot, better, fail, acronym, news; starter: logic, readcode, whatif, words, aisense) and
+a target time in seconds for every deck. A question is scheduled on one date only. Samples and anything
 already public (`daily_eligible: false`) are never scheduled (FR-024c).
 
 Keep past dates in the file: publish checks that they still match what was published.
@@ -46,16 +46,16 @@ Keep past dates in the file: publish checks that they still match what was publi
 ## 5. Publish
 
 1. Open a pull request in the content repository. CI runs:
-   - `python -m staysharp.tools.publish validate . --stage prod` (reads the stored versions, so an
+   - `python -m staysharp.tools.publish validate content --stage prod` (reads the stored versions, so an
      edit without a new `change_reason` is caught before the merge);
-   - `python -m staysharp.tools.publish leak-check .` (layer 1 of the leak guard, below).
+   - `python -m staysharp.tools.publish leak-check content` (layer 1 of the leak guard, below).
 2. Merge to `main`. CI runs, with the content role (OIDC, content keys of the table only):
-   - `publish apply . --stage prod`: all or nothing. Every check runs before the first write;
+   - `publish apply content --stage prod`: all or nothing. Every check runs before the first write;
      writes go in transactions of at most 100 items, questions first, then whole days.
-   - `publish leak-check . --record`: on success it writes the time to
+   - `publish leak-check content --record`: on success it writes the time to
      `/staysharp/prod/leak-guard/last-pass`. The prod deploy refuses to run when that is missing
      or older than 24 hours.
-   - `publish fingerprints . --out fingerprints.json`, then uploads it to
+   - `publish fingerprints content --out fingerprints.json`, then uploads it to
      `s3://<LEAK_GUARD_BUCKET>/leak-guard/fingerprints.json` for the public scan.
 3. Read the counts it prints (question versions, days written, unchanged). Output never contains
    question text.
@@ -65,7 +65,8 @@ prints `failed` (a transaction failed), the earlier transactions are written and
 at a missing question. Re-run the job: unchanged questions and days are skipped.
 
 Dev only takes fixture content: `publish apply fixtures --stage dev`. The command refuses a folder
-without `.fixtures` for dev, and a folder with it for prod.
+without `.fixtures` for dev, and a folder with it for prod. Publish reads every YAML file below
+the folder it is given, which is why real content and fixtures live in separate folders.
 
 ## 6. Edit a published question
 
