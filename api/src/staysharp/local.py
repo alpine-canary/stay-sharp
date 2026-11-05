@@ -12,6 +12,7 @@ import argparse
 import json
 import os
 import sys
+import threading
 import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -20,6 +21,8 @@ from typing import Any
 from urllib.parse import urlsplit
 
 HOST = "127.0.0.1"
+# One request at a time, like one Lambda container: the resolver holds the current request.
+_ONE_AT_A_TIME = threading.Lock()
 
 
 @dataclass
@@ -71,7 +74,8 @@ class Handler(BaseHTTPRequestHandler):
         length = int(self.headers.get("Content-Length") or 0)
         body = self.rfile.read(length) if length else b""
         event = to_event(self.command, self.path, dict(self.headers.items()), body)
-        result = api.handler(event, LocalContext())
+        with _ONE_AT_A_TIME:
+            result = api.handler(event, LocalContext())
         payload = (result.get("body") or "").encode()
         self.send_response(int(result.get("statusCode", 500)))
         for name, value in (result.get("headers") or {}).items():

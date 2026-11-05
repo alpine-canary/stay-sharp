@@ -7,7 +7,7 @@ import datetime as dt
 from aws_lambda_powertools.event_handler import Response
 from aws_lambda_powertools.event_handler.router import APIGatewayHttpRouter
 
-from staysharp import config
+from staysharp import clock, config
 from staysharp.domain import calendar
 from staysharp.domain.models import DECKS, LevelReady, Today
 from staysharp.handlers.http import JSON, json_response
@@ -17,8 +17,8 @@ router = APIGatewayHttpRouter()
 
 
 def now() -> dt.datetime:
-    """The Lambda clock. Tests replace this function."""
-    return dt.datetime.now(dt.UTC)
+    """The Lambda clock (``staysharp.clock``). Tests replace this function."""
+    return clock.now()
 
 
 @router.get("/health")
