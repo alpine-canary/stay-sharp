@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stay-sharp.lumineth.com/schema/question.v1.json",
+  "title": "Stay Sharp question (authoring format, private content repository)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "level", "deck", "prompt", "choices", "answer", "explanation", "status"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9_]{3,64}$", "description": "Stable and meaningless: no date or schedule information (publish refuses date-like patterns)." },
+    "level": { "enum": ["senior", "starter"] },
+    "deck": { "enum": ["spot", "better", "fail", "acronym", "news", "logic", "readcode", "whatif", "words", "aisense"] },
+    "language": { "enum": ["python", "typescript", "php", "sql", "cdk", "text"] },
+    "prompt": { "type": "string", "minLength": 1, "maxLength": 400 },
+    "code": { "type": "string", "maxLength": 3100 },
+    "choices": { "type": "array", "minItems": 4, "maxItems": 4, "uniqueItems": true, "items": { "type": "string", "minLength": 1, "maxLength": 240 } },
+    "answer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["choice"],
+      "properties": {
+        "choice": { "type": "integer", "minimum": 0, "maximum": 3 },
+        "lines": { "type": "array", "minItems": 1, "items": { "type": "integer", "minimum": 1, "maximum": 30 } }
+      }
+    },
+    "explanation": { "type": "string", "minLength": 1, "maxLength": 1200 },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["url", "date"],
+      "properties": { "url": { "type": "string", "pattern": "^https://" }, "date": { "type": "string", "format": "date" } }
+    },
+    "sample": { "type": "boolean", "description": "Only sample questions may live in the public repository." },
+    "daily_eligible": { "type": "boolean", "default": true, "description": "False for anything already public (samples, prototype); never schedulable." },
+    "second_reader": { "type": "string", "description": "Who reviewed the question besides the author. Required for Starter." },
+    "change_reason": { "type": "string", "minLength": 3, "description": "Required by publish when this id already exists at a lower version." },
+    "status": { "enum": ["draft", "approved"] },
+    "approved_by": { "type": "string" },
+    "approved_at": { "type": "string", "format": "date-time" }
+  },
+  "allOf": [
+    { "if": { "properties": { "deck": { "const": "spot" } }, "required": ["deck"] }, "then": { "required": ["code"], "properties": { "answer": { "required": ["choice", "lines"] } } } },
+    { "if": { "properties": { "deck": { "enum": ["better", "readcode"] } }, "required": ["deck"] }, "then": { "required": ["code"] } },
+    { "if": { "properties": { "deck": { "const": "news" } }, "required": ["deck"] }, "then": { "required": ["source"] } },
+    { "if": { "properties": { "status": { "const": "approved" } }, "required": ["status"] }, "then": { "required": ["approved_by", "approved_at"] } },
+    { "if": { "properties": { "level": { "const": "starter" }, "status": { "const": "approved" } }, "required": ["level", "status"] }, "then": { "required": ["second_reader"] } },
+    { "if": { "properties": { "sample": { "const": true } }, "required": ["sample"] }, "then": { "properties": { "daily_eligible": { "const": false } }, "required": ["daily_eligible"] } }
+  ]
+}

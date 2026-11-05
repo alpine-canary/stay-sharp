@@ -43,6 +43,7 @@ def to_question(authored: Mapping[str, Any], *, version: int = 1) -> Question:
         "code": authored.get("code"),
         "language": authored.get("language"),
         "choices": shuffled,
+        "choiceOrder": [c["id"] for c in choices],
         "answerChoiceId": answer_id,
         "answerLines": list(authored["answer"].get("lines", [])),
         "explanation": authored["explanation"],

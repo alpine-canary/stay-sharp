@@ -10,6 +10,13 @@ dependencies = [
     "tzdata>=2025.2",
 ]
 
+[project.optional-dependencies]
+# Tools only (publish, leak scan); never in the Lambda package.
+publish = [
+    "jsonschema>=4.26.0",
+    "pyyaml>=6.0.3",
+]
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"

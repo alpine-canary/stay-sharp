@@ -61,7 +61,8 @@ def _apply(content: Content, case: dict[str, Any]) -> Content:
 def _existing(content: Content, case: dict[str, Any]) -> dict[str, Question]:
     stored: dict[str, Question] = {}
     for change in case.get("existing", []):
-        authored = copy.deepcopy(next(q for q in content.questions if q.data["id"] == change["question"]))
+        original = next(q for q in content.questions if q.data["id"] == change["question"])
+        authored = copy.deepcopy(original)
         _set(authored.data, change["path"], change["value"])
         stored[change["question"]] = to_question(authored.data)
     return stored
@@ -126,9 +127,7 @@ def test_reasons_never_quote_question_text(valid: Content) -> None:
     broken = _apply(valid, case)
     for q in broken.questions:
         _set(q.data, ["explanation"], "")
-    texts = {"one", "two", "three"} | {
-        c for q in valid.questions for c in q.data["choices"]
-    }
+    texts = {"one", "two", "three"} | {c for q in valid.questions for c in q.data["choices"]}
     for problem in validate.validate(broken):
         assert not any(text in problem.reason for text in texts if len(text) > 2), problem
 

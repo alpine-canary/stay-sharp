@@ -36,12 +36,14 @@ read that depends on expiry compares `expiresAt` with now.
 | deck | enum | senior: `spot`, `better`, `fail`, `acronym`, `news`; starter: `logic`, `readcode`, `whatif`, `words`, `aisense` |
 | prompt, code, language | | as in `contracts/question.schema.json` |
 | choices | list[4] | `{id, text}`; `id` = 8 random base32 characters assigned at the first publish and kept across versions; order shuffled at the first publish |
+| choiceOrder | list[4] | the choice ids in authoring order, so later versions keep the ids (never sent) |
 | answerChoiceId, answerLines | | lines within `1..lines(code)` |
 | explanation | string | |
 | sourceUrl, sourceDate | | required for `news`, and for `aisense` when citing a fact |
 | dailyEligible | bool | false for samples and prototype questions |
 | approvedBy, approvedAt, secondReader | | `secondReader` required for Starter |
 | changeReason | string? | required from version 2 |
+| publishedAt | timestamp | when this version was written (FR-027: date and reason of each edit) |
 
 Never returned before an answer: `answerChoiceId`, `answerLines`, `explanation`, `sourceUrl`,
 `sourceDate`, and none of the authoring fields (R1 allowlist).

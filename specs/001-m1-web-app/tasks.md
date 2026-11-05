@@ -201,13 +201,13 @@ layers (V2 content part, V18).
 
 ### Tests for User Story 7 (write first, must fail)
 
-- [ ] T085 [P] [US7] Unit tests in `api/tests/unit/test_publish_validate.py` with fixtures in `api/tests/fixtures/publish/invalid/` and `.../valid/`: wrong deck order, wrong level, qid on two dates, sample or `daily_eligible: false` qid in a schedule, line outside code, missing target, Starter without `second_reader`, new version without `change_reason`, question with `status: draft` (FR-025), date-like pattern in an id, missing answer, duplicate id, wrong number of choices; each refused with id and reason (V7, FR-024)
+- [X] T085 [P] [US7] Unit tests in `api/tests/unit/test_publish_validate.py` with fixtures in `api/tests/fixtures/publish/invalid/` and `.../valid/`: wrong deck order, wrong level, qid on two dates, sample or `daily_eligible: false` qid in a schedule, line outside code, missing target, Starter without `second_reader`, new version without `change_reason`, question with `status: draft` (FR-025), date-like pattern in an id, missing answer, duplicate id, wrong number of choices; each refused with id and reason (V7, FR-024)
 - [ ] T086 [P] [US7] Integration tests in `api/tests/integration/test_publish_apply.py`: all-or-nothing batches in transactions of at most 100 items; edits write `V#<n+1>` and never change stored grades (FR-027); refusal to change today or a past day; choice ids assigned at first publish and kept; correct positions roughly uniform across a batch (S7)
 - [ ] T087 [P] [US7] Unit tests in `api/tests/unit/test_fingerprints.py`: normalised 12-word shingles, HMAC with a test key, a file copying a future prompt is matched, a harmless file is not, output shows only paths and counts
 
 ### Implementation for User Story 7
 
-- [ ] T088 [US7] Implement `api/src/staysharp/publish/validate.py` against `contracts/question.schema.json` and `contracts/schedule.schema.json` plus every R4 check
+- [X] T088 [US7] Implement `api/src/staysharp/publish/validate.py` against `contracts/question.schema.json` and `contracts/schedule.schema.json` plus every R4 check
 - [ ] T089 [US7] Implement `api/src/staysharp/publish/apply.py`: writes `Q#`, `DAILY#`, `POOL#` and `STOCK#` items, target times copied into each daily set, version history, all-or-nothing
 - [ ] T090 [US7] Implement `api/src/staysharp/publish/fingerprints.py` and the CLI `api/src/staysharp/tools/leak_scan.py` (scan tracked files and full git history, print paths and match counts only)
 - [ ] T091 [US7] Add the public leak-guard job to `.github/workflows/ci.yml`: download the fingerprint object, run `leak_scan` with the Actions secret key; skipped on fork pull requests and run again on merge (R4 layer 2, V18)

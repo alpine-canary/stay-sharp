@@ -107,6 +107,8 @@ class Question(Strict):
     code: Annotated[str, StringConstraints(max_length=3100)] | None = None
     language: Language | None = None
     choices: Annotated[list[Choice], Field(min_length=4, max_length=4)]
+    # Choice ids in authoring order, so a new version keeps the ids of version 1 (R4).
+    choice_order: Annotated[list[ChoiceId], Field(min_length=4, max_length=4)] | None = None
     answer_choice_id: ChoiceId
     answer_lines: list[Line] = []
     explanation: Annotated[str, StringConstraints(min_length=1, max_length=1200)]
@@ -117,6 +119,7 @@ class Question(Strict):
     approved_at: dt.datetime | None = None
     second_reader: str | None = None
     change_reason: Annotated[str, StringConstraints(min_length=3)] | None = None
+    published_at: dt.datetime | None = None
 
     @model_validator(mode="after")
     def _rules(self) -> Self:
@@ -127,6 +130,8 @@ class Question(Strict):
             raise ValueError("choice ids must be unique")
         if self.answer_choice_id not in ids:
             raise ValueError("answer_choice_id must be one of the choices")
+        if self.choice_order is not None and sorted(self.choice_order) != sorted(ids):
+            raise ValueError("choice_order must list the choice ids")
         if self.deck in LINE_DECKS:
             if not self.code or not self.answer_lines:
                 raise ValueError(f"{self.deck} needs code and answer_lines")
