@@ -13,7 +13,7 @@ import tempfile
 from pathlib import Path
 
 import jsii
-from aws_cdk import BundlingOptions, DockerImage, ILocalBundling
+from aws_cdk import AssetHashType, BundlingOptions, DockerImage, FileSystem, ILocalBundling
 from aws_cdk import aws_lambda as lambda_
 
 API_DIR = Path(__file__).resolve().parents[2] / "api"
@@ -23,8 +23,25 @@ PLATFORM = "aarch64-manylinux_2_28"
 EXCLUDE = shutil.ignore_patterns("__pycache__", "*.pyc", "tools")
 
 
+def copy_package(output_dir: str | Path, *, with_testing: bool) -> None:
+    """Our code into the asset: ``staysharp`` always, the drill code (``testing``) in dev only."""
+    shutil.copytree(
+        API_DIR / "src" / "staysharp",
+        Path(output_dir) / "staysharp",
+        ignore=EXCLUDE,
+        dirs_exist_ok=True,
+    )
+    if with_testing:
+        shutil.copytree(
+            API_DIR / "testing", Path(output_dir) / "testing", ignore=EXCLUDE, dirs_exist_ok=True
+        )
+
+
 @jsii.implements(ILocalBundling)
 class UvBundling:
+    def __init__(self, *, with_testing: bool) -> None:
+        self.with_testing = with_testing
+
     def try_bundle(self, output_dir: str, *, image: DockerImage, **_: object) -> bool:
         del image
         with tempfile.TemporaryDirectory() as tmp:
@@ -64,22 +81,25 @@ class UvBundling:
                 ],
                 check=True,
             )
-        shutil.copytree(
-            API_DIR / "src" / "staysharp",
-            Path(output_dir) / "staysharp",
-            ignore=EXCLUDE,
-            dirs_exist_ok=True,
-        )
+        copy_package(output_dir, with_testing=self.with_testing)
         return True
 
 
-def api_code() -> lambda_.Code:
+SOURCE_EXCLUDE = [".venv", "tests", "**/__pycache__", "dist", ".mypy_cache", ".ruff_cache"]
+
+
+def api_code(stage: str) -> lambda_.Code:
+    """One asset per stage: the hash includes the stage, so prod never reuses the dev bundle."""
+    with_testing = stage == "dev"
+    source = FileSystem.fingerprint(str(API_DIR), exclude=SOURCE_EXCLUDE)
     return lambda_.Code.from_asset(
         str(API_DIR),
-        exclude=[".venv", "tests", "**/__pycache__", "dist", ".mypy_cache", ".ruff_cache"],
+        exclude=SOURCE_EXCLUDE,
+        asset_hash_type=AssetHashType.CUSTOM,
+        asset_hash=f"{stage}-{source}",
         bundling=BundlingOptions(
             image=lambda_.Runtime.PYTHON_3_13.bundling_image,
-            local=UvBundling(),
+            local=UvBundling(with_testing=with_testing),
             command=["bash", "-c", "echo 'local bundling with uv is required' && exit 1"],
         ),
     )
