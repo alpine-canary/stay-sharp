@@ -31,7 +31,7 @@ from `.specify/memory/constitution.md`; when the two differ, the constitution wi
 1. Read the task in `specs/001-m1-web-app/tasks.md` and the documents it points to.
 2. Write the test first and see it fail; then the code.
 3. Run `make lint typecheck test` (and `make test-integration` with
-   `docker compose up -d dynamodb` when storage is touched).
+   `make ddb-start` when storage is touched; Java only, no Docker needed).
 4. Tick the task in `tasks.md` and commit: one task, one commit.
 
 ## Review checklist (worst defect first)

@@ -15,7 +15,7 @@ tasks are implemented. Contracts: [contracts/openapi.yaml](./contracts/openapi.y
 
 ```sh
 uv sync --directory api && pnpm --dir front install && uv sync --directory infra
-docker compose up -d dynamodb                                     # DynamoDB Local on :8000
+make ddb-start                                                    # DynamoDB Local on :8000 (Java; or docker compose up -d dynamodb)
 uv run --directory api python -m staysharp.tools.seed --fixtures  # samples + test fixtures only
 uv run --directory api python -m staysharp.local                  # API on :3001
 pnpm --dir front dev                                              # site on :5173, proxies /api

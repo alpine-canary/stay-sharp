@@ -1,8 +1,8 @@
 """Shared test set-up.
 
-Integration tests need DynamoDB Local (``docker compose up -d dynamodb``). Locally they are
-skipped with a clear reason when it is not running; in CI (``CI=true``) a missing DynamoDB Local
-is a failure, never a silent skip.
+Integration tests need DynamoDB Local (``make ddb-start``, or ``docker compose up -d dynamodb``
+as in CI). Locally they are skipped with a clear reason when it is not running; in CI
+(``CI=true``) a missing DynamoDB Local is a failure, never a silent skip.
 """
 
 import os
@@ -27,6 +27,6 @@ def pytest_collection_modifyitems(config: pytest.Config, items: list[pytest.Item
         return
     if os.environ.get("CI") == "true":
         raise pytest.UsageError("DynamoDB Local is not reachable on localhost:8000 in CI")
-    skip = pytest.mark.skip(reason="DynamoDB Local not running: docker compose up -d dynamodb")
+    skip = pytest.mark.skip(reason="DynamoDB Local not running: make ddb-start")
     for item in needs_db:
         item.add_marker(skip)
