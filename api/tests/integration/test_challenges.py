@@ -85,7 +85,7 @@ def test_creating_twice_returns_the_same_id(game: Game) -> None:  # noqa: F811
     assert game.player not in str(item)
     assert item["owner"]["score"] == 5
     assert item["results"] == 0
-    assert item["expiresAt"] == store.epoch_seconds(NOON + dt.timedelta(days=30))
+    assert item["expiresAt"] == store.epoch_seconds(game.now + dt.timedelta(days=30))
 
 
 def test_create_refuses_an_unfinished_play_and_a_missing_one(game: Game) -> None:  # noqa: F811
@@ -189,10 +189,12 @@ def test_a_colleague_who_already_finished_sees_both_at_once(game: Game) -> None:
 
 
 def test_a_past_date_link_plays_as_a_past_set(game: Game) -> None:  # noqa: F811
+    # The server clock follows the fixture game: move it, not a second Game.
     yesterday = TODAY - dt.timedelta(days=1)
-    owner = Game(now=NOON - dt.timedelta(days=1), day=yesterday)
-    challenge_id = owner_challenge(owner)
+    game.now, game.day = NOON - dt.timedelta(days=1), yesterday
+    challenge_id = owner_challenge(game)
 
+    game.now = NOON
     g = Game(now=NOON, player=COLLEAGUE, day=yesterday, mode="replay")
     started = g.start(challengeId=challenge_id, date=yesterday.isoformat())
     assert started["statusCode"] == 201
@@ -208,12 +210,13 @@ def test_a_past_date_link_plays_as_a_past_set(game: Game) -> None:  # noqa: F811
 def test_a_past_link_waits_for_an_unfinished_daily_of_that_day(game: Game) -> None:  # noqa: F811
     """C3 still holds: a replay must not show answers of a daily that can still be answered."""
     yesterday = TODAY - dt.timedelta(days=1)
-    owner = Game(now=NOON - dt.timedelta(days=1), day=yesterday)
-    challenge_id = owner_challenge(owner)
-    late = Game(now=NOON - dt.timedelta(days=1), player=COLLEAGUE, day=yesterday)
+    game.now, game.day = NOON - dt.timedelta(days=1), yesterday
+    challenge_id = owner_challenge(game)
+    late = Game(player=COLLEAGUE, day=yesterday)
     late.start()
     late.open(0)
 
+    game.now = NOON
     g = Game(now=NOON, player=COLLEAGUE, day=yesterday, mode="replay")
     refused = g.start(challengeId=challenge_id, date=yesterday.isoformat())
     assert refused["statusCode"] == 409

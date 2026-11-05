@@ -22,7 +22,7 @@ from pydantic import ValidationError
 
 from staysharp import config
 from staysharp.domain.models import parse_player_id
-from staysharp.handlers import routes_plays, routes_today
+from staysharp.handlers import routes_challenges, routes_plays, routes_today
 from staysharp.handlers.http import ApiError, error_response
 from staysharp.obs import bind_player, bind_request, logger, metrics
 
@@ -34,6 +34,7 @@ NO_STORE = "no-store"
 app = APIGatewayHttpResolver(strip_prefixes=[PREFIX])
 app.include_router(routes_today.router)
 app.include_router(routes_plays.router)
+app.include_router(routes_challenges.router)
 
 
 def _route_path() -> str:

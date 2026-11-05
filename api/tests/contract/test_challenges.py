@@ -20,7 +20,9 @@ COLLEAGUE = "2b7e1516-28ae-4d2a-a6d2-abf7158809cf"
 
 def test_create_view_play_and_compare(game: Game, checked: Checked) -> None:  # noqa: F811
     game.play_all()
-    created = checked("POST", "/api/v1/challenges", body={"playId": game.play_id}, player=game.player)
+    created = checked(
+        "POST", "/api/v1/challenges", body={"playId": game.play_id}, player=game.player
+    )
     assert created["statusCode"] == 200
     challenge_id = body(created)["challengeId"]
     path = f"/api/v1/challenges/{challenge_id}"
@@ -45,7 +47,9 @@ def test_create_view_play_and_compare(game: Game, checked: Checked) -> None:  # 
 
 
 def test_refusals(game: Game, checked: Checked) -> None:  # noqa: F811
-    missing = checked("POST", "/api/v1/challenges", body={"playId": game.play_id}, player=game.player)
+    missing = checked(
+        "POST", "/api/v1/challenges", body={"playId": game.play_id}, player=game.player
+    )
     assert missing["statusCode"] == 404
     game.start()
     unfinished = checked(

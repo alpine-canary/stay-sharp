@@ -31,6 +31,7 @@ from staysharp.domain.models import (
     code_line_count,
 )
 from staysharp.domain.views import question_view
+from staysharp.handlers import routes_challenges
 from staysharp.handlers.http import ApiError, json_response
 from staysharp.obs import bind_question, logger
 from staysharp.store import answers, plays, questions, table
@@ -163,19 +164,32 @@ def _scoring_failure(reason: str) -> ApiError:
     )
 
 
+def _check_challenge(
+    challenge_id: str, level: str, mode: str, day: dt.date, today: dt.date
+) -> None:
+    """A challenge play is the challenge's set: same date and level; today's set is played as
+    the daily, a past one as a replay that does not count for the streak (Story 4, 3)."""
+    challenge = routes_challenges.load(challenge_id)
+    expected_mode = "daily" if challenge.date == today else "replay"
+    if (challenge.date, challenge.level, expected_mode) != (day, level, mode):
+        raise ApiError(
+            HTTPStatus.BAD_REQUEST, "invalid_request", "This play does not match the challenge."
+        )
+
+
 # --- Routes ----------------------------------------------------------------------------------
 
 
 @router.post("/plays")
 def start_play() -> Response[str]:
     request = StartPlayRequest.model_validate_json(_body())
-    if request.challenge_id is not None:
-        # Challenge plays arrive with Story 4 (T090 onward).
-        raise ApiError(HTTPStatus.BAD_REQUEST, "invalid_request", "Challenges are not open yet.")
     now = clock.now()
     today = calendar.zurich_today(now)
     day = request.date or today
-    if not calendar.start_date_allowed(request.mode, day, today, challenge=False):
+    challenge = request.challenge_id is not None
+    if request.challenge_id is not None:
+        _check_challenge(request.challenge_id, request.level, request.mode, day, today)
+    if not calendar.start_date_allowed(request.mode, day, today, challenge=challenge):
         raise ApiError(HTTPStatus.BAD_REQUEST, "invalid_request", "This date cannot be played.")
 
     daily = questions.daily_set(day, request.level)
@@ -192,6 +206,7 @@ def start_play() -> Response[str]:
             relaxed=request.relaxed,
             lock_replay=calendar.play_date_allowed("daily", day, today, challenge=False),
             now=now,
+            challenge_id=request.challenge_id,
         )
     except plays.ReplayLocked as error:
         raise ApiError(
@@ -202,7 +217,7 @@ def start_play() -> Response[str]:
 
     question = None
     if play.next_index is not None and calendar.play_date_allowed(
-        ref.mode, day, today, challenge=False
+        ref.mode, day, today, challenge=play.challenge_id is not None
     ):
         question = _view(play, daily, play.next_index, now)
     status = HTTPStatus.CREATED if created else HTTPStatus.OK
@@ -277,6 +292,8 @@ def answer(play_id: str, index: str) -> Response[str]:
     metrics.emit("AnswersGraded")
     if graded.suspiciously_fast:
         metrics.emit("SuspiciouslyFast", dimension=("Deck", served.deck))
+    if graded.challenge_recorded:
+        metrics.emit("ChallengesFinished")
     if graded.finished_play:
         metrics.emit("PlaysFinished")
         duration = int((now - play.started_at).total_seconds() * 1000)
