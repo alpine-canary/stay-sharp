@@ -20,6 +20,7 @@ import { Challenge } from "./views/Challenge";
 import { Home } from "./views/Home";
 import { Play } from "./views/Play";
 import { Practice } from "./views/Practice";
+import { Privacy } from "./views/Privacy";
 import { Result } from "./views/Result";
 
 export interface AppProps {
@@ -145,8 +146,11 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
           ) : (
             <ChooseLevelFirst />
           ))}
-        {route.view === "privacy" && <ComingSoon />}
+        {route.view === "privacy" && <Privacy />}
       </main>
+      <footer className="site-foot">
+        <Link href="/privacy">Privacy</Link>
+      </footer>
     </div>
   );
 }
@@ -183,17 +187,6 @@ function NotFound() {
   return (
     <section className="card">
       <h1 className="text-2xl">Page not found</h1>
-      <p>
-        <Link href="/">Go to today's set</Link>
-      </p>
-    </section>
-  );
-}
-
-function ComingSoon() {
-  return (
-    <section className="card">
-      <h1 className="text-2xl">Coming soon</h1>
       <p>
         <Link href="/">Go to today's set</Link>
       </p>
