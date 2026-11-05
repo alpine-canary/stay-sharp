@@ -270,6 +270,27 @@ class ResultSnapshot(Strict):
     relaxed: bool
 
 
+class ChallengeCreated(Strict):
+    challenge_id: ChallengeId
+    path: Annotated[str, StringConstraints(pattern=r"^/c/[A-Z2-7]{12}$")]
+
+
+ChallengeViewer = Literal["owner", "colleague_before", "colleague_after"]
+
+
+class ChallengeView(Strict):
+    challenge_id: ChallengeId
+    date: dt.date
+    level: Level
+    game_number: int
+    viewer: ChallengeViewer
+    owner_score: float
+    owner: ResultSnapshot | None = None
+    you: ResultSnapshot | None = None
+    colleagues: Annotated[list[ResultSnapshot], Field(max_length=50)] | None = None
+    others: int
+
+
 class LevelReady(Strict):
     level: Level
     ready: bool

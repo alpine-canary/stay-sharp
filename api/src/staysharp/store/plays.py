@@ -62,6 +62,8 @@ class Play:
     bonus: Decimal = Decimal(0)
     elapsed_ms: int = 0
     challenge_id: str | None = None
+    # The challenge this play created (store/challenges.py), not the one it was started from.
+    created_challenge_id: str | None = None
 
     @property
     def play_id(self) -> str:
@@ -107,6 +109,7 @@ def from_item(item: dict[str, Any]) -> Play:
             bonus=_number(item, "bonus"),
             elapsed_ms=int(_number(item, "elapsedMs")),
             challenge_id=item.get("challengeId"),
+            created_challenge_id=item.get("createdChallengeId"),
         )
     except (KeyError, TypeError, ValueError) as error:
         raise table.StoreError("play item is malformed") from error
@@ -127,19 +130,23 @@ def start(
     relaxed: bool,
     lock_replay: bool,
     now: dt.datetime,
+    challenge_id: str | None = None,
 ) -> tuple[Play, bool]:
     """Create the play, or return the existing one. ``True`` when created.
 
     ``lock_replay`` is set by the caller while the daily of that date can still be answered: a
     replay then needs the daily play to be finished first (C3), so a replay can never be used
-    to read answers before playing.
+    to read answers before playing. A challenge replay of a past day is locked only while that
+    day's daily play exists unfinished: with no daily play, that day can no longer be started.
     """
     existing = get(player_id, ref, now)
     if existing is not None:
         return existing, False
     if ref.mode == "replay" and lock_replay:
         daily = get(player_id, PlayRef(ref.date, ref.level, "daily"), now)
-        if daily is None or not daily.finished:
+        if daily is None and challenge_id is None:
+            raise ReplayLocked(ref.play_id)
+        if daily is not None and not daily.finished:
             raise ReplayLocked(ref.play_id)
 
     item: dict[str, Any] = {
@@ -157,6 +164,8 @@ def start(
     }
     if relaxed:
         item["relaxedFrom"] = 0
+    if challenge_id is not None:
+        item["challengeId"] = challenge_id
     key = table.play_key(player_id, ref.play_id)
     try:
         aws.dynamodb().put_item(
