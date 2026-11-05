@@ -120,12 +120,16 @@ jobs:
       - name: Lighthouse CI against dev
         env:
           LHCI_URL: ${{ steps.dev.outputs.url }}
+        # Every page, mobile then desktop (FR-034). The deployed site replaces the local preview.
         run: |
-          if [ -f front/lighthouserc.json ]; then
-            pnpm --dir front exec lhci autorun --collect.url="$LHCI_URL/" --upload.target=filesystem --upload.outputDir=/tmp/lhci
-          else
-            echo "front/lighthouserc.json arrives with the Lighthouse budget task; skipped"
-          fi
+          urls=()
+          for path in / /play /practice /privacy; do urls+=("--collect.url=$LHCI_URL$path"); done
+          for preset in mobile desktop; do
+            extra=()
+            if [ "$preset" = desktop ]; then extra+=("--collect.settings.preset=desktop"); fi
+            pnpm --dir front exec lhci autorun "${urls[@]}" "${extra[@]}" --collect.startServerCommand= \
+              --upload.target=filesystem --upload.outputDir="/tmp/lhci-$preset"
+          done
 
   prod:
     name: prod (approval, gate, canary, site)

@@ -290,7 +290,7 @@ returns within the next 5 (V14 for the server side).
 ## Phase 10: Polish and cross-cutting concerns
 
 - [X] T113 [P] Implement `front/src/views/Privacy.tsx`: what is stored, where (Switzerland or EU), that clearing the browser removes local progress, in words a 12-year-old can follow (FR-035, FR-036)
-- [ ] T114 [P] Lighthouse CI config `front/lighthouserc.json` asserting 1.0 in all four categories on mobile and desktop presets for every page, and `front/tests/e2e/a11y.spec.ts` with axe (WCAG 2.2 AA, no violations) on every view, including relaxed reachable before and during a play (FR-033, FR-034, SC-006, V10)
+- [X] T114 [P] Lighthouse CI config `front/lighthouserc.json` asserting 1.0 in all four categories on mobile and desktop presets for every page, and `front/tests/e2e/a11y.spec.ts` with axe (WCAG 2.2 AA, no violations) on every view, including relaxed reachable before and during a play (FR-033, FR-034, SC-006, V10)
 - [ ] T115 [P] Playwright performance test `front/tests/e2e/perf.spec.ts` (Moto G Power profile, Slow 4G, cold Lambda included): first question interactive under 2 s on dev (SC-007, V17)
 - [X] T116 [P] Add WAF to `infra/stacks/edge_stack.py`: rate rule 1,000 requests per 5 minutes per IP on `/api/*` with the JSON 429 body of R9, body size rule over 2 KB, AWS managed common rule set, logging off; on the plan chosen in T015
 - [ ] T117 [P] Implement `api/src/staysharp/tools/return_rate.py`: monthly read-only count of players with finished plays on two or more dates, and challenge links that led to a finished game; prints aggregate numbers only (SC-010)

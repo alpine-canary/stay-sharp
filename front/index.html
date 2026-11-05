@@ -11,6 +11,7 @@
     <!-- Start GET /today while the script loads, so the home view needs no extra round trip
          (SC-007, W7). The client reads /today with the same request mode, so the browser can
          reuse this response. -->
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="preload" href="/api/v1/today" as="fetch" crossorigin="anonymous" />
   </head>
   <body>
