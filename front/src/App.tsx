@@ -1,18 +1,22 @@
-// Front-end shell (task T049): one place that owns local progress, the API client and the view
-// for the current path. Real views (Play, Result, Home details) arrive with Story 1.
+// Front-end shell: one place that owns local progress, the API client and the view for the
+// current path (tasks T049, T068 to T070).
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ApiError, createClient, type ApiClient, type Today } from "./api/client";
-import { useRoute } from "./router";
+import { useCallback, useMemo, useState } from "react";
+import { createClient, type ApiClient, type PlayState } from "./api/client";
+import { Link } from "./components/Link";
+import { navigate, useRoute } from "./router";
 import { createStore, type Level, type Notice, type Progress, type ProgressStore } from "./storage";
-
-const LEVEL_LABELS: Record<Level, string> = { senior: "Senior", starter: "Starter (12+)" };
-
-type TodayState = { status: "loading" } | { status: "ready"; today: Today } | { status: "down"; message: string };
+import { Home } from "./views/Home";
+import { Play } from "./views/Play";
+import { Result } from "./views/Result";
 
 export interface AppProps {
   store?: ProgressStore;
   client?: ApiClient;
+}
+
+function search(name: string): string | null {
+  return new URLSearchParams(window.location.search).get(name);
 }
 
 export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
@@ -27,25 +31,72 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
   const route = useRoute();
 
   const update = useCallback(
-    (next: Progress) => {
-      store.save(next);
-      setProgress(next);
+    (change: (p: Progress) => Progress) => {
+      setProgress((current) => {
+        const next = change(current);
+        store.save(next);
+        return next;
+      });
     },
     [store],
   );
 
+  const finished = useCallback(
+    (play: PlayState) => {
+      if (play.mode === "daily" && play.finished) {
+        update((p) => ({
+          ...p,
+          days: {
+            ...p.days,
+            [play.level]: {
+              ...p.days[play.level],
+              [play.date]: { score: play.score, bonus: play.bonus, relaxed: play.relaxed },
+            },
+          },
+        }));
+      }
+      navigate(`/result?play=${play.playId}`);
+      window.scrollTo(0, 0);
+    },
+    [update],
+  );
+
+  const mode = search("mode") === "replay" ? "replay" : "daily";
+
   return (
-    <div className="mx-auto max-w-xl px-4 py-8">
-      <header>
-        <p className="text-2xl font-semibold">
-          <a href="/">Stay Sharp</a>
-        </p>
+    <div className="wrap">
+      <header className="top">
+        <Link href="/" className="mark" aria-label="Stay Sharp, home">
+          <i aria-hidden="true" />
+          Stay Sharp
+        </Link>
       </header>
       {notice && <StorageNotice notice={notice} onDismiss={() => setNotice(null)} />}
-      <main id="main" className="mt-6">
-        {route.view === "home" && <Home client={client} progress={progress} onLevel={(level) => update({ ...progress, level })} />}
+      <main id="main" className="grid gap-5">
+        {route.view === "home" && (
+          <Home
+            client={client}
+            progress={progress}
+            onLevel={(level: Level) => update((p) => ({ ...p, level }))}
+            onRelaxed={(relaxed) => update((p) => ({ ...p, relaxed }))}
+          />
+        )}
+        {route.view === "play" &&
+          (progress.level ? (
+            <Play
+              key={`${progress.level}-${mode}`}
+              client={client}
+              level={progress.level}
+              mode={mode}
+              relaxed={progress.relaxed}
+              onFinished={finished}
+            />
+          ) : (
+            <ChooseLevelFirst />
+          ))}
+        {route.view === "result" && <Result key={search("play")} client={client} playId={search("play")} />}
         {route.view === "not-found" && <NotFound />}
-        {route.view !== "home" && route.view !== "not-found" && <ComingSoon />}
+        {(route.view === "practice" || route.view === "privacy" || route.view === "challenge") && <ComingSoon />}
       </main>
     </div>
   );
@@ -57,87 +108,46 @@ function StorageNotice({ notice, onDismiss }: { notice: Exclude<Notice, null>; o
       ? "Your saved progress on this browser could not be read, so it was reset."
       : "This browser does not let the site save your progress, so it will be lost when you close the page.";
   return (
-    <div role="status" className="mt-4 rounded border border-amber-700 p-3">
+    <div role="status" className="notice">
       <p>{text}</p>
-      <button type="button" className="mt-2 underline" onClick={onDismiss}>
-        OK
-      </button>
+      <div>
+        <button type="button" className="link-btn" onClick={onDismiss}>
+          OK
+        </button>
+      </div>
     </div>
   );
 }
 
-function Home({ client, progress, onLevel }: { client: ApiClient; progress: Progress; onLevel: (level: Level) => void }) {
-  const [today, setToday] = useState<TodayState>({ status: "loading" });
-  const [attempt, setAttempt] = useState(0);
-
-  useEffect(() => {
-    let current = true;
-    client
-      .today()
-      .then((value) => {
-        if (current) setToday({ status: "ready", today: value });
-      })
-      .catch((error: unknown) => {
-        const message =
-          error instanceof ApiError && !error.serviceDown ? error.message : "The game is not reachable right now.";
-        if (current) setToday({ status: "down", message });
-      });
-    return () => {
-      current = false;
-    };
-  }, [client, attempt]);
-
-  const retry = () => {
-    setToday({ status: "loading" });
-    setAttempt((n) => n + 1);
-  };
-
+function ChooseLevelFirst() {
   return (
-    <>
-      <h1 className="text-xl font-semibold">
-        {today.status === "ready" ? `Today's set #${today.today.gameNumber}` : "Today's set"}
-      </h1>
-      {today.status === "loading" && <p aria-live="polite">Loading today's set...</p>}
-      {today.status === "down" && (
-        <div role="alert" className="mt-2">
-          <p>{today.message}</p>
-          <button type="button" className="mt-2 underline" onClick={retry}>
-            Try again
-          </button>
-        </div>
-      )}
-      <fieldset className="mt-6">
-        <legend className="font-semibold">Level</legend>
-        {(Object.keys(LEVEL_LABELS) as Level[]).map((level) => (
-          <label key={level} className="mt-2 flex items-center gap-2">
-            <input
-              type="radio"
-              name="level"
-              value={level}
-              checked={progress.level === level}
-              onChange={() => onLevel(level)}
-            />
-            {LEVEL_LABELS[level]}
-          </label>
-        ))}
-      </fieldset>
-    </>
+    <section className="card">
+      <h1 className="text-2xl">Choose a level first</h1>
+      <p>
+        <Link href="/">Go to today's set</Link> and pick Senior or Starter.
+      </p>
+    </section>
   );
 }
 
 function NotFound() {
   return (
-    <>
-      <h1 className="text-xl font-semibold">Page not found</h1>
-      <p className="mt-2">
-        <a href="/" className="underline">
-          Go to today's set
-        </a>
+    <section className="card">
+      <h1 className="text-2xl">Page not found</h1>
+      <p>
+        <Link href="/">Go to today's set</Link>
       </p>
-    </>
+    </section>
   );
 }
 
 function ComingSoon() {
-  return <h1 className="text-xl font-semibold">Coming soon</h1>;
+  return (
+    <section className="card">
+      <h1 className="text-2xl">Coming soon</h1>
+      <p>
+        <Link href="/">Go to today's set</Link>
+      </p>
+    </section>
+  );
 }
