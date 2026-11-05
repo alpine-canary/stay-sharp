@@ -12,11 +12,12 @@ STAGES = ("dev", "prod")
 
 
 def our_functions(template: TemplateOf, stage: str) -> dict[str, dict[str, object]]:
+    """The API function only (not the pre-traffic hook, not CDK helper functions)."""
     functions = resources(template(f"staysharp-{stage}-api"), "AWS::Lambda::Function")
     return {
         k: v
         for k, v in functions.items()
-        if str(v["Properties"].get("FunctionName", "")).startswith("staysharp-")
+        if v["Properties"].get("FunctionName") == f"staysharp-{stage}-api"
     }
 
 

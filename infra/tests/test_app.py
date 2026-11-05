@@ -5,8 +5,13 @@ from app import STAGES
 EXPECTED = {
     "staysharp-account",
     "staysharp-edge",
-    *(f"staysharp-{stage}-{part}" for stage in STAGES for part in ("ops", "data", "api", "web")),
+    *(
+        f"staysharp-{stage}-{part}"
+        for stage in STAGES
+        for part in ("ops", "data", "api", "web", "cdn-alarms")
+    ),
 }
+US_EAST_1 = {"staysharp-edge", *(f"staysharp-{stage}-cdn-alarms" for stage in STAGES)}
 
 
 def test_stages_are_dev_and_prod() -> None:
@@ -19,7 +24,7 @@ def test_app_synthesises_every_stack_without_credentials(assembly: cx_api.CloudA
 
 def test_regions(assembly: cx_api.CloudAssembly) -> None:
     for stack in assembly.stacks:
-        expected = "us-east-1" if stack.stack_name == "staysharp-edge" else "eu-central-2"
+        expected = "us-east-1" if stack.stack_name in US_EAST_1 else "eu-central-2"
         assert stack.environment.region == expected
 
 

@@ -171,7 +171,7 @@ human action (V9).
 
 - [X] T072 [P] [US6] Unit tests in `api/tests/unit/test_selfcheck.py`: the self-check grades the bundled fixtures, checks the view allowlist and the R2 classification table with a stubbed DynamoDB client, touches no table, and returns failure when any check fails
 - [X] T073 [P] [US6] Unit tests in `api/tests/unit/test_pre_traffic_check.py`: invokes only the qualified ARN from its environment, reports `Succeeded` or `Failed` to CodeDeploy, reports `Failed` on timeout or an unreadable response, never swallows an error
-- [ ] T074 [P] [US6] CDK assertion tests in `infra/tests/test_delivery.py`: deployment config `LambdaCanary10Percent5Minutes` in prod and `AllAtOnce` in dev; rollback alarms with the R10 dimensions (`Resource=<fn>:live`, `ExecutedVersion`, `FunctionVersion`), period 60 s, 1 of 1, `notBreaching`; paging alarm not attached to CodeDeploy; prod asset contains no fault-injection file; pre-traffic role can invoke only the new version (V11)
+- [X] T074 [P] [US6] CDK assertion tests in `infra/tests/test_delivery.py`: deployment config `LambdaCanary10Percent5Minutes` in prod and `AllAtOnce` in dev; rollback alarms with the R10 dimensions (`Resource=<fn>:live`, `ExecutedVersion`, `FunctionVersion`), period 60 s, 1 of 1, `notBreaching`; paging alarm not attached to CodeDeploy; prod asset contains no fault-injection file; pre-traffic role can invoke only the new version (V11)
 
 ### Implementation for User Story 6
 
