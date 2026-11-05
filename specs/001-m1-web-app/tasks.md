@@ -152,7 +152,7 @@ browser before an answer contains the correct id, explanation or source (V1, V2,
 - [X] T068 [US1] Implement `front/src/views/Play.tsx`: open, answer, feedback (right, half right, wrong; correct answer; explanation; source date and link for `news`), next; relaxed switch reachable before and during a play with a one-way confirmation; resume at the first unanswered question; retry on network failure without double counting
 - [X] T069 [US1] Implement `front/src/views/Result.tsx`: squares, score out of 5, speed bonus or "relaxed", time taken; replay entry marked "not scored"
 - [X] T070 [US1] Implement `front/src/views/Home.tsx`: level choice, today's game number from `/today`, play or see today's result, "Today's set is not ready yet" state, service-down state with retry
-- [ ] T071 [US1] Wire play routes into `infra/stacks/api_stack.py` and check in dev with fixtures: `uv run --directory api pytest tests/integration` and `pnpm --dir front test:e2e --grep "daily|leak|midnight"` against dev
+- [X] T071 [US1] Wire play routes into `infra/stacks/api_stack.py` and check in dev with fixtures: `uv run --directory api pytest tests/integration` and `pnpm --dir front test:e2e --grep "daily|leak|midnight"` against dev
 
 **Checkpoint**: US1 works end to end in dev with fixture content; V1, V2 (API and E2E parts), V3, V4, V13, V15 and V16 pass.
 

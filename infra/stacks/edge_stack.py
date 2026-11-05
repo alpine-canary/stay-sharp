@@ -1,8 +1,8 @@
 """Account-wide resources that must live in us-east-1 (tasks T017 and T018, R11, R14).
 
-- The ACM certificate for the public site name, validated by DNS. The lumineth.com zone is outside this account: on
-  the first deploy the stack waits until the maintainer adds the validation CNAME shown in the
-  ACM console (docs/runbooks/account-setup.md, step 4).
+- The ACM certificate for the public site name, validated by DNS. The lumineth.com zone is
+  outside this account: on the first deploy the stack waits until the maintainer adds the
+  validation CNAME shown in the ACM console (docs/runbooks/account-setup.md, step 4).
 - The AWS Budget of USD 20 a month, with an e-mail through SNS when actual cost passes USD 20 or
   the forecast passes USD 16 (FR-031). ``AWS::Budgets::Budget`` is not available in eu-central-2.
 - The WAF web ACL (R9) joins this stack later.
