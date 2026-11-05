@@ -1,9 +1,10 @@
-// Home (task T070): level choice, today's game number from /today, play or see today's result,
-// "not ready yet" and service-down states with a retry.
+// Home (tasks T070, T098): level choice, today's game number from /today, play or see today's
+// result, "not ready yet" and service-down states with a retry, then the progress card.
 
 import { useEffect, useState } from "react";
 import { ApiError, type ApiClient, type Today } from "../api/client";
 import { Link } from "../components/Link";
+import { ProgressCard, zurichToday } from "../components/ProgressCard";
 import { DECK_ORDER, deckName } from "../decks";
 import type { Level, Progress } from "../storage";
 
@@ -131,7 +132,8 @@ export function Home({ client, progress, onLevel, onRelaxed }: HomeProps) {
           Relaxed mode: no timer, no speed bonus
         </label>
       </section>
-      <p className="foot">No account. Your progress is saved in this browser only.</p>
+      {level && <ProgressCard progress={progress} level={level} today={date ?? zurichToday()} />}
+      <p className="foot">{level ? "No account." : "No account. Your progress is saved in this browser only."}</p>
     </>
   );
 }

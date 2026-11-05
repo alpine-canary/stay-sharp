@@ -613,3 +613,76 @@ a {
     transform: none;
   }
 }
+
+/* Progress card (task T098): three figures, then the skill view. */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.stats > div {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+}
+
+.stats dt {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.stats dd {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.stats .big {
+  font: 800 32px/1 var(--display);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+
+.skills {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  border-top: 1px solid var(--line);
+}
+
+.skills li {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 6px 12px;
+  align-items: baseline;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.skills .figure {
+  font-variant-numeric: tabular-nums;
+  font-size: 14px;
+}
+
+.skills .muted {
+  color: var(--muted);
+}
+
+.skills .bar {
+  grid-column: 1 / -1;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--line);
+  overflow: hidden;
+}
+
+.skills .bar i {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--accent);
+}
