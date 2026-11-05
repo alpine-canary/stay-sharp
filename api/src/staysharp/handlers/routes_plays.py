@@ -124,7 +124,7 @@ def _state(play: Play, question: QuestionView | None = None) -> PlayState:
     )
 
 
-def _result(question: Question, served: answers.Served, *, duplicate: bool) -> AnswerResult:
+def result_of(question: Question, served: answers.Served, *, duplicate: bool) -> AnswerResult:
     if served.grade is None or served.bonus is None or served.elapsed_ms is None:
         raise table.StoreError("graded answer is missing its grade")
     return AnswerResult(
@@ -140,7 +140,7 @@ def _result(question: Question, served: answers.Served, *, duplicate: bool) -> A
     )
 
 
-def _check_submission(question: Question, request: AnswerRequest) -> grading.Submission:
+def check_submission(question: Question, request: AnswerRequest) -> grading.Submission:
     if request.choice_id not in {choice.id for choice in question.choices}:
         raise ApiError(HTTPStatus.BAD_REQUEST, "invalid_request", "Unknown choice.")
     if question.deck in LINE_DECKS:
@@ -153,7 +153,7 @@ def _check_submission(question: Question, request: AnswerRequest) -> grading.Sub
     return grading.Submission(request.choice_id, request.line)
 
 
-def _scoring_failure(reason: str) -> ApiError:
+def scoring_failure(reason: str) -> ApiError:
     version = getattr(router.lambda_context, "function_version", "$LATEST")
     metrics.emit("ScoringFailures", dimension=("FunctionVersion", str(version)))
     logger.error("scoring failure", extra={"reason": reason})
@@ -260,7 +260,7 @@ def answer(play_id: str, index: str) -> Response[str]:
         raise ApiError(HTTPStatus.BAD_REQUEST, "invalid_request", "Open the question first.")
     bind_question(served.qid)
     question = questions.question(served.qid, served.version)
-    submission = _check_submission(question, request)
+    submission = check_submission(question, request)
     key = grading.AnswerKey(question.answer_choice_id, frozenset(question.answer_lines))
 
     try:
@@ -270,12 +270,12 @@ def answer(play_id: str, index: str) -> Response[str]:
             HTTPStatus.BAD_REQUEST, "invalid_request", "Open the question first."
         ) from error
     except answers.ScoringFailure as error:
-        raise _scoring_failure("retries exhausted") from error
+        raise scoring_failure("retries exhausted") from error
     except (table.StoreError, ClientError, BotoCoreError) as error:
-        raise _scoring_failure(type(error).__name__) from error
+        raise scoring_failure(type(error).__name__) from error
 
     if graded.outcome is Outcome.CONFLICT:
-        recorded = _result(question, graded.served, duplicate=False)
+        recorded = result_of(question, graded.served, duplicate=False)
         body: dict[str, Any] = {
             "code": "conflict",
             "recorded": recorded.model_dump(mode="json", by_alias=True, exclude_none=True),
@@ -287,7 +287,7 @@ def answer(play_id: str, index: str) -> Response[str]:
         )
     if graded.outcome is Outcome.DUPLICATE:
         metrics.emit("DuplicateAnswers")
-        return json_response(_result(question, graded.served, duplicate=True))
+        return json_response(result_of(question, graded.served, duplicate=True))
 
     metrics.emit("AnswersGraded")
     if graded.suspiciously_fast:
@@ -298,4 +298,4 @@ def answer(play_id: str, index: str) -> Response[str]:
         metrics.emit("PlaysFinished")
         duration = int((now - play.started_at).total_seconds() * 1000)
         metrics.emit("PlayDurationMs", max(0, duration))
-    return json_response(_result(question, graded.served, duplicate=False))
+    return json_response(result_of(question, graded.served, duplicate=False))

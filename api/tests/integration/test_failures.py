@@ -123,6 +123,6 @@ def test_gives_up_with_503_and_writes_nothing(
 
 
 def test_backoff_has_jitter_and_a_cap() -> None:
-    delays = {answers._backoff(2) for _ in range(50)}  # noqa: SLF001
+    delays = {answers.backoff(2) for _ in range(50)}
     assert len(delays) > 1
     assert all(0 <= d <= answers.MAX_DELAY_S for d in delays)

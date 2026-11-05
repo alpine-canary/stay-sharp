@@ -88,7 +88,11 @@ def test_prefer_never_reaches_today_or_the_future(game: Game, when: int) -> None
 
 
 def test_prefer_never_reaches_an_unknown_or_other_level_question(game: Game) -> None:  # noqa: F811
-    starter = sorted(past_pool("starter", "logic"))[0]
+    daily = questions.daily_set(TODAY, "starter")
+    assert not isinstance(daily, questions.NotReady)
+    starter = daily.items[0].qid
+    add_pool("starter", "logic", TODAY - dt.timedelta(days=3), starter)
+    assert starter in past_pool("starter", "logic")
     for prefer in (["no_such_question"], [starter]):
         got = body(next_question(prefer=prefer))
         assert got["qid"] not in prefer

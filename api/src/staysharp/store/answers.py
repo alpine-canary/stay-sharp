@@ -87,7 +87,7 @@ class Graded:
     challenge_recorded: bool = False
 
 
-def _served(index: int, item: Mapping[str, Any]) -> Served:
+def served_from(index: int, item: Mapping[str, Any]) -> Served:
     try:
         grade = item.get("grade")
         bonus = item.get("bonus")
@@ -158,18 +158,18 @@ def open_question(player_id: str, play: Play, daily_item: DailyItem, now: dt.dat
             ConditionExpression="expiresAt <> :exp",
             ExpressionAttributeValues={":exp": {"N": str(play.expires_at)}},
         )
-        return _served(daily_item.index, fresh)
+        return served_from(daily_item.index, fresh)
     attributes = response.get("Attributes")
     if not attributes:
         raise table.StoreError("open returned no item")
-    return _served(daily_item.index, table.deserialize(attributes))
+    return served_from(daily_item.index, table.deserialize(attributes))
 
 
 def read(player_id: str, play: Play, index: int) -> Served | None:
     item = table.get(table.answer_key(player_id, play.play_id, index), consistent=True)
     if item is None or item.get("expiresAt") != play.expires_at:
         return None
-    return _served(index, item)
+    return served_from(index, item)
 
 
 def _same(served: Served, submission: Submission) -> bool:
@@ -240,7 +240,7 @@ def _final_snapshot(
     )
 
 
-def _reasons(error: ClientError) -> list[Reason]:
+def cancellation_reasons(error: ClientError) -> list[Reason]:
     raw = error.response.get("CancellationReasons")
     if not isinstance(raw, list):
         return []
@@ -252,7 +252,7 @@ def _reasons(error: ClientError) -> list[Reason]:
     return reasons
 
 
-def _backoff(attempt: int) -> float:
+def backoff(attempt: int) -> float:
     """Full jitter: a random delay up to an exponentially growing cap."""
     return random.uniform(0, min(MAX_DELAY_S, BASE_DELAY_S * 2**attempt))  # noqa: S311
 
@@ -296,14 +296,14 @@ def answer(
     last: Exception | None = None
     for attempt in range(ATTEMPTS):
         if attempt:
-            sleep(_backoff(attempt))
+            sleep(backoff(attempt))
         try:
             client.transact_write_items(TransactItems=items)
         except ClientError as error:
             last = error
             if error.response.get("Error", {}).get("Code") != "TransactionCanceledException":
                 continue
-            reasons = _reasons(error)
+            reasons = cancellation_reasons(error)
             outcome = cancellation.classify(reasons, submission)
             if outcome is Outcome.CHALLENGE_FULL and len(items) > cancellation.CHALLENGE_FROM:
                 # Not a failure: grade the answer without the challenge items, at once.
@@ -321,7 +321,7 @@ def answer(
             stored = reasons[cancellation.ANSWER_POSITION].item
             if stored is None or outcome not in (Outcome.DUPLICATE, Outcome.CONFLICT):
                 raise ScoringFailure(f"unexpected outcome {outcome}") from error
-            return Graded(_served(served.index, stored), outcome)
+            return Graded(served_from(served.index, stored), outcome)
         except BotoCoreError as error:
             last = error
             continue
