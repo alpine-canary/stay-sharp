@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { ApiError, type ApiClient, type PlayState } from "../api/client";
+import { ChallengeLink } from "../components/ChallengeLink";
 import { Link } from "../components/Link";
 import { ShareCard } from "../components/ShareCard";
 import { Squares } from "../components/Squares";
@@ -127,6 +128,7 @@ export function Result({ client, playId, progress }: ResultProps) {
           address={window.location.host}
         />
       )}
+      {play.finished && !replay && <ChallengeLink client={client} playId={play.playId} />}
       <div className="row">
         {!play.finished && (
           <Link href={replay ? "/play?mode=replay" : "/play"} className="btn">

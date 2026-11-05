@@ -43,31 +43,37 @@ export function shareText(input: ShareInput): string {
   ].join("\n");
 }
 
-type Status = null | "copied" | "manual";
+export type CopyStatus = null | "copied" | "manual";
+
+/** Copy to the clipboard; when that is not possible, select the element's text instead
+ * (Story 3, scenario 3) and say so. */
+export async function copyOrSelect(text: string, element: HTMLElement | null): Promise<CopyStatus> {
+  const clipboard = typeof navigator === "undefined" ? undefined : navigator.clipboard;
+  if (clipboard?.writeText) {
+    try {
+      await clipboard.writeText(text);
+      return "copied";
+    } catch {
+      // Refused (no permission, not a secure page): fall through to selecting by hand.
+    }
+  }
+  const selection = window.getSelection();
+  if (element && selection) {
+    selection.removeAllRanges();
+    selection.selectAllChildren(element);
+  }
+  return "manual";
+}
+
+export const MANUAL_COPY = "This browser could not copy it. The text is selected: copy it with your keyboard or a long press.";
 
 export function ShareCard(props: ShareInput) {
   const text = shareText(props);
   const box = useRef<HTMLPreElement>(null);
-  const [status, setStatus] = useState<Status>(null);
-
-  function selectByHand() {
-    const selection = window.getSelection();
-    if (box.current && selection) {
-      selection.removeAllRanges();
-      selection.selectAllChildren(box.current);
-    }
-    setStatus("manual");
-  }
+  const [status, setStatus] = useState<CopyStatus>(null);
 
   async function copy() {
-    const clipboard = typeof navigator === "undefined" ? undefined : navigator.clipboard;
-    if (!clipboard?.writeText) return selectByHand();
-    try {
-      await clipboard.writeText(text);
-      setStatus("copied");
-    } catch {
-      selectByHand();
-    }
+    setStatus(await copyOrSelect(text, box.current));
   }
 
   return (
@@ -95,8 +101,7 @@ export function ShareCard(props: ShareInput) {
       </div>
       <p role="status" className="hint">
         {status === "copied" && "Copied. Paste it wherever you like."}
-        {status === "manual" &&
-          "This browser could not copy it. The text is selected: copy it with your keyboard or a long press."}
+        {status === "manual" && MANUAL_COPY}
       </p>
     </section>
   );

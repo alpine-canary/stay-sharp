@@ -16,6 +16,9 @@ type Json<P extends keyof paths, M extends "get" | "post", S extends number> = p
 export type Today = Json<"/today", "get", 200>;
 export type PlayState = Schemas["PlayState"];
 export type QuestionView = Schemas["QuestionView"];
+export type ChallengeView = Schemas["ChallengeView"];
+export type ChallengeCreated = Schemas["ChallengeCreated"];
+export type ResultSnapshot = Schemas["ResultSnapshot"];
 export type AnswerResult = Schemas["AnswerResult"];
 export type AnswerRequest = Schemas["AnswerRequest"];
 export type Level = Schemas["Level"];
@@ -169,6 +172,19 @@ export function createClient(options: ClientOptions) {
       });
       if (status === 409) return { result: (data as { recorded: AnswerResult }).recorded, conflict: true };
       return { result: data as AnswerResult, conflict: false };
+    },
+
+    /** Creating twice returns the same challenge, so a retry is safe. */
+    async createChallenge(playId: string): Promise<ChallengeCreated> {
+      return (await request({ method: "POST", path: "/challenges", body: { playId }, idempotent: true }))
+        .body as ChallengeCreated;
+    },
+
+    /** Records a colleague's finished play the first time only, so a retry is safe. */
+    async getChallenge(challengeId: string): Promise<ChallengeView> {
+      return (
+        await request({ method: "GET", path: `/challenges/${encodeURIComponent(challengeId)}`, idempotent: true })
+      ).body as ChallengeView;
     },
   };
 }

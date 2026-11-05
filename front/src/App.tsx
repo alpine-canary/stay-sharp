@@ -4,6 +4,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { createClient, type ApiClient, type PlayState } from "./api/client";
 import { Link } from "./components/Link";
+import { levelOfDeck } from "./decks";
 import { navigate, useRoute } from "./router";
 import {
   createStore,
@@ -14,6 +15,7 @@ import {
   type Progress,
   type ProgressStore,
 } from "./storage";
+import { Challenge } from "./views/Challenge";
 import { Home } from "./views/Home";
 import { Play } from "./views/Play";
 import { Result } from "./views/Result";
@@ -59,6 +61,21 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
     [update],
   );
 
+  const answered = useCallback(
+    (level: Level, playMode: "daily" | "replay", deck: string, grade: number, duplicate: boolean) => {
+      // Replays are not scored, so they do not count in the skill view either.
+      if (playMode === "daily") update((p) => recordAnswer(p, { level, deck, grade, duplicate }));
+    },
+    [update],
+  );
+
+  const challengeFinished = useCallback(
+    (play: PlayState) => {
+      if (play.mode === "daily" && play.finished) update((p) => recordDay(p, play));
+    },
+    [update],
+  );
+
   const mode = search("mode") === "replay" ? "replay" : "daily";
 
   return (
@@ -89,19 +106,28 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
               relaxed={progress.relaxed}
               onFinished={finished}
               onAnswered={({ mode: playMode, deck, grade, duplicate }) => {
-                // Replays are not scored, so they do not count in the skill view either.
-                if (playMode === "daily" && progress.level) {
-                  const level = progress.level;
-                  update((p) => recordAnswer(p, { level, deck, grade, duplicate }));
-                }
+                if (progress.level) answered(progress.level, playMode, deck, grade, duplicate);
               }}
             />
           ) : (
             <ChooseLevelFirst />
           ))}
         {route.view === "result" && <Result key={search("play")} client={client} playId={search("play")} progress={progress} />}
+        {route.view === "challenge" && route.challengeId && (
+          <Challenge
+            key={route.challengeId}
+            client={client}
+            challengeId={route.challengeId}
+            relaxed={progress.relaxed}
+            onFinished={challengeFinished}
+            onAnswered={({ mode: playMode, deck, grade, duplicate }) => {
+              // The level of a challenge is the challenge's, whatever level this browser chose.
+              answered(levelOfDeck(deck), playMode, deck, grade, duplicate);
+            }}
+          />
+        )}
         {route.view === "not-found" && <NotFound />}
-        {(route.view === "practice" || route.view === "privacy" || route.view === "challenge") && <ComingSoon />}
+        {(route.view === "practice" || route.view === "privacy") && <ComingSoon />}
       </main>
     </div>
   );

@@ -709,3 +709,42 @@ a {
 .share .hint:empty {
   display: none;
 }
+
+/* Challenge (T107) */
+.link-text {
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.versus {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.side {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+  align-content: start;
+}
+
+.side-figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.side-figures dt {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.side-figures dd {
+  margin: 0;
+  font: 700 20px/1.2 var(--display);
+  font-variant-numeric: tabular-nums;
+}

@@ -509,11 +509,25 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            challengeId: string;
-                            /** Format: uri */
-                            url: string;
-                        };
+                        "application/json": components["schemas"]["ChallengeCreated"];
+                    };
+                };
+                /** @description Invalid play id, or the play is not a daily. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No such play. */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
                     };
                 };
                 /** @description Play not finished. */
@@ -521,7 +535,9 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
                 };
             };
         };
@@ -539,8 +555,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Challenge as seen by the caller. viewer = owner, colleague_before (owner result shown as
-         *     score only, no squares) or colleague_after (both snapshots).
+         * Challenge as seen by the caller. viewer = owner (own snapshot and the colleagues who
+         *     finished), colleague_before (owner result shown as score only, no squares) or
+         *     colleague_after (both snapshots). A colleague who already finished that set gets their
+         *     snapshot written from their existing play on first view.
          */
         get: {
             parameters: {
@@ -561,27 +579,17 @@ export interface paths {
                         [name: string]: unknown;
                     };
                     content: {
-                        "application/json": {
-                            /** Format: date */
-                            date: string;
-                            level: components["schemas"]["Level"];
-                            gameNumber: number;
-                            /** @enum {string} */
-                            viewer: "owner" | "colleague_before" | "colleague_after";
-                            ownerScore: number;
-                            owner?: components["schemas"]["ResultSnapshot"];
-                            you?: components["schemas"]["ResultSnapshot"];
-                            /** @description Number of colleagues who finished. */
-                            others?: number;
-                        };
+                        "application/json": components["schemas"]["ChallengeView"];
                     };
                 };
-                /** @description Unknown, malformed or expired (code expired). */
+                /** @description Unknown or malformed (code not_found), or expired (code expired). */
                 404: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
                 };
             };
         };
@@ -668,6 +676,29 @@ export interface components {
             bonus: number;
             elapsedMs: number;
             relaxed: boolean;
+        };
+        ChallengeCreated: {
+            challengeId: string;
+            /** @description Site path of the challenge link; the site adds its own origin (same origin as the API). */
+            path: string;
+        };
+        ChallengeView: {
+            challengeId: string;
+            /** Format: date */
+            date: string;
+            level: components["schemas"]["Level"];
+            gameNumber: number;
+            /** @enum {string} */
+            viewer: "owner" | "colleague_before" | "colleague_after";
+            ownerScore: number;
+            /** @description Owner result; absent for colleague_before. */
+            owner?: components["schemas"]["ResultSnapshot"];
+            /** @description The caller as a colleague; colleague_after only. */
+            you?: components["schemas"]["ResultSnapshot"];
+            /** @description Owner only - colleagues who finished, oldest first. Anonymous. */
+            colleagues?: components["schemas"]["ResultSnapshot"][];
+            /** @description Number of colleagues who finished */
+            others: number;
         };
     };
     responses: never;

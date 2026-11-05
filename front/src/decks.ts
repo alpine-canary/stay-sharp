@@ -18,6 +18,11 @@ export const DECK_ORDER = {
   starter: ["logic", "readcode", "whatif", "words", "aisense"],
 } as const;
 
+/** The level a deck belongs to. */
+export function levelOfDeck(deck: string): "senior" | "starter" {
+  return (DECK_ORDER.senior as readonly string[]).includes(deck) ? "senior" : "starter";
+}
+
 /** Decks where the player also picks a line. */
 export const LINE_DECKS = new Set(["spot"]);
 

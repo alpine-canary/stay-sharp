@@ -23,6 +23,8 @@ export interface PlayProps {
   level: Level;
   mode: "daily" | "replay";
   relaxed: boolean;
+  /** Set for a play started from a challenge link: its date and id (Story 4). */
+  challenge?: { id: string; date: string } | undefined;
   onFinished: (play: PlayState) => void;
   /** Every graded answer, for the skill view. ``duplicate`` is true when the server had already
    * counted an answer for this question (a retry, or a 409 with the answer that counts). */
@@ -36,7 +38,7 @@ function messageOf(error: unknown, fallback: string): string {
   return fallback;
 }
 
-export function Play({ client, level, mode, relaxed: relaxedPref, onFinished, onAnswered }: PlayProps) {
+export function Play({ client, level, mode, relaxed: relaxedPref, challenge, onFinished, onAnswered }: PlayProps) {
   const [loading, setLoading] = useState<Loading>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [play, setPlay] = useState<PlayState | null>(null);
@@ -55,7 +57,12 @@ export function Play({ client, level, mode, relaxed: relaxedPref, onFinished, on
   useEffect(() => {
     let current = true;
     client
-      .startPlay({ level, mode, relaxed: relaxedPref })
+      .startPlay({
+        level,
+        mode,
+        relaxed: relaxedPref,
+        ...(challenge ? { challengeId: challenge.id, date: challenge.date } : {}),
+      })
       .then(({ play: state }) => {
         if (!current) return;
         if (state.finished) {
@@ -75,7 +82,9 @@ export function Play({ client, level, mode, relaxed: relaxedPref, onFinished, on
         const notReady = err instanceof ApiError && err.code === "not_ready";
         const message =
           err instanceof ApiError && err.code === "conflict"
-            ? "Finish today's set before replaying it."
+            ? challenge
+              ? "Finish your own play of that day first, then come back to this link."
+              : "Finish today's set before replaying it."
             : messageOf(err, "The game is not reachable right now.");
         setLoading({ status: "blocked", message, retry: !notReady && !(err instanceof ApiError && !err.serviceDown) });
       });
@@ -84,7 +93,7 @@ export function Play({ client, level, mode, relaxed: relaxedPref, onFinished, on
     };
     // relaxedPref is only read when the play is created; a change later does not restart it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client, level, mode, attempt]);
+  }, [client, level, mode, challenge?.id, attempt]);
 
   // Move focus to the new question so keyboard and screen-reader users start from its title.
   useEffect(() => {

@@ -257,13 +257,13 @@ side.
 **Independent test**: finish on browser A, create a link, play it on browser B, and check both
 see both results (V6).
 
-- [ ] T101 [P] [US4] Integration tests in `api/tests/integration/test_challenges.py`: creating twice returns the same id; colleague sees only "A colleague scored <score>/5" before finishing; result item written in the same transaction as the fifth answer with `attribute_not_exists`; cap of 50 results (transaction retried without item 3, answer still graded); a colleague who already finished gets their snapshot from the existing play at first view; past-date link plays as a past set; expired (compare `expiresAt` with now), unknown and malformed ids; challenger opening their own link
-- [ ] T102 [P] [US4] Contract tests in `api/tests/contract/test_challenges.py` for `/challenges` and `/challenges/{challengeId}`
-- [ ] T103 [P] [US4] Playwright test in `front/tests/e2e/challenge.spec.ts` with two browser contexts (V6)
-- [ ] T104 [US4] Implement `api/src/staysharp/store/challenges.py`: `CH#<challengeId>` `META` with `ownerHash`, owner snapshot `{grades[5], score, bonus, elapsedMs, relaxed}`, `results` count, `expiresAt` = 30 days; `challengeId` = 12 random base32 characters stored on the owner's play; `R#<playerHash>` items
-- [ ] T105 [US4] Add item 3 (challenge result and `META.results < 50` condition) to the answer transaction in `api/src/staysharp/store/answers.py` for plays started from a challenge
-- [ ] T106 [US4] Implement `POST /challenges` and `GET /challenges/{challengeId}` in `api/src/staysharp/handlers/routes_challenges.py`; emit `ChallengesCreated`, `ChallengesOpened` and `ChallengesFinished`
-- [ ] T107 [US4] Implement `front/src/views/Challenge.tsx` (served at `/c/<id>`): invitation, play through the same Play view, side-by-side squares, score and time; plain message and "Play today's daily" for bad links
+- [X] T101 [P] [US4] Integration tests in `api/tests/integration/test_challenges.py`: creating twice returns the same id; colleague sees only "A colleague scored <score>/5" before finishing; result item written in the same transaction as the fifth answer with `attribute_not_exists`; cap of 50 results (transaction retried without item 3, answer still graded); a colleague who already finished gets their snapshot from the existing play at first view; past-date link plays as a past set; expired (compare `expiresAt` with now), unknown and malformed ids; challenger opening their own link
+- [X] T102 [P] [US4] Contract tests in `api/tests/contract/test_challenges.py` for `/challenges` and `/challenges/{challengeId}`
+- [X] T103 [P] [US4] Playwright test in `front/tests/e2e/challenge.spec.ts` with two browser contexts (V6)
+- [X] T104 [US4] Implement `api/src/staysharp/store/challenges.py`: `CH#<challengeId>` `META` with `ownerHash`, owner snapshot `{grades[5], score, bonus, elapsedMs, relaxed}`, `results` count, `expiresAt` = 30 days; `challengeId` = 12 random base32 characters stored on the owner's play; `R#<playerHash>` items
+- [X] T105 [US4] Add item 3 (challenge result and `META.results < 50` condition) to the answer transaction in `api/src/staysharp/store/answers.py` for plays started from a challenge
+- [X] T106 [US4] Implement `POST /challenges` and `GET /challenges/{challengeId}` in `api/src/staysharp/handlers/routes_challenges.py`; emit `ChallengesCreated`, `ChallengesOpened` and `ChallengesFinished`
+- [X] T107 [US4] Implement `front/src/views/Challenge.tsx` (served at `/c/<id>`): invitation, play through the same Play view, side-by-side squares, score and time; plain message and "Play today's daily" for bad links
 
 **Checkpoint**: V6 passes in dev.
 

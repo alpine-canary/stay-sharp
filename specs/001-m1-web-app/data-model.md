@@ -61,6 +61,7 @@ Never returned before an answer: `answerChoiceId`, `answerLines`, `explanation`,
 | relaxed | bool | false at start unless asked; can go false -> true at any time, never back |
 | relaxedFrom | int? | index of the first question played relaxed |
 | challengeId | string? | set when started from a challenge link |
+| createdChallengeId | string? | the challenge this play created (owner side); set once, in the same transaction as the challenge `META` |
 | startedAt | timestamp | |
 | answered | string set | indexes graded so far, added with `ADD` (C1) |
 | grades | map | index -> 0, 0.5 or 1 |
@@ -91,8 +92,11 @@ days (S5).
 | `META` | `date`, `level`, `ownerHash` = HMAC(pepper, playerId), `owner` snapshot `{grades[5], score, bonus, elapsedMs, relaxed}`, `results` (count), `createdAt`, `expiresAt` (30 days) |
 | `R#<playerHash>` | colleague snapshot, written in the same transaction as their fifth answer (R2), `attribute_not_exists`; `META.results < 50` checked in the same transaction |
 
-`challengeId` = 12 random base32 characters, stored on the owner's play; creating it twice
-returns the same id. `GET` compares `expiresAt` with now and answers `expired` (W4). A colleague
+`challengeId` = 12 random base32 characters, stored on the owner's play as
+`createdChallengeId` (the play's own `challengeId` means "started from a link", and a play
+started from a link can create its own challenge); creating it twice returns the same id.
+A link to today's set is played as the daily; a link to a past set as a replay with the
+`challengeId`, which is locked only while the colleague's daily of that day exists unfinished. `GET` compares `expiresAt` with now and answers `expired` (W4). A colleague
 who already finished that set gets their snapshot written from their existing play on first
 view (spec Story 4, 3a).
 
