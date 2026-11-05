@@ -34,5 +34,6 @@ def test_no_account_id_is_hard_coded(assembly: cx_api.CloudAssembly) -> None:
 
     for stack in assembly.stacks:
         text = json.dumps(stack.template)
-        ids = set(re.findall(r"(?<![0-9])[0-9]{12}(?![0-9])", text)) - {"000000000000"}
+        # Whole tokens only: a hex asset hash can hold 12 digits in a row (it did on 2026-11-05).
+        ids = set(re.findall(r"(?<![0-9A-Za-z])[0-9]{12}(?![0-9A-Za-z])", text)) - {"000000000000"}
         assert ids == set(), stack.stack_name
