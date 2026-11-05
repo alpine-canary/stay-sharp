@@ -22,7 +22,7 @@ from pydantic import ValidationError
 
 from staysharp import config
 from staysharp.domain.models import parse_player_id
-from staysharp.handlers import routes_today
+from staysharp.handlers import routes_plays, routes_today
 from staysharp.handlers.http import ApiError, error_response
 from staysharp.obs import bind_player, bind_request, logger, metrics
 
@@ -33,6 +33,7 @@ NO_STORE = "no-store"
 
 app = APIGatewayHttpResolver(strip_prefixes=[PREFIX])
 app.include_router(routes_today.router)
+app.include_router(routes_plays.router)
 
 
 def _route_path() -> str:
@@ -122,7 +123,8 @@ def _no_store(result: dict[str, Any]) -> dict[str, Any]:
 @metrics.log_metrics
 @logger.inject_lambda_context(log_event=False, clear_state=True)
 def handler(event: dict[str, Any], context: LambdaContext) -> dict[str, Any]:
-    metrics.set_default_dimensions(Stage=config.stage())
+    if metrics.default_dimensions.get("Stage") != config.stage():
+        metrics.set_default_dimensions(Stage=config.stage())
     if event.get("selfcheck") is True:
         return run_selfcheck()
     return _no_store(app.resolve(event, context))
