@@ -109,6 +109,28 @@ components:
         bonus: { type: number }
         elapsedMs: { type: integer }
         relaxed: { type: boolean }
+    ChallengeCreated:
+      type: object
+      additionalProperties: false
+      required: [challengeId, path]
+      properties:
+        challengeId: { type: string, pattern: '^[A-Z2-7]{12}$' }
+        path: { type: string, pattern: '^/c/[A-Z2-7]{12}$', description: 'Site path of the challenge link; the site adds its own origin (same origin as the API).' }
+    ChallengeView:
+      type: object
+      additionalProperties: false
+      required: [challengeId, date, level, gameNumber, viewer, ownerScore, others]
+      properties:
+        challengeId: { type: string, pattern: '^[A-Z2-7]{12}$' }
+        date: { type: string, format: date }
+        level: { $ref: '#/components/schemas/Level' }
+        gameNumber: { type: integer }
+        viewer: { type: string, enum: [owner, colleague_before, colleague_after] }
+        ownerScore: { type: number }
+        owner: { $ref: '#/components/schemas/ResultSnapshot', description: 'Owner result; absent for colleague_before.' }
+        you: { $ref: '#/components/schemas/ResultSnapshot', description: 'The caller as a colleague; colleague_after only.' }
+        colleagues: { type: array, maxItems: 50, items: { $ref: '#/components/schemas/ResultSnapshot' }, description: 'Owner only - colleagues who finished, oldest first. Anonymous.' }
+        others: { type: integer, description: Number of colleagues who finished, the caller included. }
 paths:
   /health:
     get:
@@ -224,30 +246,18 @@ paths:
       parameters: [ { $ref: '#/components/parameters/PlayerId' } ]
       requestBody: { content: { application/json: { schema: { type: object, additionalProperties: false, required: [playId], properties: { playId: { type: string } } } } } }
       responses:
-        '200': { description: OK, content: { application/json: { schema: { type: object, additionalProperties: false, required: [challengeId, url], properties: { challengeId: { type: string }, url: { type: string, format: uri } } } } } }
-        '409': { description: Play not finished. }
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ChallengeCreated' } } } }
+        '400': { description: 'Invalid play id, or the play is not a daily.', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '404': { description: No such play., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
+        '409': { description: Play not finished., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
   /challenges/{challengeId}:
     get:
       summary: |
-        Challenge as seen by the caller. viewer = owner, colleague_before (owner result shown as
-        score only, no squares) or colleague_after (both snapshots).
+        Challenge as seen by the caller. viewer = owner (own snapshot and the colleagues who
+        finished), colleague_before (owner result shown as score only, no squares) or
+        colleague_after (both snapshots). A colleague who already finished that set gets their
+        snapshot written from their existing play on first view.
       parameters: [ { $ref: '#/components/parameters/PlayerId' }, { name: challengeId, in: path, required: true, schema: { type: string, pattern: '^[A-Z2-7]{12}$' } } ]
       responses:
-        '200':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: object
-                additionalProperties: false
-                required: [date, level, gameNumber, viewer, ownerScore]
-                properties:
-                  date: { type: string, format: date }
-                  level: { $ref: '#/components/schemas/Level' }
-                  gameNumber: { type: integer }
-                  viewer: { type: string, enum: [owner, colleague_before, colleague_after] }
-                  ownerScore: { type: number }
-                  owner: { $ref: '#/components/schemas/ResultSnapshot' }
-                  you: { $ref: '#/components/schemas/ResultSnapshot' }
-                  others: { type: integer, description: Number of colleagues who finished. }
-        '404': { description: 'Unknown, malformed or expired (code expired).' }
+        '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ChallengeView' } } } }
+        '404': { description: 'Unknown or malformed (code not_found), or expired (code expired).', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
