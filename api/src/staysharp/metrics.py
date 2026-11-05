@@ -29,7 +29,12 @@ ALLOWED: dict[str, tuple[MetricUnit, str | None]] = {
     "ChallengesFinished": (COUNT, None),
     "StockDaysAhead": (COUNT, "Level"),
     "SelfCheckFailures": (COUNT, None),
+    # Dev only: emitted by api/testing/fault_injection.py while injection is on (W11).
+    "FaultInjectionActive": (COUNT, None),
 }
+
+# Also emitted with ``Stage`` alone, so the paging alarm sums over versions (R10, FR-028).
+ALSO_PER_STAGE = frozenset({"ScoringFailures"})
 
 _DECKS = frozenset(deck for decks in DECKS.values() for deck in decks)
 _LEVELS = frozenset(DECKS)
@@ -56,6 +61,8 @@ def emit(name: str, value: float = 1, *, dimension: tuple[str, str] | None = Non
         metrics.add_metric(name=name, unit=unit, value=value)
         return
     _check_value(*dimension)
+    if name in ALSO_PER_STAGE:
+        metrics.add_metric(name=name, unit=unit, value=value)
     with single_metric(
         name=name,
         unit=unit,

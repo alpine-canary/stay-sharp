@@ -28,13 +28,13 @@ markers = [
 [tool.ruff]
 line-length = 100
 target-version = "py313"
-src = ["src", "tests", "scripts"]
+src = ["src", "tests", "scripts", "testing"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "B", "UP", "S", "SIM"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["staysharp"]
+known-first-party = ["staysharp", "testing"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["S101"]
@@ -43,7 +43,7 @@ known-first-party = ["staysharp"]
 python_version = "3.13"
 strict = true
 mypy_path = "src"
-files = ["src", "tests", "scripts"]
+files = ["src", "tests", "scripts", "testing"]
 plugins = ["pydantic.mypy"]
 
 # Parts of the Powertools event handler are untyped (router, context, exception decorators).
