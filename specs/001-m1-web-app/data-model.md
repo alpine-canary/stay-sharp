@@ -111,7 +111,9 @@ One marker per published complete set.
 `{ playerId, level, relaxed, days: {<level>: {<playDate>: {score, bonus, relaxed}}},
 freeze: {<level>: {held, earnedWeek, usedOn[]}}, longest: {<level>: n},
 deckStats: {<level>: {<deck>: {answered, correct}}}, boxes: {<qid>: 1..5} }`. Answers marked
-`duplicate` are never counted. Versioned; broken data is reset with a message, never a crash.
+`duplicate` are never counted. Streak, longest and freeze are derived from `days` by
+`front/src/progress/streak.ts` (replayed in date order, so they cannot drift); the stored
+`freeze` and `longest` fields are kept for the shape check only. `correct` counts halves. Versioned; broken data is reset with a message, never a crash.
 
 ## Validation summary
 
