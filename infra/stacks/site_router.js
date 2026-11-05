@@ -1,6 +1,6 @@
 // CloudFront Function (viewer request, cloudfront-js-2.0): route the static site.
 // - App paths are served by index.html (views switched by path, no router library).
-// - /c/<challengeId> is served by c/index.html.
+// - /c/<challengeId> is served by index.html too (the app reads the id from the path).
 // - Files (a dot in the last segment) pass through to S3.
 // - Anything else gets a real 404, so unknown pages are not indexed as the home page.
 // /api/* never reaches this function (separate behaviour).
@@ -24,7 +24,7 @@ function handler(event) {
     return request;
   }
   if (CHALLENGE.test(uri)) {
-    request.uri = "/c/index.html";
+    request.uri = "/index.html";
     return request;
   }
   var last = uri.substring(uri.lastIndexOf("/") + 1);

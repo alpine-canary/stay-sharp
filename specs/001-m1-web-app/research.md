@@ -147,7 +147,7 @@ deploy** are facts not confirmed from an AWS primary source on 2026-11-03. Audit
     contract); all methods allowed. A CDK assertion test checks it (V11).
   - Default behaviour: S3 with OAC; static files under a versioned prefix `site/<commit>/`, the
     distribution's origin path points at the current one, so deploying the previous commit is an
-    instant revert (W6). A CloudFront Function rewrites `/c/<id>` to `/c/index.html`; other
+    instant revert (W6). A CloudFront Function rewrites `/c/<id>` to `/index.html`; other
     unknown paths return a real 404 page (W18).
   - Every boto3 client: `connect_timeout=2`, `read_timeout=3`, standard retry mode, 3 calls in total
     (`total_max_attempts=3`). Every DynamoDB response checked; unexpected shapes raise and count as

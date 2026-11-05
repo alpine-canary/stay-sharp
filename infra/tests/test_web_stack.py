@@ -106,7 +106,7 @@ ROUTER_CASES = [
     ("/play", "/index.html", None),
     ("/practice/", "/index.html", None),
     ("/privacy", "/index.html", None),
-    ("/c/ABCDEFGHJKLM", "/c/index.html", None),
+    ("/c/ABCDEFGHJKLM", "/index.html", None),
     ("/assets/index-abc123.js", "/assets/index-abc123.js", None),
     ("/fonts/inter.woff2", "/fonts/inter.woff2", None),
     ("/c/short", None, 404),
