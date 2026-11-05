@@ -135,9 +135,9 @@ browser before an answer contains the correct id, explanation or source (V1, V2,
 - [X] T054 [P] [US1] Integration tests in `api/tests/integration/test_failures.py`: throttled or timed-out transaction is retried up to 3 times with backoff and jitter, then `503`, `ScoringFailures` +1, no partial write, never `duplicate` (R2, V15)
 - [X] T055 [P] [US1] Integration tests in `api/tests/integration/test_validation.py`: answer for a question not in the set, a future date, an unopened question, an out-of-range choice, a line outside the served version's line count, a body over 2 KB, a malformed `X-Player-Id`: each rejected with a clear code and nothing stored (FR-032, Edge Cases)
 - [X] T056 [P] [US1] Contract tests in `api/tests/contract/test_plays.py` for `/plays`, `/plays/{playId}`, `/plays/{playId}/relaxed`, `.../open`, `.../answer` against `contracts/openapi.yaml`, including the `409` and `503` bodies
-- [ ] T057 [P] [US1] Playwright tests in `front/tests/e2e/daily.spec.ts`: full daily by keyboard only; grade, correct answer and explanation after each; reload mid-play resumes at the first unanswered question; finished daily shows the recorded result (V1)
-- [ ] T058 [P] [US1] Playwright test in `front/tests/e2e/leak.spec.ts`: before each answer, page source, scripts, network responses, storage and Cache Storage contain no correct choice id marked, explanation or source text (FR-003, SC-002, V2)
-- [ ] T059 [P] [US1] Playwright test in `front/tests/e2e/midnight.spec.ts` with a mocked server clock: a play started 23:58 and finished 00:03 counts for its start date; the new day's set is a separate play (W2, V16)
+- [X] T057 [P] [US1] Playwright tests in `front/tests/e2e/daily.spec.ts`: full daily by keyboard only; grade, correct answer and explanation after each; reload mid-play resumes at the first unanswered question; finished daily shows the recorded result (V1)
+- [X] T058 [P] [US1] Playwright test in `front/tests/e2e/leak.spec.ts`: before each answer, page source, scripts, network responses, storage and Cache Storage contain no correct choice id marked, explanation or source text (FR-003, SC-002, V2)
+- [X] T059 [P] [US1] Playwright test in `front/tests/e2e/midnight.spec.ts` with a mocked server clock: a play started 23:58 and finished 00:03 counts for its start date; the new day's set is a separate play (W2, V16)
 
 ### Implementation for User Story 1
 
