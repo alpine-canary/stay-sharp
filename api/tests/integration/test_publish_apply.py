@@ -50,7 +50,7 @@ def schedule(c: Content, level: str) -> dict[str, Any]:
 
 
 def run(c: Content, *, today: dt.date = BEFORE, seed: int = 1) -> apply.Plan:
-    return apply.publish(c, today=today, launch=LAUNCH, now=NOW, rng=random.Random(seed))
+    return apply.publish(c, today=today, launch=LAUNCH, now=NOW, rng=random.Random(seed))  # noqa: S311 - repeatable tests
 
 
 def everything(name: str) -> dict[tuple[str, str], dict[str, Any]]:
@@ -231,7 +231,6 @@ def big(days: int) -> Content:
     questions: list[Authored] = []
     schedules: list[Authored] = []
     for s in base.schedules:
-        level = s.data["level"]
         first = s.data["days"]["2026-12-01"]
         new_days: dict[str, list[str]] = {}
         for n in range(days):
@@ -272,40 +271,39 @@ def test_transactions_hold_at_most_100_items_and_never_split_a_day(
     table: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     recorder = Recorder(aws.dynamodb())
-    monkeypatch.setattr(aws, "dynamodb", lambda: recorder)
-    plan = run(big(40))
-    assert len(plan.questions) == 400 + 1
+    with monkeypatch.context() as patch:
+        patch.setattr(aws, "dynamodb", lambda: recorder)
+        plan = run(big(40))
+    assert len(plan.questions) == 400
     assert max(recorder.sizes) <= 100
-    assert sum(recorder.sizes) == 401 + 80 * (1 + 1 + 5)
-    # Questions first (5 transactions), then whole days of 7 items each.
-    assert recorder.sizes[:5] == [100, 100, 100, 100, 1]
-    assert all(size % 7 == 0 for size in recorder.sizes[5:])
+    assert sum(recorder.sizes) == 400 + 80 * (1 + 1 + 5)
+    # Questions first (4 transactions), then whole days of 7 items each.
+    assert recorder.sizes[:4] == [100, 100, 100, 100]
+    assert all(size % 7 == 0 for size in recorder.sizes[4:])
 
 
 def test_a_failed_write_stops_and_a_rerun_finishes_the_job(
     table: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    real = aws.dynamodb()
-    monkeypatch.setattr(aws, "dynamodb", lambda: Recorder(real, fail_at=3))
-    with pytest.raises(apply.WriteFailed):
-        run(big(30))
+    recorder = Recorder(aws.dynamodb(), fail_at=3)
+    with monkeypatch.context() as patch:
+        patch.setattr(aws, "dynamodb", lambda: recorder)
+        with pytest.raises(apply.WriteFailed, match="transaction 3 of"):
+            run(big(30))
     partial = everything(table)
-    assert not any(pk.startswith("DAILY#") for pk, _ in partial)  # no set before its questions
+    assert Counter(pk.split("#")[0] for pk, _ in partial) == {"Q": 200}  # no set yet
 
-    monkeypatch.setattr(aws, "dynamodb", lambda: real)
     run(big(30), seed=7)
     items = everything(table)
     kinds = Counter(pk.split("#")[0] for pk, _ in items)
-    assert kinds == {"Q": 301, "DAILY": 60, "POOL": 300, "STOCK": 60}
+    assert kinds == {"Q": 300, "DAILY": 60, "POOL": 300, "STOCK": 60}
     # Questions written before the failure kept their first ids (no version 2 from the rerun).
     assert not any(sk == "V#2" for _, sk in items)
 
 
 def test_correct_positions_are_roughly_uniform(table: str) -> None:
     plan = run(big(40))
-    positions = Counter(
-        [c.id for c in q.choices].index(q.answer_choice_id) for q in plan.questions
-    )
+    positions = Counter([c.id for c in q.choices].index(q.answer_choice_id) for q in plan.questions)
     assert set(positions) == {0, 1, 2, 3}
     assert max(positions.values()) - min(positions.values()) <= 1
 
