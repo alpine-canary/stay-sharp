@@ -36,7 +36,8 @@ export function Privacy() {
         <li>daily games: about 90 days, then deleted;</li>
         <li>practice questions: about 14 days;</li>
         <li>
-          challenges: about 30 days. A challenge only shows scores. Your colleague never sees your random code.
+          challenges: about 30 days. A challenge shows results only, never who played. Your colleague never sees
+          your random code.
         </li>
       </ul>
       <p>
