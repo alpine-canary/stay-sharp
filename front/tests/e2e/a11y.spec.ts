@@ -18,6 +18,8 @@ for (const scheme of ["light", "dark"] as const) {
     test.use({ colorScheme: scheme });
 
     test("home, play, feedback, result, challenge and practice", async ({ page, browser }) => {
+      // The longest test: a full daily, a challenge and practice, with axe on each view.
+      test.setTimeout(60_000);
       await page.goto("/");
       await expect(page.getByRole("heading", { level: 1, name: /Today's set/ })).toBeVisible();
       await noViolations(page, "home before a level");
