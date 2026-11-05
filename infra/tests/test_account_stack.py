@@ -105,11 +105,17 @@ def test_diff_role_has_no_write_action(template: TemplateOf) -> None:
 
 def test_content_role_writes_content_keys_only(template: TemplateOf) -> None:
     statements = statements_of_role(template, "staysharp-github-contentpublish")
-    (dynamo,) = [s for s in statements if any(a.startswith("dynamodb:") for a in actions_of(s))]
-    leading = dynamo["Condition"]["ForAllValues:StringLike"]["dynamodb:LeadingKeys"]
+    dynamo = [s for s in statements if any(a.startswith("dynamodb:") for a in actions_of(s))]
+    (writes,) = [s for s in dynamo if "dynamodb:PutItem" in actions_of(s)]
+    leading = writes["Condition"]["ForAllValues:StringLike"]["dynamodb:LeadingKeys"]
     assert sorted(leading) == ["DAILY#*", "POOL#*", "Q#*", "STOCK#*"]
-    assert "staysharp-prod" in json.dumps(dynamo["Resource"])
-    assert "dynamodb:DeleteItem" not in actions_of(dynamo)
+    assert "table/staysharp-prod" in json.dumps(writes["Resource"])
+    assert "table/staysharp-dev" in json.dumps(writes["Resource"])
+    assert "dynamodb:DeleteItem" not in actions_of(writes)
+    # Deletes: practice pool entries only (a future set that changes drops its old entries).
+    (deletes,) = [s for s in dynamo if "dynamodb:DeleteItem" in actions_of(s)]
+    assert actions_of(deletes) == ["dynamodb:DeleteItem"]
+    assert deletes["Condition"]["ForAllValues:StringLike"]["dynamodb:LeadingKeys"] == ["POOL#*"]
 
 
 def test_dev_deploy_role_seeds_dev_content_keys_only(template: TemplateOf) -> None:
@@ -143,3 +149,8 @@ def test_no_bedrock_and_no_admin_anywhere(template: TemplateOf, stack: str) -> N
             assert action != "*", stack
         managed = json.dumps(template(stack).to_json())
         assert "AdministratorAccess" not in managed
+
+
+def test_the_fingerprint_bucket_name_is_an_output(template: TemplateOf) -> None:
+    outputs = template("staysharp-account").to_json()["Outputs"]
+    assert "FingerprintBucketName" in outputs

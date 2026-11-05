@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from aws_cdk import Aws, Duration, RemovalPolicy, Stack
+from aws_cdk import Aws, CfnOutput, Duration, RemovalPolicy, Stack
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_s3 as s3
 from constructs import Construct
@@ -52,6 +52,8 @@ class AccountStack(Stack):
             removal_policy=RemovalPolicy.RETAIN,
         )
         fingerprint_object = self.fingerprints.arn_for_objects(FINGERPRINT_KEY)
+        # The name goes into the GitHub variable LEAK_GUARD_BUCKET of both repositories.
+        CfnOutput(self, "FingerprintBucketName", value=self.fingerprints.bucket_name)
 
         # --- GitHub OIDC and roles ------------------------------------------------------------
         provider = iam.OpenIdConnectProvider(
@@ -156,11 +158,12 @@ class AccountStack(Stack):
             iam.PolicyStatement(actions=["ssm:GetParameter"], resources=[leak_guard])
         )
 
-        # Content publish: prod table, content keys only.
+        # Content publish: prod (real questions) and dev (fixtures only, enforced by the publish
+        # command), content keys only. Transactions are authorised item by item.
         self.content_role = github_role(
             "ContentPublish",
             f"repo:{github_owner}/{content_repository}:ref:refs/heads/main",
-            "publish questions and daily sets to prod",
+            "publish questions and daily sets",
         )
         prod_table = (
             f"arn:{Aws.PARTITION}:dynamodb:{MAIN_REGION}:{Aws.ACCOUNT_ID}:table/staysharp-prod"
@@ -175,10 +178,19 @@ class AccountStack(Stack):
                     "dynamodb:ConditionCheckItem",
                     "dynamodb:BatchWriteItem",
                 ],
-                resources=[prod_table],
+                resources=[prod_table, dev_table],
                 conditions={
                     "ForAllValues:StringLike": {"dynamodb:LeadingKeys": list(CONTENT_KEY_PREFIXES)}
                 },
+            )
+        )
+        # A future set that changes drops the old pool entry; otherwise practice could show the
+        # question after the old date while it is scheduled later (R1, C4). Pool keys only.
+        self.content_role.add_to_policy(
+            iam.PolicyStatement(
+                actions=["dynamodb:DeleteItem"],
+                resources=[prod_table, dev_table],
+                conditions={"ForAllValues:StringLike": {"dynamodb:LeadingKeys": ["POOL#*"]}},
             )
         )
         self.content_role.add_to_policy(

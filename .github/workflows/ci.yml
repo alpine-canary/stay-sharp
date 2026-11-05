@@ -1,8 +1,8 @@
 # Pull-request and main-branch checks (task T010, research R13).
 #
-# No AWS credentials in any job except `cdk-diff`, which uses a read-only role (task T018) and
-# only runs for pull requests from branches of this repository: GitHub gives fork pull requests
-# no OIDC token. Every third-party action is pinned to a commit SHA. No artefacts are uploaded.
+# No AWS credentials in any job except `cdk-diff` and `leak-guard`. `cdk-diff` uses a read-only
+# role (task T018) and only runs for pull requests from branches of this repository: GitHub
+# gives fork pull requests no OIDC token. `leak-guard` only reads the fingerprint object. Every third-party action is pinned to a commit SHA. No artefacts are uploaded.
 
 name: ci
 
@@ -100,6 +100,49 @@ jobs:
         run: |
           pnpm --dir front exec vite build
           if find front/dist -name '*.map' | grep -q .; then echo "source maps found"; exit 1; fi
+
+  leak-guard:
+    name: leak guard (future questions in files and full history)
+    # Research R4 layer 2, FR-024b, V18. Fork pull requests get no OIDC token and no secrets:
+    # they are skipped here and scanned again on the push to main after the merge. Skipped
+    # until the content repository has published the first fingerprint file (the variable
+    # LEAK_GUARD_BUCKET is set then, docs/runbooks/publish.md).
+    if: >-
+      vars.LEAK_GUARD_BUCKET != '' &&
+      (github.event_name == 'push' ||
+       github.event.pull_request.head.repo.full_name == github.repository)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0 # the full history of every branch and tag
+      - uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+        with:
+          python-version: "3.13"
+      - name: install
+        run: uv sync --directory api --locked --no-dev
+      - uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6.3.0
+        with:
+          # Pull requests: the read-only role; main: the dev deploy role. Both may only read
+          # the fingerprint object.
+          role-to-assume: ${{ github.event_name == 'push' && vars.AWS_DEVDEPLOY_ROLE_ARN || vars.AWS_DIFF_ROLE_ARN }}
+          aws-region: eu-central-2
+          role-session-name: staysharp-leak-guard
+      - name: download the fingerprint file
+        run: |
+          aws s3 cp "s3://${{ vars.LEAK_GUARD_BUCKET }}/leak-guard/fingerprints.json" \
+            "$RUNNER_TEMP/fingerprints.json" --only-show-errors
+      - name: scan tracked files and the full history (paths and counts only)
+        env:
+          LEAK_GUARD_KEY: ${{ secrets.LEAK_GUARD_KEY }}
+        run: |
+          uv run --directory api --no-sync python -m staysharp.tools.leak_scan \
+            --fingerprints "$RUNNER_TEMP/fingerprints.json" --repo "$GITHUB_WORKSPACE"
 
   cdk-diff:
     name: cdk diff (read-only)
