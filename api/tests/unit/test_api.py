@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import datetime as dt
+import importlib
 import json
 
 import pytest
@@ -103,7 +104,13 @@ def test_unexpected_error_is_a_json_500(monkeypatch: pytest.MonkeyPatch) -> None
     assert "store down" not in result["body"]
 
 
-def test_selfcheck_event_fails_until_the_self_check_exists() -> None:
+def test_selfcheck_event_fails_when_the_self_check_is_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def missing(name: str) -> object:
+        raise ModuleNotFoundError(name)
+
+    monkeypatch.setattr(importlib, "import_module", missing)
     result = api.handler({"selfcheck": True}, FakeContext())
     assert result["ok"] is False
 

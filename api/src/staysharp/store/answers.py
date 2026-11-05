@@ -179,6 +179,7 @@ def _transaction(
     scored: grading.Scored,
     elapsed_ms: int,
     now: dt.datetime,
+    name: str,
 ) -> list[dict[str, Any]]:
     answer_set = ["SET choiceId = :c", "grade = :g", "bonus = :b", "answeredAt = :at"]
     answer_set.append("elapsedMs = :e")
@@ -192,7 +193,6 @@ def _transaction(
     if submission.line is not None:
         answer_set.append("line = :l")
         answer_values[":l"] = submission.line
-    name = table.table_name()
     return [
         {
             "Update": {
@@ -245,8 +245,15 @@ def answer(
     submission: Submission,
     key: grading.AnswerKey,
     now: dt.datetime,
+    *,
+    client: Any = None,
+    table_name: str | None = None,
 ) -> Graded:
-    """Grade and store once. Raises ``NotOpened`` or ``ScoringFailure``."""
+    """Grade and store once. Raises ``NotOpened`` or ``ScoringFailure``.
+
+    ``client`` and ``table_name`` default to the shared client and ``TABLE_NAME``; the self-check
+    passes a stub and a dummy name.
+    """
     if served.graded:
         outcome = Outcome.DUPLICATE if _same(served, submission) else Outcome.CONFLICT
         return Graded(served, outcome)
@@ -260,14 +267,15 @@ def answer(
         elapsed_ms=elapsed_ms,
         target_seconds=served.target_seconds,
     )
-    items = _transaction(player_id, play, served, submission, scored, elapsed_ms, now)
-    client = aws.dynamodb()
+    name = table_name or table.table_name()
+    items = _transaction(player_id, play, served, submission, scored, elapsed_ms, now, name)
+    client = client or aws.dynamodb()
     last: Exception | None = None
     for attempt in range(ATTEMPTS):
         if attempt:
             sleep(_backoff(attempt))
         try:
-            client.transact_write_items(TransactItems=items)  # type: ignore[arg-type]
+            client.transact_write_items(TransactItems=items)
         except ClientError as error:
             last = error
             if error.response.get("Error", {}).get("Code") != "TransactionCanceledException":

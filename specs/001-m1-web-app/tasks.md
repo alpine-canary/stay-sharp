@@ -169,13 +169,13 @@ human action (V9).
 
 ### Tests for User Story 6 (write first, must fail)
 
-- [ ] T072 [P] [US6] Unit tests in `api/tests/unit/test_selfcheck.py`: the self-check grades the bundled fixtures, checks the view allowlist and the R2 classification table with a stubbed DynamoDB client, touches no table, and returns failure when any check fails
+- [X] T072 [P] [US6] Unit tests in `api/tests/unit/test_selfcheck.py`: the self-check grades the bundled fixtures, checks the view allowlist and the R2 classification table with a stubbed DynamoDB client, touches no table, and returns failure when any check fails
 - [ ] T073 [P] [US6] Unit tests in `api/tests/unit/test_pre_traffic_check.py`: invokes only the qualified ARN from its environment, reports `Succeeded` or `Failed` to CodeDeploy, reports `Failed` on timeout or an unreadable response, never swallows an error
 - [ ] T074 [P] [US6] CDK assertion tests in `infra/tests/test_delivery.py`: deployment config `LambdaCanary10Percent5Minutes` in prod and `AllAtOnce` in dev; rollback alarms with the R10 dimensions (`Resource=<fn>:live`, `ExecutedVersion`, `FunctionVersion`), period 60 s, 1 of 1, `notBreaching`; paging alarm not attached to CodeDeploy; prod asset contains no fault-injection file; pre-traffic role can invoke only the new version (V11)
 
 ### Implementation for User Story 6
 
-- [ ] T075 [P] [US6] Implement `api/src/staysharp/selfcheck/__init__.py` and fixtures in `api/src/staysharp/selfcheck/fixtures/` (fixture questions only, no content from the content repo), emitting only `SelfCheckFailures` (C5)
+- [X] T075 [P] [US6] Implement `api/src/staysharp/selfcheck/__init__.py` and fixtures in `api/src/staysharp/selfcheck/fixtures/` (fixture questions only, no content from the content repo), emitting only `SelfCheckFailures` (C5)
 - [ ] T076 [P] [US6] Implement `api/src/staysharp/handlers/pre_traffic_check.py` to pass T073 (R10)
 - [ ] T077 [P] [US6] Implement the fault-injection handler in `api/testing/fault_injection.py`, packaged only in the dev build and refused at runtime when `STAGE=prod` (W11)
 - [ ] T078 [US6] Extend `infra/stacks/api_stack.py`: version and alias `live`, CodeDeploy deployment group with the stage config, pre-traffic hook function with the new version's qualified ARN, the three rollback alarms of R10 (each also with an SNS alarm action), a CodeDeploy trigger on `DeploymentFailure` and `DeploymentRollback` to the SNS topic (Story 6 scenario 2), async invoke with on-failure destination to SNS and an error alarm for `pre_traffic_check`

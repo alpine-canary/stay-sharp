@@ -1,0 +1,42 @@
+{
+  "_note": "Self-check fixtures only (research R10, C5). Written for the self-check; never played.",
+  "questions": [
+    {
+      "qid": "selfcheck_spot",
+      "version": 1,
+      "level": "senior",
+      "deck": "spot",
+      "prompt": "Pick the worst line and say what is wrong with it.",
+      "code": "total = 0\nfor n in numbers:\n    total = n\nprint(total)\n",
+      "language": "python",
+      "choices": [
+        {"id": "AAAAAAAA", "text": "The loop overwrites the total instead of adding to it"},
+        {"id": "BBBBBBBB", "text": "print needs parentheses"},
+        {"id": "CCCCCCCC", "text": "numbers must be a tuple"},
+        {"id": "DDDDDDDD", "text": "total should start at 1"}
+      ],
+      "answerChoiceId": "AAAAAAAA",
+      "answerLines": [3],
+      "explanation": "SELFCHECK-EXPLANATION-SPOT: use total += n.",
+      "dailyEligible": false
+    },
+    {
+      "qid": "selfcheck_news",
+      "version": 1,
+      "level": "senior",
+      "deck": "news",
+      "prompt": "Which statement about this fixture is true?",
+      "choices": [
+        {"id": "EEEEEEEE", "text": "It is a fixture"},
+        {"id": "FFFFFFFF", "text": "It is a real question"},
+        {"id": "GGGGGGGG", "text": "It is published"},
+        {"id": "HHHHHHHH", "text": "It is scheduled"}
+      ],
+      "answerChoiceId": "EEEEEEEE",
+      "explanation": "SELFCHECK-EXPLANATION-NEWS: fixtures are never played.",
+      "sourceUrl": "https://example.com/selfcheck",
+      "sourceDate": "2026-01-01",
+      "dailyEligible": false
+    }
+  ]
+}
