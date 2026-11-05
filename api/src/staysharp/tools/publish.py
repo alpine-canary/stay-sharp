@@ -2,6 +2,8 @@
 
     python -m staysharp.tools.publish validate CONTENT [--stage local|dev|prod]
     python -m staysharp.tools.publish apply CONTENT --stage local|dev|prod [--dry-run]
+    python -m staysharp.tools.publish leak-check CONTENT [--days 7] [--record]
+    LEAK_GUARD_KEY=... python -m staysharp.tools.publish fingerprints CONTENT --out FILE
 
 ``validate`` works offline; with ``--stage`` it also reads the stored versions, so an edit
 without a new ``change_reason`` is caught before the merge. ``apply`` validates, plans and
@@ -10,6 +12,10 @@ writes, all or nothing. Output is counts and ``id: reason`` lines only, never qu
 Stages: ``local`` is DynamoDB Local. ``dev`` only accepts a fixtures folder (a ``.fixtures`` file
 at its root): real questions never reach dev (C7). ``prod`` refuses a fixtures folder. Outside
 ``local`` the launch day comes from ``--launch`` or ``LAUNCH_DATE``.
+
+``leak-check`` is layer 1 of the leak guard (offline, R4): with ``--record`` a pass is written to
+SSM ``/staysharp/prod/leak-guard/last-pass``, which the prod deploy gate reads. ``fingerprints``
+writes the layer 2 file for the public scan.
 """
 
 from __future__ import annotations
@@ -23,9 +29,10 @@ from pathlib import Path
 
 from staysharp import aws, clock, config
 from staysharp.domain import calendar
-from staysharp.publish import apply, validate
+from staysharp.publish import apply, fingerprints, leak_check, validate
 
 FIXTURES_MARKER = ".fixtures"
+LEAK_GUARD_PARAMETER = "/staysharp/prod/leak-guard/last-pass"
 STAGES = ("local", "dev", "prod")
 
 
@@ -96,6 +103,38 @@ def run_apply(content: Path, stage: str, *, launch: dt.date | None, dry_run: boo
     return 0
 
 
+def run_leak_check(content: Path, *, days: int, record: bool) -> int:
+    now = clock.now()
+    today = calendar.zurich_today(now)
+    batch = validate.load(content)
+    checked, problems = leak_check.check(batch, today=today, days=days)
+    if problems:
+        print(f"leak check FAILED on {len(problems)} problem(s):", file=sys.stderr)
+        for problem in problems:
+            print(f"  {problem.id}: {problem.reason}", file=sys.stderr)
+        return 1
+    print(f"leak check: {checked} questions from {today.isoformat()} to +{days} days, clean")
+    if record:
+        import boto3
+
+        ssm = boto3.client("ssm", region_name="eu-central-2", config=aws.CONFIG)
+        stamp = now.astimezone(dt.UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
+        ssm.put_parameter(Name=LEAK_GUARD_PARAMETER, Value=stamp, Type="String", Overwrite=True)
+        print(f"recorded the pass in {LEAK_GUARD_PARAMETER}")
+    return 0
+
+
+def run_fingerprints(content: Path, out: Path) -> int:
+    key = os.environ.get("LEAK_GUARD_KEY", "")
+    if not key:
+        raise Refusal("LEAK_GUARD_KEY is not set")
+    today = calendar.zurich_today(clock.now())
+    prints = fingerprints.build(key.encode(), validate.load(content), today=today)
+    out.write_text(prints.to_json(), encoding="utf-8")
+    print(f"fingerprints: {len(prints.hashes)} digests for days from {today.isoformat()}")
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="publish", description="Publish questions (R4).")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -107,10 +146,21 @@ def main(argv: Sequence[str] | None = None) -> int:
     a.add_argument("--stage", choices=STAGES, required=True)
     a.add_argument("--launch", type=dt.date.fromisoformat, default=None)
     a.add_argument("--dry-run", action="store_true")
+    lc = sub.add_parser("leak-check", help="leak guard layer 1: views of today + N days")
+    lc.add_argument("content", type=Path)
+    lc.add_argument("--days", type=int, default=7)
+    lc.add_argument("--record", action="store_true", help="write the pass time to SSM")
+    fp = sub.add_parser("fingerprints", help="leak guard layer 2: the fingerprint file")
+    fp.add_argument("content", type=Path)
+    fp.add_argument("--out", type=Path, required=True)
     args = parser.parse_args(argv)
     try:
         if args.command == "validate":
             return run_validate(args.content, args.stage)
+        if args.command == "leak-check":
+            return run_leak_check(args.content, days=args.days, record=args.record)
+        if args.command == "fingerprints":
+            return run_fingerprints(args.content, args.out)
         return run_apply(args.content, args.stage, launch=args.launch, dry_run=args.dry_run)
     except Refusal as refusal:
         print(f"refused: {refusal}", file=sys.stderr)
