@@ -61,7 +61,7 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
         "staysharp-edge",
         env=edge_env,
         cross_region_references=True,
-        description="Stay Sharp: us-east-1 resources (certificate, budget)",
+        description="Stay Sharp: us-east-1 resources (certificate, budget, WAF)",
     )
 
     launch_dates: dict[str, str | None] = _context(app, "launchDate") or {}
@@ -94,11 +94,12 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
             site_dist=site_dist,
             domain_name=SITE_DOMAIN if prod else None,
             certificate=edge.certificate if prod else None,
+            web_acl_arn=edge.web_acl.attr_arn,
             env=main_env,
             cross_region_references=True,
         )
-        if prod:
-            web.add_stack_dependency(edge)
+        # The certificate (prod) and the web ACL (both stages) come from the edge stack.
+        web.add_stack_dependency(edge)
         CdnAlarmsStack(
             app,
             f"{prefix}-cdn-alarms",

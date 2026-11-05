@@ -54,6 +54,7 @@ class WebStack(Stack):
         site_dist: str | None = None,
         domain_name: str | None = None,
         certificate: acm.ICertificate | None = None,
+        web_acl_arn: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -133,6 +134,7 @@ class WebStack(Stack):
                 cloudfront.SecurityPolicyProtocol.TLS_V1_2_2021 if certificate else None
             ),
             http_version=cloudfront.HttpVersion.HTTP2_AND_3,
+            web_acl_id=web_acl_arn,
             price_class=cloudfront.PriceClass.PRICE_CLASS_100,
             enable_logging=False,
             default_behavior=cloudfront.BehaviorOptions(
