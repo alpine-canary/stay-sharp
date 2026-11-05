@@ -5,7 +5,15 @@ import { useCallback, useMemo, useState } from "react";
 import { createClient, type ApiClient, type PlayState } from "./api/client";
 import { Link } from "./components/Link";
 import { navigate, useRoute } from "./router";
-import { createStore, type Level, type Notice, type Progress, type ProgressStore } from "./storage";
+import {
+  createStore,
+  recordAnswer,
+  recordDay,
+  type Level,
+  type Notice,
+  type Progress,
+  type ProgressStore,
+} from "./storage";
 import { Home } from "./views/Home";
 import { Play } from "./views/Play";
 import { Result } from "./views/Result";
@@ -43,18 +51,8 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
 
   const finished = useCallback(
     (play: PlayState) => {
-      if (play.mode === "daily" && play.finished) {
-        update((p) => ({
-          ...p,
-          days: {
-            ...p.days,
-            [play.level]: {
-              ...p.days[play.level],
-              [play.date]: { score: play.score, bonus: play.bonus, relaxed: play.relaxed },
-            },
-          },
-        }));
-      }
+      // Keyed by the play's server date: a play finished after midnight counts for its own day.
+      if (play.mode === "daily" && play.finished) update((p) => recordDay(p, play));
       navigate(`/result?play=${play.playId}`);
       window.scrollTo(0, 0);
     },
@@ -90,6 +88,13 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
               mode={mode}
               relaxed={progress.relaxed}
               onFinished={finished}
+              onAnswered={({ mode: playMode, deck, grade, duplicate }) => {
+                // Replays are not scored, so they do not count in the skill view either.
+                if (playMode === "daily" && progress.level) {
+                  const level = progress.level;
+                  update((p) => recordAnswer(p, { level, deck, grade, duplicate }));
+                }
+              }}
             />
           ) : (
             <ChooseLevelFirst />

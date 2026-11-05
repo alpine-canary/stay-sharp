@@ -228,7 +228,7 @@ the browser from the local log, per level.
 
 - [X] T095 [P] [US2] Table-driven tests in `front/src/progress/progress.test.ts`: freeze earned on the 5th finished daily of an ISO week (at most one held), used for one missed day (shown "frozen"), two missed days reset to 1, longest kept, DST weeks, a play finished after midnight counts for its own date, `duplicate: true` changes no count or box, per-level separation (FR-012 to FR-015, R7, W13, V5)
 - [X] T096 [US2] Implement `front/src/progress/streak.ts` and `front/src/progress/skills.ts` (pure functions) to pass T095; skill view counts half-right as half, daily and practice combined, weakest deck first
-- [ ] T097 [US2] Record finished plays and answers in `front/src/storage.ts` from the play flow (ignore answers marked `duplicate`), keyed by the play's server date
+- [X] T097 [US2] Record finished plays and answers in `front/src/storage.ts` from the play flow (ignore answers marked `duplicate`), keyed by the play's server date
 - [ ] T098 [US2] Show current streak, longest, freeze and the skill view in `front/src/views/Home.tsx`, with the plain note that progress is kept on this browser (FR-016)
 
 **Checkpoint**: V5 passes; the home screen shows the figures after a played daily.

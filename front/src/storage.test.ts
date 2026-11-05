@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { createStore, freshProgress, isProgress, newPlayerId, STORAGE_KEY } from "./storage";
+import { createStore, freshProgress, isProgress, newPlayerId, recordAnswer, STORAGE_KEY } from "./storage";
 
 const UUID_V4 = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
@@ -112,5 +112,23 @@ describe("store", () => {
     p.boxes.null_check = 2;
     expect(isProgress(JSON.parse(JSON.stringify(p)))).toBe(true);
     expect(isProgress({ ...p, deckStats: { ...p.deckStats, senior: { spot: { answered: 1, correct: 2 } } } })).toBe(false);
+  });
+});
+
+describe("skill counts", () => {
+  it("keep half-right answers across a reload", () => {
+    const storage = new MemoryStorage();
+    const store = createStore(storage);
+    const p = recordAnswer(store.load().progress, { level: "senior", deck: "spot", grade: 0.5, duplicate: false });
+    store.save(p);
+    const again = createStore(storage).load();
+    expect(again.notice).toBeNull();
+    expect(again.progress.deckStats.senior.spot).toEqual({ answered: 1, correct: 0.5 });
+  });
+
+  it("refuse a correct count that is not a multiple of a half", () => {
+    const p = freshProgress();
+    p.deckStats.senior.spot = { answered: 2, correct: 0.3 };
+    expect(isProgress(p)).toBe(false);
   });
 });

@@ -104,11 +104,14 @@ function isFreeze(v: unknown): boolean {
   );
 }
 
+// Half-right counts as half (FR-015): correct is a multiple of 0.5.
+const isHalves = (v: unknown): v is number => isNumber(v) && v >= 0 && Number.isInteger(v * 2);
+
 function isDeckStats(v: unknown): boolean {
   return (
     isObject(v) &&
     Object.values(v).every(
-      (s) => isObject(s) && isCount(s.answered) && isCount(s.correct) && s.correct <= s.answered,
+      (s) => isObject(s) && isCount(s.answered) && isHalves(s.correct) && s.correct <= s.answered,
     )
   );
 }
@@ -206,5 +209,42 @@ export function createStore(storage: Storage | null = browserStorage()): Progres
         return false;
       }
     },
+  };
+}
+
+// --- Recording (task T097, R7, W13) -----------------------------------------------------------
+
+export interface FinishedDaily {
+  level: Level;
+  /** The play's date from the server, never the device clock: a play finished after midnight
+   * counts for its own day. */
+  date: string;
+  score: number;
+  bonus: number;
+  relaxed: boolean;
+}
+
+export function recordDay(progress: Progress, play: FinishedDaily): Progress {
+  const days = { ...progress.days[play.level], [play.date]: { score: play.score, bonus: play.bonus, relaxed: play.relaxed } };
+  return { ...progress, days: { ...progress.days, [play.level]: days } };
+}
+
+export interface GradedAnswer {
+  level: Level;
+  deck: string;
+  grade: number;
+  /** The server already had this answer: it was counted the first time. */
+  duplicate: boolean;
+}
+
+/** Add one graded answer to the skill view. A duplicate returns the same object, unchanged. */
+export function recordAnswer(progress: Progress, answer: GradedAnswer): Progress {
+  if (answer.duplicate) return progress;
+  const stats = progress.deckStats[answer.level];
+  const before = stats[answer.deck] ?? { answered: 0, correct: 0 };
+  const after = { answered: before.answered + 1, correct: before.correct + answer.grade };
+  return {
+    ...progress,
+    deckStats: { ...progress.deckStats, [answer.level]: { ...stats, [answer.deck]: after } },
   };
 }

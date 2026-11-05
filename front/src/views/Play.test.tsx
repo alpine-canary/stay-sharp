@@ -175,4 +175,24 @@ describe("Play", () => {
     );
     expect(await screen.findByRole("alert")).toHaveTextContent("Finish today's set before replaying it.");
   });
+
+  it.each([
+    ["a first answer", { result: NO_LINES, conflict: false }, false],
+    ["a retry the server had already counted", { result: { ...NO_LINES, duplicate: true }, conflict: false }, true],
+    ["a different answer after one was recorded (409)", { result: NO_LINES, conflict: true }, true],
+  ])("reports %s to the skill view", async (_name, response, duplicate) => {
+    const user = userEvent.setup();
+    const onAnswered = vi.fn();
+    const api = client({
+      startPlay: vi.fn().mockResolvedValue({ created: true, play: state({ question: view(1, "better") }) }),
+      answer: vi.fn().mockResolvedValue(response),
+    });
+    render(
+      <Play client={api} level="senior" mode="daily" relaxed={false} onFinished={vi.fn()} onAnswered={onAnswered} />,
+    );
+    await user.click(await screen.findByRole("radio", { name: /Right one/ }));
+    await user.click(screen.getByRole("button", { name: "Check" }));
+    await screen.findByRole("status");
+    expect(onAnswered).toHaveBeenCalledWith({ mode: "daily", deck: "better", grade: 1, duplicate });
+  });
 });

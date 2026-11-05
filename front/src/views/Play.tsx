@@ -24,6 +24,9 @@ export interface PlayProps {
   mode: "daily" | "replay";
   relaxed: boolean;
   onFinished: (play: PlayState) => void;
+  /** Every graded answer, for the skill view. ``duplicate`` is true when the server had already
+   * counted an answer for this question (a retry, or a 409 with the answer that counts). */
+  onAnswered?: (answer: { mode: "daily" | "replay"; deck: string; grade: number; duplicate: boolean }) => void;
 }
 
 type Loading = { status: "loading" } | { status: "ready" } | { status: "blocked"; message: string; retry: boolean };
@@ -33,7 +36,7 @@ function messageOf(error: unknown, fallback: string): string {
   return fallback;
 }
 
-export function Play({ client, level, mode, relaxed: relaxedPref, onFinished }: PlayProps) {
+export function Play({ client, level, mode, relaxed: relaxedPref, onFinished, onAnswered }: PlayProps) {
   const [loading, setLoading] = useState<Loading>({ status: "loading" });
   const [attempt, setAttempt] = useState(0);
   const [play, setPlay] = useState<PlayState | null>(null);
@@ -136,6 +139,12 @@ export function Play({ client, level, mode, relaxed: relaxedPref, onFinished }: 
       });
       setResult(answer.result);
       setConflict(answer.conflict);
+      onAnswered?.({
+        mode: play.mode,
+        deck: question.deck,
+        grade: answer.result.grade,
+        duplicate: answer.result.duplicate || answer.conflict,
+      });
       setPlay((p) => {
         if (!p) return p;
         const grades = [...p.grades];
