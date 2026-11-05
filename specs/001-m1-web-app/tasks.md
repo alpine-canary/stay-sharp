@@ -294,7 +294,7 @@ returns within the next 5 (V14 for the server side).
 - [X] T115 [P] Playwright performance test `front/tests/e2e/perf.spec.ts` (Moto G Power profile, Slow 4G, cold Lambda included): first question interactive under 2 s on dev (SC-007, V17)
 - [X] T116 [P] Add WAF to `infra/stacks/edge_stack.py`: rate rule 1,000 requests per 5 minutes per IP on `/api/*` with the JSON 429 body of R9, body size rule over 2 KB, AWS managed common rule set, logging off; on the plan chosen in T015
 - [X] T117 [P] Implement `api/src/staysharp/tools/return_rate.py`: monthly read-only count of players with finished plays on two or more dates, and challenge links that led to a finished game; prints aggregate numbers only (SC-010)
-- [ ] T118 [P] Write `docs/runbooks/restore.md` and try the PITR restore once in dev (R17); write `docs/runbooks/pepper-rotation.md` (30-day notice, R16)
+- [X] T118 [P] Write `docs/runbooks/restore.md` and try the PITR restore once in dev (R17); write `docs/runbooks/pepper-rotation.md` (30-day notice, R16)
 - [ ] T119 [P] Manual check with a keyboard-only tester and a screen reader on a full relaxed daily; record the date and result in `docs/accessibility-check.md` (SC-007a)
 - [X] T120 Update `README.md`: what the game is, how to run it locally (from quickstart.md), architecture in a few lines, and a "Numbers" section that says "Not measured yet" (Principle I)
 - [ ] T121 Run every scenario V1 to V18 of `specs/001-m1-web-app/quickstart.md` and record the result and date of each in `specs/001-m1-web-app/checklists/release.md`

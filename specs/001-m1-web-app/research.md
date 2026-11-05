@@ -330,5 +330,9 @@ measured cost is above USD 12, cut dev metrics first (dev emits only `ScoringFai
 
 ## R17. Data recovery
 
-- **Decision (S10)**: PITR on in prod. `docs/runbooks/restore.md`: restore to a new table, compare
-  item counts, switch the table name parameter, redeploy. Tried once in dev before launch.
+- **Decision (S10)**: PITR on in prod. `docs/runbooks/restore.md`: restore to a side table,
+  compare item counts, then copy the snapshot back into the live table with
+  `staysharp.tools.restore_copy` (counts only, dry run first) and delete the side table. Changed
+  from "switch the table name and redeploy" (2026-11-05, T118): the name is fixed in the data,
+  API and ops stacks and in the content role, and the live table keeps its CDK settings (TTL,
+  PITR, alarms, permissions) this way. Tried once in dev before launch.
