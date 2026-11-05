@@ -1,10 +1,37 @@
 @import "tailwindcss";
 
-/* Fonts are self-hosted (CSP font-src 'self'), latin subset only, font-display: swap. */
-@import "@fontsource/bricolage-grotesque/latin-800.css";
-@import "@fontsource/ibm-plex-sans/latin-400.css";
-@import "@fontsource/ibm-plex-sans/latin-600.css";
-@import "@fontsource/jetbrains-mono/latin-400.css";
+/* Fonts are self-hosted (CSP font-src 'self'), latin subset only. font-display: optional: the
+   font is used when it arrives within about 100 ms (and from the cache on later visits), else the
+   system font stays for that page view. No late swap, so no layout shift and no late largest
+   paint (FR-034). */
+@font-face {
+  font-family: "Bricolage Grotesque";
+  font-style: normal;
+  font-display: optional;
+  font-weight: 800;
+  src: url("@fontsource/bricolage-grotesque/files/bricolage-grotesque-latin-800-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-display: optional;
+  font-weight: 400;
+  src: url("@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-400-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "IBM Plex Sans";
+  font-style: normal;
+  font-display: optional;
+  font-weight: 600;
+  src: url("@fontsource/ibm-plex-sans/files/ibm-plex-sans-latin-600-normal.woff2") format("woff2");
+}
+@font-face {
+  font-family: "JetBrains Mono";
+  font-style: normal;
+  font-display: optional;
+  font-weight: 400;
+  src: url("@fontsource/jetbrains-mono/files/jetbrains-mono-latin-400-normal.woff2") format("woff2");
+}
 
 /* The look comes from the M0 prototype: one narrow column like a code-review pane. The question
    is the "diff", the player's pick is a yellow review flag, verdicts use review colours. Every

@@ -1,21 +1,16 @@
-import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import { App } from "./App";
+// Entry: tiny on purpose (FR-034). A prerendered first screen (src/prerender.tsx) is painted
+// before the app's code is even requested; the app then loads and replaces it. The dev server
+// has no first screen, so it loads the app at once.
+
 import "./index.css";
 
 const root = document.getElementById("root");
 if (!root) throw new Error("Missing #root element");
-
 const container = root;
-function start() {
-  createRoot(container).render(
-    <StrictMode>
-      <App />
-    </StrictMode>,
-  );
+
+function load(): void {
+  void import("./start").then(({ start }) => start(container));
 }
 
-// A prerendered first screen (src/prerender.tsx) is painted before React replaces it: start one
-// frame later, after that paint (FR-034). The dev server has no first screen and starts at once.
-if (container.hasChildNodes()) requestAnimationFrame(() => setTimeout(start, 0));
-else start();
+if (container.hasChildNodes()) requestAnimationFrame(() => setTimeout(load, 0));
+else load();
