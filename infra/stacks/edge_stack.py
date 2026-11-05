@@ -22,7 +22,7 @@ from aws_cdk import aws_sns as sns
 from aws_cdk import aws_sns_subscriptions as subscriptions
 from constructs import Construct
 
-from stacks.ops_stack import alarm_email
+from stacks.ops_stack import alarm_email, allow_cloudwatch
 
 SITE_DOMAIN = "stay-sharp.lumineth.com"
 BUDGET_USD = 20
@@ -51,6 +51,8 @@ class EdgeStack(Stack):
         topic.add_subscription(
             subscriptions.EmailSubscription(alarm_email(self, "/staysharp/account/alarm-email"))
         )
+        allow_cloudwatch(topic)
+        self.alerts = topic
         topic.add_to_resource_policy(
             iam.PolicyStatement(
                 principals=[iam.ServicePrincipal("budgets.amazonaws.com")],

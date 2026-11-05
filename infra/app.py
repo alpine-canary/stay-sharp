@@ -11,6 +11,10 @@ Stacks:
   deployed first, removed last.
 - per stage, in eu-central-2: ``-ops``, ``-data``, ``-api``, ``-web``. Only prod uses the public
   name and certificate (cross-region reference); dev uses its CloudFront domain.
+- per stage, in us-east-1: ``-cdn-alarms`` (CloudFront metrics exist only there).
+
+Context for drills in dev only: ``devDeploymentConfig`` (for example
+``LambdaCanary10Percent5Minutes``) and ``drill`` (``selfcheck-fail`` or ``fail-traffic``).
 """
 
 from __future__ import annotations
@@ -22,6 +26,7 @@ import aws_cdk as cdk
 
 from stacks.account_stack import AccountStack
 from stacks.api_stack import ApiStack
+from stacks.cdn_alarms_stack import CdnAlarmsStack
 from stacks.data_stack import DataStack
 from stacks.edge_stack import SITE_DOMAIN, EdgeStack
 from stacks.ops_stack import OpsStack
@@ -63,7 +68,8 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
     site_commit = _context(app, "siteCommit") or "initial"
     for stage in STAGES:
         prefix = f"staysharp-{stage}"
-        OpsStack(app, f"{prefix}-ops", stage=stage, env=main_env)
+        prod = stage == "prod"
+        ops = OpsStack(app, f"{prefix}-ops", stage=stage, env=main_env)
         data = DataStack(app, f"{prefix}-data", stage=stage, env=main_env)
         api = ApiStack(
             app,
@@ -72,9 +78,11 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
             table=data.table,
             pepper=data.pepper,
             launch_date=launch_dates.get(stage),
+            topic=ops.topic,
+            deployment_config=None if prod else _context(app, "devDeploymentConfig"),
+            drill=None if prod else _context(app, "drill"),
             env=main_env,
         )
-        prod = stage == "prod"
         web = WebStack(
             app,
             f"{prefix}-web",
@@ -84,10 +92,19 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
             domain_name=SITE_DOMAIN if prod else None,
             certificate=edge.certificate if prod else None,
             env=main_env,
-            cross_region_references=prod,
+            cross_region_references=True,
         )
         if prod:
             web.add_stack_dependency(edge)
+        CdnAlarmsStack(
+            app,
+            f"{prefix}-cdn-alarms",
+            stage=stage,
+            distribution_id=web.distribution.distribution_id,
+            topic=edge.alerts,
+            env=edge_env,
+            cross_region_references=True,
+        )
     return app
 
 

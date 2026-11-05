@@ -1,4 +1,11 @@
-"""Per-stage operations: the alarm topic and one way to make alarms (task T019, research R11).
+"""Per-stage operations: the alarm topic, one way to make alarms, and the stage alarms
+(tasks T019, T079, research R11).
+
+Alarms here use metrics found by name (Stage, function name), so this stack needs nothing from
+the API stack: paging ``ScoringFailures`` summed over versions, ``SelfCheckFailures``, Lambda
+errors and throttles, and in dev the fault injection left on. The rollback alarms and the API
+5xx alarm live in the API stack (they need the version and the API id); the CloudFront 5xx alarm
+lives in us-east-1, where CloudFront metrics are (``CdnAlarmsStack``).
 
 The maintainer's e-mail is read at deploy time from the SSM parameter
 ``/staysharp/<stage>/alarm-email`` (created by hand, see docs/runbooks/account-setup.md), so it
@@ -9,9 +16,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from aws_cdk import Duration, Stack
+from aws_cdk import Aws, Duration, Stack
 from aws_cdk import aws_cloudwatch as cloudwatch
 from aws_cdk import aws_cloudwatch_actions as actions
+from aws_cdk import aws_iam as iam
 from aws_cdk import aws_sns as sns
 from aws_cdk import aws_sns_subscriptions as subscriptions
 from aws_cdk import aws_ssm as ssm
@@ -21,6 +29,18 @@ from constructs import Construct
 def alarm_email(scope: Construct, path: str) -> str:
     """Deploy-time value of an SSM parameter: a CloudFormation parameter, not a lookup."""
     return ssm.StringParameter.value_for_string_parameter(scope, path)
+
+
+def allow_cloudwatch(topic: sns.Topic) -> None:
+    """A topic with its own policy (enforce_ssl) loses the default one: let alarms publish."""
+    topic.add_to_resource_policy(
+        iam.PolicyStatement(
+            principals=[iam.ServicePrincipal("cloudwatch.amazonaws.com")],
+            actions=["sns:Publish"],
+            resources=[topic.topic_arn],
+            conditions={"StringEquals": {"aws:SourceAccount": Aws.ACCOUNT_ID}},
+        )
+    )
 
 
 def make_alarm(
@@ -69,6 +89,84 @@ class OpsStack(Stack):
         self.topic.add_subscription(
             subscriptions.EmailSubscription(alarm_email(self, f"/staysharp/{stage}/alarm-email"))
         )
+        allow_cloudwatch(self.topic)
+        self._alarms(stage)
+
+    def _alarms(self, stage: str) -> None:
+        minute = Duration.minutes(1)
+        five = Duration.minutes(5)
+        quiet = cloudwatch.TreatMissingData.NOT_BREACHING
+
+        def ours(name: str, period: Duration) -> cloudwatch.Metric:
+            return cloudwatch.Metric(
+                namespace="StaySharp",
+                metric_name=name,
+                dimensions_map={"Stage": stage},
+                statistic="Sum",
+                period=period,
+            )
+
+        def lambda_metric(name: str) -> cloudwatch.Metric:
+            return cloudwatch.Metric(
+                namespace="AWS/Lambda",
+                metric_name=name,
+                dimensions_map={"FunctionName": f"staysharp-{stage}-api"},
+                statistic="Sum",
+                period=five,
+            )
+
+        # FR-028, SC-004: one failure in any of the last 5 minutes pages the maintainer. Never
+        # attached to CodeDeploy (that is the version-scoped alarm in the API stack).
+        make_alarm(
+            self,
+            "PagingScoringFailures",
+            topic=self.topic,
+            metric=ours("ScoringFailures", minute),
+            threshold=1,
+            evaluation_periods=5,
+            datapoints_to_alarm=1,
+            treat_missing_data=quiet,
+            description="PAGE: answers could not be scored (all versions). See rollback.md.",
+        )
+        make_alarm(
+            self,
+            "SelfCheckFailures",
+            topic=self.topic,
+            metric=ours("SelfCheckFailures", five),
+            threshold=1,
+            treat_missing_data=quiet,
+            description="A new version failed its self-check and was stopped before traffic.",
+        )
+        make_alarm(
+            self,
+            "LambdaErrors",
+            topic=self.topic,
+            metric=lambda_metric("Errors"),
+            threshold=1,
+            treat_missing_data=quiet,
+            description="The API function raised errors (all versions).",
+        )
+        make_alarm(
+            self,
+            "LambdaThrottles",
+            topic=self.topic,
+            metric=lambda_metric("Throttles"),
+            threshold=1,
+            treat_missing_data=quiet,
+            description="The API function hit its reserved concurrency (players got 5xx).",
+        )
+        if stage == "dev":
+            make_alarm(
+                self,
+                "FaultInjectionLeftOn",
+                topic=self.topic,
+                metric=ours("FaultInjectionActive", five),
+                threshold=1,
+                evaluation_periods=6,
+                datapoints_to_alarm=6,
+                treat_missing_data=quiet,
+                description="Dev fault injection has been on for 30 minutes: switch it off.",
+            )
 
     def alarm(
         self,
