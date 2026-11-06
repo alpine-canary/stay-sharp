@@ -29,10 +29,10 @@ Every pair is measured in `front/src/contrast.test.ts` (text 4.5:1, UI parts 3:1
 
 ## Type
 
-- **Source Serif 4, 600**: headings, the question, the score and streak figures. Lining figures
-  (`lining-nums`); never `tabular-nums` on a decimal, its tabular point sits too high.
+- **Source Serif 4, 600**: headings and the question. Never for figures: this subset has
+  old-style figures only, so "3.5" reads as "3·5".
 - **IBM Plex Sans 400 and 600**: body (17 px), options, buttons, eyebrows (600, 14.5 px,
-  `letter-spacing .1em`, capitals).
+  `letter-spacing .1em`, capitals), and every figure (score, streak) in tabular figures.
 - **Mono**: the system's (`ui-monospace, SFMono-Regular, Menlo, monospace`), no download. Code
   14.5 px; deck chips and timer 13 to 14 px. Text between backticks in an explanation is code.
 - Nothing under 14.5 px except mono labels. Three font files, all preloaded, `font-display:

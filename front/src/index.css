@@ -874,10 +874,12 @@ code {
   gap: 10px;
 }
 
-/* Lining figures only: Source Serif's tabular set raises the decimal point. */
+/* Figures in Plex: this subset of Source Serif has old-style figures only (3, 5, 9 drop below
+   the line, so "3.5" reads as "3·5"). */
 .score .big {
-  font: 600 72px/1 var(--serif);
-  font-variant-numeric: lining-nums;
+  font: 600 72px/1 var(--body);
+  letter-spacing: -0.03em;
+  font-variant-numeric: tabular-nums;
 }
 
 @media (min-width: 768px) {
@@ -1002,8 +1004,8 @@ code {
 }
 
 .stats .big {
-  font: 600 36px/1 var(--serif);
-  font-variant-numeric: lining-nums tabular-nums;
+  font: 600 36px/1 var(--body);
+  font-variant-numeric: tabular-nums;
   color: var(--isl-ink);
   display: inline-block;
 }
@@ -1108,8 +1110,8 @@ code {
 
 .side-figures dd {
   margin: 0;
-  font: 600 24px/1.2 var(--serif);
-  font-variant-numeric: lining-nums;
+  font: 600 24px/1.2 var(--body);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Privacy (T113) */
