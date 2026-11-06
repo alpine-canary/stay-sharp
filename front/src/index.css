@@ -528,8 +528,9 @@ code {
 }
 
 .seg .opts-row {
-  display: inline-flex;
-  flex-wrap: wrap;
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: auto;
   gap: 4px;
   padding: 4px;
   border-radius: 14px;
@@ -541,8 +542,10 @@ code {
 .seg label {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  white-space: nowrap;
   min-height: 44px;
-  padding: 8px 16px;
+  padding: 8px 14px;
   border-radius: 10px;
   cursor: pointer;
   font-weight: 600;
