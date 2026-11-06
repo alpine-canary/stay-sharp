@@ -68,6 +68,10 @@ export function createAccountApi({ token, fetchImpl = (i, n) => fetch(i, n), bas
     async getProgress(): Promise<ProgressCopy> {
       return (await call("GET", "/me/progress")).body as ProgressCopy;
     },
+    /** Delete the account and all its data: resolves only once the server says it is done. */
+    async deleteAccount(): Promise<void> {
+      await call("DELETE", "/me");
+    },
     /** ``conflict`` carries the stored copy when someone else wrote first (409). */
     async putProgress(version: number, body: unknown): Promise<{ stored: ProgressCopy; conflict: boolean }> {
       const result = await call("PUT", "/me/progress", { version, body }, {}, [409]);

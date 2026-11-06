@@ -1533,3 +1533,8 @@ code {
     font-weight: 600;
   }
 }
+
+.btn.danger {
+  background: var(--bad);
+  color: var(--surface);
+}

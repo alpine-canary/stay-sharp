@@ -143,10 +143,12 @@ def test_failed_and_rolled_back_deployments_reach_the_maintainer(
 ) -> None:
     (trigger,) = group(api(template, stage))["TriggerConfigurations"]
     assert set(trigger["TriggerEvents"]) == {"DeploymentFailure", "DeploymentRollback"}
+    # The pre-traffic hook and the account job (M2) both report failures, without retries.
     hook_config = resources(api(template, stage), "AWS::Lambda::EventInvokeConfig")
-    (config,) = hook_config.values()
-    assert config["Properties"]["MaximumRetryAttempts"] == 0
-    assert "OnFailure" in config["Properties"]["DestinationConfig"]
+    assert len(hook_config) == 2
+    for config in hook_config.values():
+        assert config["Properties"]["MaximumRetryAttempts"] == 0
+        assert "OnFailure" in config["Properties"]["DestinationConfig"]
 
 
 @pytest.mark.parametrize("stage", STAGES)

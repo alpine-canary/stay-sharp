@@ -28,6 +28,8 @@ ALLOWED: dict[str, tuple[MetricUnit, str | None]] = {
     "ChallengesOpened": (COUNT, None),
     "ChallengesFinished": (COUNT, None),
     "StockDaysAhead": (COUNT, "Level"),
+    # Accounts (M2): deletions still not finished an hour after they were asked (FR-114).
+    "StuckAccountDeletions": (COUNT, None),
     "SelfCheckFailures": (COUNT, None),
     # Dev only: emitted by api/testing/fault_injection.py while injection is on (W11).
     "FaultInjectionActive": (COUNT, None),

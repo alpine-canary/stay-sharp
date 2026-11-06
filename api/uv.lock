@@ -116,6 +116,9 @@ cloudwatch = [
 codedeploy = [
     { name = "mypy-boto3-codedeploy" },
 ]
+cognito-idp = [
+    { name = "mypy-boto3-cognito-idp" },
+]
 dynamodb = [
     { name = "mypy-boto3-dynamodb" },
 ]
@@ -373,6 +376,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/1b/04/db989ce72e00b818ab44ce19c3706d468f3dfc62305ae7dd2e7933fd7483/mypy_boto3_codedeploy-1.43.115.tar.gz", hash = "sha256:1c1379545ed3a16f33361b8131fff43bc6061d5c23fc976fe72e738d2a4bdf28", size = 37305, upload-time = "2026-10-19T20:43:13.717Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/93/36/a9d4b31a85f7ef53b974d03c3e449f47c0339db41b2e6993ebf17e9e8a57/mypy_boto3_codedeploy-1.43.115-py3-none-any.whl", hash = "sha256:14fb001628e9eaa61fe774bceb74603188862390c15c142fd1f92394b8bf3e8e", size = 44106, upload-time = "2026-10-19T20:43:10.831Z" },
+]
+
+[[package]]
+name = "mypy-boto3-cognito-idp"
+version = "1.43.108"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/30/aa/92d39c3b291997cbaa10c98e567a2ad42ed9d5fd9bf1e1cdb011b14d2314/mypy_boto3_cognito_idp-1.43.108.tar.gz", hash = "sha256:7870f241049df1c807b10ac06d62fd751483802172435e297a36c897b7dee1de", size = 55876, upload-time = "2026-10-02T21:05:43.131Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cc/15/167d0a33aea4d9b638f56d5b8c7bd88d1da3fcde52b0865ee7241ca3d4de/mypy_boto3_cognito_idp-1.43.108-py3-none-any.whl", hash = "sha256:63b728a83a520cce327aabb33f8a82fdf5e923a637d1b4240375979ba57fdfde", size = 62201, upload-time = "2026-10-02T21:05:40.87Z" },
 ]
 
 [[package]]
@@ -756,7 +768,7 @@ publish = [
 
 [package.dev-dependencies]
 dev = [
-    { name = "boto3-stubs", extra = ["cloudwatch", "codedeploy", "dynamodb", "lambda", "secretsmanager", "ssm"] },
+    { name = "boto3-stubs", extra = ["cloudwatch", "codedeploy", "cognito-idp", "dynamodb", "lambda", "secretsmanager", "ssm"] },
     { name = "jsonschema" },
     { name = "mypy" },
     { name = "openapi-core" },
@@ -781,7 +793,7 @@ provides-extras = ["publish"]
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "boto3-stubs", extras = ["cloudwatch", "codedeploy", "dynamodb", "lambda", "secretsmanager", "ssm"], specifier = ">=1.43.123" },
+    { name = "boto3-stubs", extras = ["cloudwatch", "codedeploy", "cognito-idp", "dynamodb", "lambda", "secretsmanager", "ssm"], specifier = ">=1.43.123" },
     { name = "jsonschema", specifier = ">=4.26.0" },
     { name = "mypy", specifier = ">=2.4.1" },
     { name = "openapi-core", specifier = ">=0.23.1" },

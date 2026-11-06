@@ -1,6 +1,9 @@
-// What we keep and where (task T113, FR-035, FR-036). Written so a 12-year-old can follow it.
-// Every fact here matches the code: browser storage (src/storage.ts), the table and its expiry
-// times (infra/stacks/data_stack.py, store/*.py), logs without IP addresses (api_stack.py).
+// What we keep and where (task T113, FR-035, FR-036; accounts: T235, FR-114 to FR-117).
+// Written so a 12-year-old can follow it. Every fact here matches the code: browser storage
+// (src/storage.ts), the table and its expiry times (infra/stacks/data_stack.py, store/*.py),
+// logs without IP addresses (api_stack.py), accounts (infra/stacks/auth_stack.py,
+// store/accounts.py, store/deletion.py). Add the 24-month rule for inactive accounts here only
+// once it runs (task T243).
 
 import { Link } from "../components/Link";
 
@@ -12,8 +15,8 @@ export function Privacy() {
         What we keep, and where
       </h1>
       <p>
-        You do not need an account. We never ask for your name, your e-mail or your age. There are no ads, no
-        cookies and no trackers.
+        You do not need an account to play. Without one, we never ask for your name, your e-mail or your age.
+        There are no ads, no cookies and no trackers.
       </p>
 
       <h2 className="text-lg">In your browser</h2>
@@ -47,6 +50,29 @@ export function Privacy() {
       <p>
         Our logs keep technical ids only, never your IP address. We count things like "how many games were
         finished today" as totals, never per person.
+      </p>
+
+      <h2 className="text-lg">If you create an account</h2>
+      <p>
+        An account is optional and only for players aged 16 and over. It keeps your streak and progress on all
+        your devices. With an account, we also keep:
+      </p>
+      <ul>
+        <li>your e-mail address, used only to send you sign-in codes. No newsletter;</li>
+        <li>that you said you are 16 or older;</li>
+        <li>
+          your passkeys, if you add some: only the public part. Your face, your fingerprint and your screen lock
+          never leave your device;
+        </li>
+        <li>a copy of your progress, and the games of all your devices under one random code.</li>
+      </ul>
+      <p>
+        All of it stays in Zurich, Switzerland. Our logs never keep your e-mail address or your sign-in codes.
+      </p>
+      <p>
+        <strong>Delete my account</strong>, on your account page, deletes all of it within a minute: your
+        account, your e-mail, your games and your progress. Challenge results you left for a colleague stay as
+        scores without a name. Backups keep a copy for up to 35 days, then it is gone.
       </p>
 
       <div className="row">

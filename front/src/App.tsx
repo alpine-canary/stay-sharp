@@ -283,7 +283,7 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
         {route.view === "privacy" && <Privacy />}
         {route.view === "account" && (
           <Suspense fallback={<AccountLoading />}>
-            <AccountPage current={current} replace={replace} onSignedIn={() => setSignedIn(true)} />
+            <AccountPage current={current} replace={replace} onSignedIn={() => setSignedIn(true)} onSignedOut={() => setSignedIn(false)} />
           </Suspense>
         )}
       </main>

@@ -15,6 +15,7 @@ import boto3
 from botocore.config import Config
 
 if TYPE_CHECKING:
+    from mypy_boto3_cognito_idp import CognitoIdentityProviderClient
     from mypy_boto3_dynamodb import DynamoDBClient
     from mypy_boto3_secretsmanager import SecretsManagerClient
 
@@ -40,7 +41,14 @@ def secretsmanager() -> SecretsManagerClient:
     return boto3.client("secretsmanager", region_name=_region(), config=CONFIG)
 
 
+@cache
+def cognito() -> CognitoIdentityProviderClient:
+    """Used only by the account delete and jobs functions (AdminDeleteUser)."""
+    return boto3.client("cognito-idp", region_name=_region(), config=CONFIG)
+
+
 def reset() -> None:
     """Forget cached clients (tests that change the environment)."""
     dynamodb.cache_clear()
     secretsmanager.cache_clear()
+    cognito.cache_clear()

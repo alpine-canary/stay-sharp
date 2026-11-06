@@ -148,8 +148,11 @@ def test_the_api_role_cannot_call_cognito(template: TemplateOf, stage: str) -> N
 
 
 @pytest.mark.parametrize("stage", STAGES)
-def test_only_the_delete_function_deletes_cognito_users(template: TemplateOf, stage: str) -> None:
-    statements = _statements_of_role(template, stage, f"staysharp-{stage}-account-delete")
+@pytest.mark.parametrize("function", ["account-delete", "account-jobs"])
+def test_only_the_delete_and_jobs_functions_delete_cognito_users(
+    template: TemplateOf, stage: str, function: str
+) -> None:
+    statements = _statements_of_role(template, stage, f"staysharp-{stage}-{function}")
     cognito = [s for s in statements if "cognito-idp" in json.dumps(s)]
     assert len(cognito) == 1
     (statement,) = cognito
@@ -157,7 +160,29 @@ def test_only_the_delete_function_deletes_cognito_users(template: TemplateOf, st
     # The stage's own pool, never "*".
     assert "PlayersCF26CFA0Arn" in json.dumps(statement["Resource"])  # type: ignore[index]
     everything = json.dumps(resources(template(f"staysharp-{stage}-api"), "AWS::IAM::Policy"))
-    assert everything.count("cognito-idp:") == 1
+    assert everything.count("cognito-idp:") == 2
+
+
+@pytest.mark.parametrize("stage", STAGES)
+def test_account_jobs_run_every_hour_and_alarm_on_stuck_deletions(
+    template: TemplateOf, stage: str
+) -> None:
+    t = template(f"staysharp-{stage}-api")
+    rules = [
+        r["Properties"]
+        for r in resources(t, "AWS::Events::Rule").values()
+        if "AccountJobs" in json.dumps(r["Properties"]["Targets"])
+    ]
+    assert [r["ScheduleExpression"] for r in rules] == ["rate(1 hour)"]
+    alarms = {
+        a["Properties"]["MetricName"]: a["Properties"]
+        for a in resources(t, "AWS::CloudWatch::Alarm").values()
+        if "MetricName" in a["Properties"]
+    }
+    stuck = alarms["StuckAccountDeletions"]
+    assert stuck["Threshold"] == 1
+    assert stuck["ComparisonOperator"] == "GreaterThanOrEqualToThreshold"
+    assert stuck["AlarmActions"]
 
 
 @pytest.mark.parametrize("stage", STAGES)

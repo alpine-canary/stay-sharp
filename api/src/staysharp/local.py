@@ -129,6 +129,13 @@ def route(method: str, target: str, headers: dict[str, str], body: bytes) -> dic
             "headers": {"Content-Type": "application/json"},
             "body": json.dumps({"message": "Unauthorized"}),
         }
+    if method == "DELETE" and event["rawPath"] == ACCOUNT_PREFIX:
+        # Its own function in AWS (infra/stacks/api_stack.py).
+        from staysharp.handlers import account_delete
+
+        with _ONE_AT_A_TIME:
+            deleted: dict[str, Any] = account_delete.handler(event, LocalContext())
+        return deleted
     from staysharp.handlers import api
 
     with _ONE_AT_A_TIME:

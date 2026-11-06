@@ -28,6 +28,8 @@ from aws_cdk import aws_cloudwatch as cloudwatch
 from aws_cdk import aws_codedeploy as codedeploy
 from aws_cdk import aws_cognito as cognito
 from aws_cdk import aws_dynamodb as dynamodb
+from aws_cdk import aws_events as events
+from aws_cdk import aws_events_targets as targets
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_lambda_destinations as destinations
@@ -45,6 +47,7 @@ THROTTLE_BURST = 50
 THROTTLE_RATE = 20
 API_HANDLER = "staysharp.handlers.api.handler"
 DELETE_HANDLER = "staysharp.handlers.account_delete.handler"
+JOBS_HANDLER = "staysharp.handlers.account_jobs.handler"
 ACCOUNT_PATH = "/api/v1/me"
 DEV_HANDLER = "testing.fault_injection.handler"
 DRILLS = ("selfcheck-fail", "fail-traffic")
@@ -196,7 +199,7 @@ class ApiStack(Stack):
             access_log_settings=AccessLogs(access_logs),
         )
 
-        self._accounts(stage, environment, table, pepper, user_pool, user_pool_client)
+        self._accounts(stage, environment, table, pepper, user_pool, user_pool_client, topic)
         self._delivery(stage, topic, config_name)
 
     def _accounts(
@@ -207,8 +210,9 @@ class ApiStack(Stack):
         pepper: secretsmanager.ISecret,
         user_pool: cognito.IUserPool,
         user_pool_client: cognito.IUserPoolClient,
+        topic: sns.ITopic,
     ) -> None:
-        """Account routes behind the JWT authorizer, and the delete function (T207)."""
+        """Account routes behind the JWT authorizer, the delete function and the job (T207)."""
         jwt = authorizers.HttpUserPoolAuthorizer(
             "Players",
             user_pool,
@@ -258,6 +262,87 @@ class ApiStack(Stack):
             methods=[method.DELETE],
             integration=integrations.HttpLambdaIntegration("AccountDelete", self.delete_function),
             authorizer=jwt,
+        )
+        self._account_jobs(stage, environment, table, pepper, user_pool, topic)
+
+    def _account_jobs(
+        self,
+        stage: str,
+        environment: dict[str, str],
+        table: dynamodb.ITableV2,
+        pepper: secretsmanager.ISecret,
+        user_pool: cognito.IUserPool,
+        topic: sns.ITopic,
+    ) -> None:
+        """Hourly: finish stuck deletions (T233); inactive accounts later (T243)."""
+        name = f"staysharp-{stage}-account-jobs"
+        jobs = lambda_.Function(
+            self,
+            "AccountJobs",
+            function_name=name,
+            runtime=lambda_.Runtime.PYTHON_3_13,
+            architecture=lambda_.Architecture.ARM_64,
+            handler=JOBS_HANDLER,
+            code=api_code(stage),
+            memory_size=512,
+            timeout=Duration.minutes(5),
+            reserved_concurrent_executions=1,
+            environment={**environment, "USER_POOL_ID": user_pool.user_pool_id},
+            log_group=logs.LogGroup(
+                self,
+                "AccountJobsLogs",
+                log_group_name=f"/aws/lambda/{name}",
+                retention=LOG_RETENTION,
+            ),
+            logging_format=lambda_.LoggingFormat.JSON,
+            retry_attempts=0,
+            on_failure=destinations.SnsDestination(topic),
+        )
+        table.grant_read_write_data(jobs)
+        pepper.grant_read(jobs)
+        jobs.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["cognito-idp:AdminDeleteUser"], resources=[user_pool.user_pool_arn]
+            )
+        )
+        events.Rule(
+            self,
+            "AccountJobsHourly",
+            schedule=events.Schedule.rate(Duration.hours(1)),
+            targets=[targets.LambdaFunction(jobs, retry_attempts=0)],
+        )
+        make_alarm(
+            self,
+            "StuckAccountDeletions",
+            topic=topic,
+            metric=cloudwatch.Metric(
+                namespace="StaySharp",
+                metric_name="StuckAccountDeletions",
+                dimensions_map={"Stage": stage},
+                statistic="Maximum",
+                period=Duration.hours(1),
+            ),
+            threshold=1,
+            treat_missing_data=cloudwatch.TreatMissingData.NOT_BREACHING,
+            description=(
+                "An account deletion is still not finished after an hour "
+                "(docs/runbooks/accounts.md)."
+            ),
+        )
+        make_alarm(
+            self,
+            "AccountJobsErrors",
+            topic=topic,
+            metric=cloudwatch.Metric(
+                namespace="AWS/Lambda",
+                metric_name="Errors",
+                dimensions_map={"FunctionName": name},
+                statistic="Sum",
+                period=Duration.hours(1),
+            ),
+            threshold=1,
+            treat_missing_data=cloudwatch.TreatMissingData.NOT_BREACHING,
+            description="The account job failed (stuck deletions or inactive accounts).",
         )
 
     def _delivery(self, stage: str, topic: sns.ITopic, config_name: str) -> None:

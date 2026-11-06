@@ -67,11 +67,11 @@ follows the player.
 **Goal**: every item and the Cognito user removed; 204 only when done.
 **Independent test**: quickstart A10.
 
-- [ ] T231 [P] [US3] Test first (DynamoDB Local and a stubbed Cognito): delete removes account, player links, plays, answers, practice records, progress copy, merge records; challenge results become "deleted player"; Cognito user deleted; an injected failure gives 503 and a retry finishes; repeated delete is 204: `api/tests/integration/test_deletion.py`
-- [ ] T232 [US3] Deletion: `api/src/staysharp/store/deletion.py` and `DELETE /me` in `routes_me.py` (only role allowed `AdminDeleteUser`)
-- [ ] T233 [US3] Job: finish deletions stuck in `deleting` for more than 10 minutes; metric and alarm when one stays more than 1 hour: `api/src/staysharp/handlers/account_jobs.py`, `infra/stacks/api_stack.py`
-- [ ] T234 [US3] Delete screen: one confirmation, plain consequences, result only after 204, then a new anonymous player: `front/src/account/views/DeleteAccount.tsx` with tests
-- [ ] T235 [US3] Privacy page: what an account stores, where, how long (24 months inactive, backups 35 days), how to delete: `front/src/views/Privacy.tsx`
+- [X] T231 [P] [US3] Test first (DynamoDB Local and a stubbed Cognito): delete removes account, player links, plays, answers, practice records, progress copy, merge records; challenge results become "deleted player"; Cognito user deleted; an injected failure gives 503 and a retry finishes; repeated delete is 204: `api/tests/integration/test_deletion.py`
+- [X] T232 [US3] Deletion: `api/src/staysharp/store/deletion.py` and `DELETE /me` in `routes_me.py` (only role allowed `AdminDeleteUser`)
+- [X] T233 [US3] Job: finish deletions stuck in `deleting` for more than 10 minutes; metric and alarm when one stays more than 1 hour: `api/src/staysharp/handlers/account_jobs.py`, `infra/stacks/api_stack.py`
+- [X] T234 [US3] Delete screen: one confirmation, plain consequences, result only after 204, then a new anonymous player: `front/src/account/views/DeleteAccount.tsx` with tests
+- [X] T235 [US3] Privacy page: what an account stores, where, how long (24 months inactive, backups 35 days), how to delete: `front/src/views/Privacy.tsx`
 
 ## Phase 6: US4 - Asked at the right moment (P2)
 

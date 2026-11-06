@@ -18,6 +18,7 @@ function api(adopted: object, remote: { version: number; body: unknown }): Accou
     getProgress: vi.fn().mockResolvedValue(remote),
     putProgress: vi.fn().mockResolvedValue({ stored: { version: remote.version + 1, body: {} }, conflict: false }),
     me: vi.fn(),
+    deleteAccount: vi.fn(),
   };
 }
 

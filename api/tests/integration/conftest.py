@@ -39,10 +39,19 @@ def table(ddb: DynamoDBClient, monkeypatch: pytest.MonkeyPatch) -> Iterator[str]
         AttributeDefinitions=[
             {"AttributeName": "PK", "AttributeType": "S"},
             {"AttributeName": "SK", "AttributeType": "S"},
+            {"AttributeName": "lastActiveMonth", "AttributeType": "S"},
         ],
         KeySchema=[
             {"AttributeName": "PK", "KeyType": "HASH"},
             {"AttributeName": "SK", "KeyType": "RANGE"},
+        ],
+        # As infra/stacks/data_stack.py (M2): sparse, account items only.
+        GlobalSecondaryIndexes=[
+            {
+                "IndexName": "GSI_INACTIVE",
+                "KeySchema": [{"AttributeName": "lastActiveMonth", "KeyType": "HASH"}],
+                "Projection": {"ProjectionType": "KEYS_ONLY"},
+            }
         ],
     )
     monkeypatch.setenv("TABLE_NAME", name)

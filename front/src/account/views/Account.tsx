@@ -10,6 +10,7 @@ import { createPasskey, passkeysSupported } from "../passkeys";
 import type { Runtime } from "../runtime";
 import type { Session } from "../session";
 import { SYNC_KEY } from "../sync";
+import { DeleteAccount } from "./DeleteAccount";
 
 export interface PasskeyMaker {
   supported: () => boolean;
@@ -22,6 +23,8 @@ export interface AccountProps {
   runtime: Runtime;
   current: () => Progress;
   replace: (progress: Progress) => void;
+  /** The account is gone (deleted): the page shows so and the app forgets the session. */
+  onGone?: () => void;
   passkeys?: PasskeyMaker;
 }
 
@@ -35,18 +38,30 @@ function remember(version: number) {
   }
 }
 
+type Done = Extract<Joining, { state: "done" }>;
+
+// One join at a time per page, even if the view mounts twice (React's development mode does).
+let inFlight: Promise<Done> | null = null;
+
+function joinOnce(api: Runtime["api"], current: () => Progress, replace: (p: Progress) => void): Promise<Done> {
+  inFlight ??= (async (): Promise<Done> => {
+    const me = await api.me();
+    if (me && me.primaryPlayerId === current().playerId) return { state: "done", created: false, combined: false };
+    const joined = await joinAccount(api, current, replace);
+    remember(joined.version);
+    return { state: "done", created: joined.created, combined: joined.combined };
+  })().finally(() => {
+    inFlight = null;
+  });
+  return inFlight;
+}
+
 /** Make sure this browser is the account's (after sign-in, or if that was cut short). */
 function useJoin({ api }: Runtime, current: () => Progress, replace: (p: Progress) => void): Joining {
   const [joining, setJoining] = useState<Joining>({ state: "working" });
   useEffect(() => {
     let live = true;
-    (async () => {
-      const me = await api.me();
-      if (me && me.primaryPlayerId === current().playerId) return { state: "done", created: false, combined: false } as const;
-      const joined = await joinAccount(api, current, replace);
-      remember(joined.version);
-      return { state: "done", created: joined.created, combined: joined.combined } as const;
-    })().then(
+    joinOnce(api, current, replace).then(
       (result) => {
         if (live) setJoining(result);
       },
@@ -68,7 +83,7 @@ function useJoin({ api }: Runtime, current: () => Progress, replace: (p: Progres
   return joining;
 }
 
-export function Account({ runtime, current, replace, passkeys = BROWSER }: AccountProps) {
+export function Account({ runtime, current, replace, onGone = () => undefined, passkeys = BROWSER }: AccountProps) {
   const { cognito, session } = runtime;
   const joining = useJoin(runtime, current, replace);
   return (
@@ -94,6 +109,7 @@ export function Account({ runtime, current, replace, passkeys = BROWSER }: Accou
         </p>
       </section>
       {passkeys.supported() && <Passkeys cognito={cognito} session={session} maker={passkeys} />}
+      <DeleteAccount api={runtime.api} onDeleted={onGone} />
     </>
   );
 }

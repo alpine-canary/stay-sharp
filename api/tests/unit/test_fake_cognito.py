@@ -247,3 +247,13 @@ def test_passkey_with_the_wrong_challenge_is_refused() -> None:
         },
     )
     assert (status, body["__type"]) == (400, "NotAuthorizedException")
+
+
+def test_signing_up_again_after_deletion_gives_a_new_user_with_working_tokens() -> None:
+    first = sign_up_and_sign_in()
+    old_sub = fc.verify(first["AccessToken"])["sub"]  # type: ignore[index]
+    fc.admin_delete_user(old_sub)
+    again = sign_up_and_sign_in()
+    claims = fc.verify(again["AccessToken"])
+    assert claims is not None
+    assert claims["sub"] != old_sub

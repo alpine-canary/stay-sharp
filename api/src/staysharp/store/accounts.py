@@ -48,6 +48,7 @@ class BadProgress(Exception):
 class Account:
     sub: str
     primary_player: str
+    players: frozenset[str]
     display_name: str | None
     created_at: str
     state: str
@@ -99,6 +100,7 @@ def _from_item(sub: str, item: dict[str, Any]) -> Account:
         return Account(
             sub=sub,
             primary_player=str(item["primaryPlayer"]),
+            players=frozenset(item.get("players") or {item["primaryPlayer"]}),
             display_name=item.get("displayName"),
             created_at=str(item["createdAt"]),
             state=str(item.get("state", "active")),
@@ -135,6 +137,8 @@ def _create(sub: str, player_id: str, now: dt.datetime) -> bool:
         "createdAt": table.iso_ms(now),
         "lastActiveMonth": month(now),
         "state": "active",
+        # Every player id of this account (primary and merged): deletion clears them all.
+        "players": {player_id},
     }
     try:
         aws.dynamodb().transact_write_items(
@@ -216,6 +220,19 @@ def adopt(sub: str, player_id: str, now: dt.datetime) -> Adopted:
                     "Put": {
                         "TableName": table.table_name(),
                         "Item": {**merge_key(sub, hashed), **table.serialize(record)},
+                    }
+                },
+                {
+                    "Update": {
+                        "TableName": table.table_name(),
+                        "Key": account_key(sub),
+                        "UpdateExpression": "ADD players :p",
+                        "ConditionExpression": "#st = :active",
+                        "ExpressionAttributeNames": {"#st": "state"},
+                        "ExpressionAttributeValues": {
+                            ":p": {"SS": [player_id]},
+                            ":active": {"S": "active"},
+                        },
                     }
                 },
             ]

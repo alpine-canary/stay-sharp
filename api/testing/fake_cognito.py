@@ -25,6 +25,7 @@ import base64
 import hashlib
 import hmac
 import json
+import math
 import os
 import secrets
 import threading
@@ -149,6 +150,7 @@ class _State:
     sessions: dict[str, str] = field(default_factory=dict)  # session -> e-mail
     challenges: dict[str, str] = field(default_factory=dict)  # session or sub -> challenge
     refresh: dict[str, str] = field(default_factory=dict)  # refresh token -> sub
+    deleted: dict[str, int] = field(default_factory=dict)  # e-mail -> times deleted
     # Tokens issued before this time (per sub) are refused: global sign-out, deleted user.
     revoked_before: dict[str, float] = field(default_factory=dict)
     lock: threading.Lock = field(default_factory=threading.Lock)
@@ -191,7 +193,7 @@ def _email_of(sub: str) -> str | None:
 
 def _tokens(sub: str, *, with_refresh: bool = True) -> dict[str, Any]:
     # Tokens issued in the same second as a sign-out must still be valid afterwards.
-    now = max(time.time(), _STATE.revoked_before.get(sub, 0))
+    now = math.ceil(max(time.time(), _STATE.revoked_before.get(sub, 0)))
     result: dict[str, Any] = {
         "AccessToken": issue(sub, now=now),
         "IdToken": issue(sub, token_use="id", now=now, email=_email_of(sub)),
@@ -212,7 +214,9 @@ def _sign_up(params: dict[str, Any]) -> dict[str, Any]:
         raise CognitoError("InvalidParameterException", "Passwords are not used")
     if email in _STATE.users:
         raise CognitoError("UsernameExistsException", "User already exists")
-    user = _User(sub=sub_for(email))
+    # Like Cognito, an e-mail signed up again after a deletion gets a new user id.
+    generation = _STATE.deleted.get(email, 0)
+    user = _User(sub=sub_for(email) if not generation else sub_for(f"{email}#{generation}"))
     _STATE.users[email] = user
     return {
         "UserConfirmed": False,
@@ -420,6 +424,9 @@ def _global_sign_out(params: dict[str, Any]) -> dict[str, Any]:
 def admin_delete_user(sub: str) -> None:
     """What the delete function does with ``AdminDeleteUser`` (idempotent here)."""
     with _STATE.lock:
+        for email, user in _STATE.users.items():
+            if user.sub == sub:
+                _STATE.deleted[email] = _STATE.deleted.get(email, 0) + 1
         _STATE.users = {e: u for e, u in _STATE.users.items() if u.sub != sub}
         _STATE.revoked_before[sub] = time.time() + 1
         _STATE.refresh = {token: s for token, s in _STATE.refresh.items() if s != sub}

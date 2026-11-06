@@ -124,3 +124,30 @@ test("a second device joins: both show the combined streak, and today's game fol
   await a.context().close();
   await b.context().close();
 });
+
+// --- US3: delete my account (T231 to T234, A10) -------------------------------------------------
+
+test("delete the account: gone on the server, this browser starts again", async ({ page }) => {
+  const address = email();
+  await signIn(page, address);
+  await expect(page.getByText(/Your streak and progress are saved to your account/)).toBeVisible();
+  const before = await page.evaluate(() => JSON.parse(localStorage.getItem("staysharp.v1") ?? "{}").playerId as string);
+
+  await page.getByRole("button", { name: "Delete my account" }).click();
+  await expect(page.getByRole("heading", { name: "Delete your account for good?" })).toBeFocused();
+  await page.getByRole("button", { name: "Yes, delete everything" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "Your account is deleted" })).toBeFocused();
+
+  const after = await page.evaluate(() => ({
+    playerId: JSON.parse(localStorage.getItem("staysharp.v1") ?? "{}").playerId as string,
+    session: sessionStorage.getItem("staysharp.session"),
+    refresh: localStorage.getItem("staysharp.refresh"),
+    sync: localStorage.getItem("staysharp.sync"),
+  }));
+  expect(after.playerId).not.toBe(before);
+  expect([after.session, after.refresh, after.sync]).toEqual([null, null, null]);
+
+  // Signing up again with the same e-mail starts a brand-new account.
+  await signIn(page, address);
+  await expect(page.getByText(/Your streak and progress are saved to your account/)).toBeVisible();
+});
