@@ -108,3 +108,14 @@ re-checked at the first dev deploy (T2xx "verify service facts").
 - **Decision**: Cognito Essentials free tier (10,000 monthly active users), SES at about USD 0.10
   per 1,000 e-mails, two small Lambda functions and DynamoDB on-demand: well under USD 1 a month
   at 1,000 accounts (SC-107). The existing USD 20 budget alarm covers it.
+
+## Verified on the account (T211, 2026-11-06)
+
+- SES is offered in `eu-central-2`: the account answers there, sending enabled, sandbox (200 a
+  day). Cognito sends through SES in the same region (`ses_region` = `eu-central-2`).
+- The Cognito user pool API answers in `eu-central-2` (no pool yet).
+- The CLI and CDK know `AllowedFirstAuthFactors` with `EMAIL_OTP` and `WEB_AUTHN`. Cognito
+  requires `PASSWORD` in that list; players still never have a password (sign-up without one,
+  app client limited to `USER_AUTH` and refresh), see `infra/stacks/auth_stack.py`.
+- Still to see at the first dev deploy: passwordless self sign-up end to end (sign up, confirm
+  with the code, signed in without a second code), recorded in the release checklist (T250).

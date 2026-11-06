@@ -2,7 +2,10 @@
 
 - Static files live under ``site/<commit>/``; the origin path points at the current one, so
   redeploying the previous commit is an instant revert (W6).
-- ``/api/*`` is never cached and forwards only ``X-Player-Id`` and ``Content-Type`` (C2).
+- ``/api/*`` is never cached and forwards only ``X-Player-Id`` and ``Content-Type`` (C2), plus
+  ``Authorization`` for the account routes (M2). CloudFront passes ``Authorization`` on GET only
+  through a cache policy, so ``/api/*`` has its own: at most 1 second, and the API answers
+  ``Cache-Control: no-store``, so nothing is ever stored.
 - A strict CSP and security headers on every response (R12).
 - A CloudFront Function maps app paths to their HTML entry and answers a real 404 for anything
   else, without custom error responses (those would also rewrite API errors, W18).
@@ -30,7 +33,8 @@ CSP = "; ".join(
         "style-src 'self'",
         "img-src 'self' data:",
         "font-src 'self'",
-        "connect-src 'self'",
+        # The account pages talk to the Cognito user pool API in Zurich (M2, research A1).
+        "connect-src 'self' https://cognito-idp.eu-central-2.amazonaws.com",
         "manifest-src 'self'",
         "object-src 'none'",
         "base-uri 'none'",
@@ -123,6 +127,21 @@ class WebStack(Stack):
             cookie_behavior=cloudfront.OriginRequestCookieBehavior.none(),
         )
 
+        api_cache = cloudfront.CachePolicy(
+            self,
+            "ApiNoStore",
+            cache_policy_name=f"staysharp-{stage}-api-no-store",
+            comment="Never cached (no-store from the API); forwards Authorization",
+            default_ttl=Duration.seconds(0),
+            min_ttl=Duration.seconds(0),
+            max_ttl=Duration.seconds(1),
+            header_behavior=cloudfront.CacheHeaderBehavior.allow_list("Authorization"),
+            query_string_behavior=cloudfront.CacheQueryStringBehavior.none(),
+            cookie_behavior=cloudfront.CacheCookieBehavior.none(),
+            enable_accept_encoding_gzip=False,
+            enable_accept_encoding_brotli=False,
+        )
+
         self.distribution = cloudfront.Distribution(
             self,
             "Distribution",
@@ -158,7 +177,7 @@ class WebStack(Stack):
                     ),
                     viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.HTTPS_ONLY,
                     allowed_methods=cloudfront.AllowedMethods.ALLOW_ALL,
-                    cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
+                    cache_policy=api_cache,
                     origin_request_policy=api_requests,
                     response_headers_policy=headers,
                     compress=True,

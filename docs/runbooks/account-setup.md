@@ -92,3 +92,49 @@ Confirm the SNS subscription e-mail after the first deploy of each stage.
    account stack outputs. Variables, not secrets: role ARNs are not secret, but keep them out of
    committed files.
 2. Create the environment `production` with the maintainer as required reviewer.
+
+## 7. Sign-in e-mails (accounts, M2)
+
+Cognito sends the sign-in codes from `stay-sharp@lumineth.com` through SES in `eu-central-2`
+(stack `staysharp-mail`, one per account). Checked on 2026-11-06: SES is offered in
+`eu-central-2`; the account starts in the SES sandbox (200 e-mails a day, verified recipients
+only).
+
+1. **Bootstrap policy.** The execution policy now allows `cognito-idp:*`, `ses:*` and the
+   Cognito e-mail service-linked role. Publish the new policy version and run the bootstrap
+   again (section 3) before the first deploy of an `-auth` stack.
+2. **Deploy the mail stack**, then print the three DKIM records:
+
+   ```sh
+   make dkim-records
+   ```
+
+   Each line is a CNAME: `<token>._domainkey.lumineth.com` to `<token>.dkim.amazonses.com`. Add
+   the three in the `lumineth.com` zone (same place as section 4) and keep them. SES checks them
+   by itself; `make dkim-records` shows `SUCCESS` once they are seen (up to 72 hours, usually
+   minutes).
+3. **DMARC and SPF.** DKIM signed with `lumineth.com` is enough for DMARC alignment. If the zone
+   has a DMARC record with `p=reject`, nothing changes for these e-mails. No SPF change is
+   needed (SES uses its own MAIL FROM domain).
+4. **Dev, while in the sandbox:** SES sends only to verified addresses. Verify the address you
+   test with, from your terminal (never written in the repository):
+
+   ```sh
+   aws sesv2 create-email-identity --profile stay-sharp --region eu-central-2 \
+     --email-identity "<your address>"
+   ```
+
+   and click the link SES sends.
+5. **Before prod:** ask for SES production access (transactional mail, sign-in codes only, a
+   few per player per month):
+
+   ```sh
+   aws sesv2 put-account-details --profile stay-sharp --region eu-central-2 \
+     --production-access-enabled --mail-type TRANSACTIONAL \
+     --website-url https://stay-sharp.lumineth.com \
+     --use-case-description "One-time sign-in codes for an optional account of a free daily quiz. Sent only when a player asks for one. Bounces and complaints go to the maintainer."
+   ```
+
+6. **Dev passkeys.** After the first `staysharp-dev-web` deploy, set the context `devSiteHost`
+   to the dev CloudFront host (`dxxxxxxxx.cloudfront.net`) in `infra/cdk.json` and redeploy
+   `staysharp-dev-auth`. Without it, dev signs in with e-mail codes only.

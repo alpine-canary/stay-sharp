@@ -67,3 +67,49 @@ def test_a_missing_or_short_secret_is_refused(monkeypatch: pytest.MonkeyPatch, v
     monkeypatch.setattr(aws, "secretsmanager", lambda: FakeSecrets(value))
     with pytest.raises(RuntimeError, match="pepper"):
         obs.pepper()
+
+
+def test_account_hash_differs_from_the_player_hash_of_the_same_text(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("STAGE", "local")
+    monkeypatch.delenv("PEPPER_SECRET_ARN", raising=False)
+    sub = PLAYER
+    assert obs.account_hash(sub) != obs.player_hash(sub)
+    assert sub not in obs.account_hash(sub)
+    assert len(obs.account_hash(sub)) == 64
+
+
+def test_bound_account_logs_the_hash_only(monkeypatch: pytest.MonkeyPatch) -> None:
+    from tests.events import captured_logs
+    from tests.pii import pii_found
+
+    monkeypatch.setenv("STAGE", "local")
+    monkeypatch.delenv("PEPPER_SECRET_ARN", raising=False)
+    with captured_logs() as logs:
+        obs.bind_request("req-1")
+        obs.bind_account(PLAYER)
+        obs.logger.info("account read")
+        obs.bind_request("req-2")
+        obs.logger.info("next request")
+    first, second = logs.lines
+    assert obs.account_hash(PLAYER) in first
+    assert "account_hash" not in second
+    assert pii_found(logs.text) == []
+
+
+@pytest.mark.parametrize(
+    ("text", "found"),
+    [
+        ("player@example.test signed in", ["e-mail"]),
+        ("token eyJhbGciOi.eyJzdWIiOi.c2lnbmF0dXJl", ["jwt"]),
+        ("Authorization: Bearer abc", ["bearer"]),
+        ("code 123456", ["code"]),
+        ("from 192.0.2.1", ["ipv4"]),
+        ('{"request_id": "req-1", "account_hash": "ab12"}', []),
+    ],
+)
+def test_the_pii_check_itself(text: str, found: list[str]) -> None:
+    from tests.pii import pii_found
+
+    assert pii_found(text) == found

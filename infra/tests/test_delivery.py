@@ -198,6 +198,7 @@ def test_drill_context_reaches_dev_only() -> None:
 
 def test_prod_refuses_drills() -> None:
     from aws_cdk import App, Stack
+    from aws_cdk import aws_cognito as cognito
     from aws_cdk import aws_dynamodb as dynamodb
     from aws_cdk import aws_secretsmanager as secretsmanager
     from aws_cdk import aws_sns as sns
@@ -209,6 +210,8 @@ def test_prod_refuses_drills() -> None:
     )
     secret = secretsmanager.Secret(base, "S")
     topic = sns.Topic(base, "Topic")
+    pool = cognito.UserPool(base, "Pool")
+    client = pool.add_client("Client")
     with pytest.raises(ValueError, match="prod"):
         api_stack.ApiStack(
             app,
@@ -218,6 +221,8 @@ def test_prod_refuses_drills() -> None:
             pepper=secret,
             launch_date=None,
             topic=topic,
+            user_pool=pool,
+            user_pool_client=client,
             drill="fail-traffic",
         )
 

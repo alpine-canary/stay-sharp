@@ -7,11 +7,15 @@ placeholder account is used so the templates still synthesize; nothing can be de
 
 Stacks:
 - ``staysharp-account`` (eu-central-2): GitHub OIDC roles, fingerprint bucket. Once.
+- ``staysharp-mail`` (eu-central-2): SES domain identity for the sign-in codes. Once.
 - ``staysharp-edge`` (us-east-1): certificate for the public name and the USD 20 budget. Once,
   deployed first, removed last.
-- per stage, in eu-central-2: ``-ops``, ``-data``, ``-api``, ``-web``. Only prod uses the public
-  name and certificate (cross-region reference); dev uses its CloudFront domain.
+- per stage, in eu-central-2: ``-ops``, ``-data``, ``-auth``, ``-api``, ``-web``. Only prod uses
+  the public name and certificate (cross-region reference); dev uses its CloudFront domain.
 - per stage, in us-east-1: ``-cdn-alarms`` (CloudFront metrics exist only there).
+
+Context ``devSiteHost``: the dev CloudFront host, for dev passkeys (set after the first web
+deploy; without it dev signs in with e-mail codes only).
 
 Context for drills in dev only: ``devDeploymentConfig`` (for example
 ``LambdaCanary10Percent5Minutes``) and ``drill`` (``selfcheck-fail`` or ``fail-traffic``).
@@ -26,9 +30,11 @@ import aws_cdk as cdk
 
 from stacks.account_stack import AccountStack
 from stacks.api_stack import ApiStack
+from stacks.auth_stack import AuthStack
 from stacks.cdn_alarms_stack import CdnAlarmsStack
 from stacks.data_stack import DataStack
 from stacks.edge_stack import SITE_DOMAIN, EdgeStack
+from stacks.mail_stack import MailStack
 from stacks.ops_stack import OpsStack
 from stacks.web_stack import WebStack
 
@@ -56,6 +62,12 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
         github_owner=_context(app, "githubOwner"),
         description="Stay Sharp: GitHub OIDC roles, leak-guard bucket (once per account)",
     )
+    mail = MailStack(
+        app,
+        "staysharp-mail",
+        env=main_env,
+        description="Stay Sharp: SES identity for sign-in e-mails (once per account)",
+    )
     edge = EdgeStack(
         app,
         "staysharp-edge",
@@ -73,6 +85,14 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
         prod = stage == "prod"
         ops = OpsStack(app, f"{prefix}-ops", stage=stage, env=main_env)
         data = DataStack(app, f"{prefix}-data", stage=stage, env=main_env)
+        auth = AuthStack(
+            app,
+            f"{prefix}-auth",
+            stage=stage,
+            site_host=SITE_DOMAIN if prod else _context(app, "devSiteHost"),
+            env=main_env,
+        )
+        auth.add_dependency(mail)
         api = ApiStack(
             app,
             f"{prefix}-api",
@@ -81,6 +101,8 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
             pepper=data.pepper,
             launch_date=launch_dates.get(stage),
             topic=ops.topic,
+            user_pool=auth.user_pool,
+            user_pool_client=auth.client,
             deployment_config=None if prod else _context(app, "devDeploymentConfig"),
             drill=None if prod else _context(app, "drill"),
             env=main_env,

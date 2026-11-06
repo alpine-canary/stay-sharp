@@ -6,7 +6,7 @@ CDK := npx --yes aws-cdk@$(CDK_VERSION)
 PNPM := corepack pnpm
 STAGE ?= dev
 
-.PHONY: ddb-download ddb-start ddb-stop install lint typecheck test test-integration synth contract-check fault-drill canary-drill guard-not-prod
+.PHONY: dkim-records ddb-download ddb-start ddb-stop install lint typecheck test test-integration synth contract-check fault-drill canary-drill guard-not-prod
 
 install:
 	uv sync --directory api
@@ -81,3 +81,10 @@ ddb-start: ddb-download
 
 ddb-stop:
 	@if [ -s $(DDB_DIR)/pid ]; then kill $$(cat $(DDB_DIR)/pid) 2>/dev/null; : > $(DDB_DIR)/pid; echo stopped; fi
+
+# The three DKIM CNAME records for the lumineth.com zone (runbook account-setup section 7).
+dkim-records:
+	@aws sesv2 get-email-identity --profile stay-sharp --region eu-central-2 \
+		--email-identity lumineth.com \
+		--query '[DkimAttributes.Status, DkimAttributes.Tokens]' --output json \
+		| python3 -c 'import json,sys; status, tokens = json.load(sys.stdin); print("status:", status); [print(f"{t}._domainkey.lumineth.com CNAME {t}.dkim.amazonses.com") for t in tokens]'

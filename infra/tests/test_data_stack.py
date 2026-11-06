@@ -40,3 +40,12 @@ def test_pepper_is_generated_and_retained(template: TemplateOf, stage: str) -> N
     generate = secret["Properties"]["GenerateSecretString"]
     assert generate["PasswordLength"] >= 32
     assert "SecretString" not in secret["Properties"]
+
+
+@pytest.mark.parametrize("stage", ["dev", "prod"])
+def test_sparse_index_for_inactive_accounts(template: TemplateOf, stage: str) -> None:
+    (table,) = resources(template(f"staysharp-{stage}-data"), "AWS::DynamoDB::GlobalTable").values()
+    (index,) = table["Properties"]["GlobalSecondaryIndexes"]
+    assert index["IndexName"] == "GSI_INACTIVE"
+    assert index["KeySchema"] == [{"AttributeName": "lastActiveMonth", "KeyType": "HASH"}]
+    assert index["Projection"] == {"ProjectionType": "KEYS_ONLY"}

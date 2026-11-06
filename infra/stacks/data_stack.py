@@ -27,6 +27,16 @@ class DataStack(Stack):
             ),
             deletion_protection=prod,
             time_to_live_attribute="expiresAt",
+            # Sparse: only account items carry lastActiveMonth (M2, inactive accounts, A8).
+            global_secondary_indexes=[
+                dynamodb.GlobalSecondaryIndexPropsV2(
+                    index_name="GSI_INACTIVE",
+                    partition_key=dynamodb.Attribute(
+                        name="lastActiveMonth", type=dynamodb.AttributeType.STRING
+                    ),
+                    projection_type=dynamodb.ProjectionType.KEYS_ONLY,
+                )
+            ],
             removal_policy=RemovalPolicy.RETAIN if prod else RemovalPolicy.DESTROY,
         )
 

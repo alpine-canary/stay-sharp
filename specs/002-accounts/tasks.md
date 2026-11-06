@@ -21,14 +21,14 @@ out.
 
 ## Phase 2: Foundations (blocks every story)
 
-- [ ] T204 Test first: auth stack assertions (Essentials plan, `USER_AUTH` with `EMAIL_OTP` and `WEB_AUTHN` only, no password factor, MFA off, self sign-up on, e-mail as username, case-insensitive, RP id per stage, SES sender, deletion protection on prod, no output with an account id) in `infra/tests/test_auth_stack.py`
-- [ ] T205 Auth stack: user pool, public app client (no secret, `ALLOW_USER_AUTH` and refresh), SES domain identity `lumineth.com` with DKIM, WebAuthn RP id from the stage's host: `infra/stacks/auth_stack.py`, wired in `infra/app.py`
-- [ ] T206 Test first: JWT authorizer on `/api/v1/me*` only, M1 routes stay public, the API role cannot call Cognito admin actions, the delete function alone can call `AdminDeleteUser` on this pool: `infra/tests/test_api_stack.py`
-- [ ] T207 API stack: JWT authorizer, `/me` routes on the API function, account jobs function (daily schedule), sparse index `GSI_INACTIVE` on `lastActiveMonth`: `infra/stacks/api_stack.py`, `infra/stacks/data_stack.py`
-- [ ] T208 [P] `account_hash` (HMAC of `sub` with the stage pepper) and a log check that no e-mail, token or code pattern is ever logged: `api/src/staysharp/obs.py`, `api/tests/unit/test_obs.py`
+- [X] T204 Test first: auth stack assertions (Essentials plan, `USER_AUTH` with `EMAIL_OTP` and `WEB_AUTHN` only, no password factor, MFA off, self sign-up on, e-mail as username, case-insensitive, RP id per stage, SES sender, deletion protection on prod, no output with an account id) in `infra/tests/test_auth_stack.py`
+- [X] T205 Auth stack: user pool, public app client (no secret, `ALLOW_USER_AUTH` and refresh), SES domain identity `lumineth.com` with DKIM, WebAuthn RP id from the stage's host: `infra/stacks/auth_stack.py`, wired in `infra/app.py`
+- [X] T206 Test first: JWT authorizer on `/api/v1/me*` only, M1 routes stay public, the API role cannot call Cognito admin actions, the delete function alone can call `AdminDeleteUser` on this pool: `infra/tests/test_api_stack.py`
+- [X] T207 API stack: JWT authorizer, `/me` routes on the API function, `DELETE /me` on its own function (the jobs function comes with T233), sparse index `GSI_INACTIVE` on `lastActiveMonth`: `infra/stacks/api_stack.py`, `infra/stacks/data_stack.py`
+- [X] T208 [P] `account_hash` (HMAC of `sub` with the stage pepper) and a log check that no e-mail, token or code pattern is ever logged: `api/src/staysharp/obs.py`, `api/tests/unit/test_obs.py`
 - [X] T209 [P] Claims reader for requests that passed the authorizer (`sub`, token use = access): `api/src/staysharp/handlers/http.py` with tests in `api/tests/unit/test_http.py`
-- [ ] T210 [maintainer] Add the SES DKIM and the mail-from records to the `lumineth.com` zone, verify the sender address for dev, and request SES production access before prod; steps in `docs/runbooks/account-setup.md` section 5
-- [ ] T211 Verify the service facts research.md relies on, on the dev pool (Cognito in eu-central-2 with `EMAIL_OTP` and `WEB_AUTHN`, SES region, passwordless self sign-up), and record the result in `specs/002-accounts/research.md`
+- [ ] T210 [maintainer] Add the SES DKIM and the mail-from records to the `lumineth.com` zone, verify the sender address for dev, and request SES production access before prod; steps in `docs/runbooks/account-setup.md` section 7
+- [X] T211 Verify the service facts research.md relies on, on the dev pool (Cognito in eu-central-2 with `EMAIL_OTP` and `WEB_AUTHN`, SES region, passwordless self sign-up), and record the result in `specs/002-accounts/research.md`
 
 ## Phase 3: US2 - Sign in without a password (P1)
 

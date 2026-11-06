@@ -8,6 +8,10 @@
 - CodeDeploy tells the maintainer about failed and rolled-back deployments (Story 6 scenario 2).
 - Dev only: the handler is the fault-injection wrapper (``testing``), which reads one SSM
   parameter; prod has neither the code nor the permission (W11).
+- Accounts (M2, research A6, A7): ``/api/v1/me`` and below sit behind a JWT authorizer bound
+  to the stage's user pool and website client; M1 routes stay on the open ``$default`` route.
+  ``DELETE /api/v1/me`` goes to its own function, the only one allowed ``AdminDeleteUser``; the
+  API function has no Cognito permission at all.
 """
 
 from __future__ import annotations
@@ -18,9 +22,11 @@ import jsii
 from aws_cdk import Annotations, Duration, Stack
 from aws_cdk import aws_apigateway as apigw_v1
 from aws_cdk import aws_apigatewayv2 as apigw
+from aws_cdk import aws_apigatewayv2_authorizers as authorizers
 from aws_cdk import aws_apigatewayv2_integrations as integrations
 from aws_cdk import aws_cloudwatch as cloudwatch
 from aws_cdk import aws_codedeploy as codedeploy
+from aws_cdk import aws_cognito as cognito
 from aws_cdk import aws_dynamodb as dynamodb
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_lambda as lambda_
@@ -38,6 +44,8 @@ RESERVED_CONCURRENCY = 20
 THROTTLE_BURST = 50
 THROTTLE_RATE = 20
 API_HANDLER = "staysharp.handlers.api.handler"
+DELETE_HANDLER = "staysharp.handlers.account_delete.handler"
+ACCOUNT_PATH = "/api/v1/me"
 DEV_HANDLER = "testing.fault_injection.handler"
 DRILLS = ("selfcheck-fail", "fail-traffic")
 DEPLOYMENT_CONFIGS = {
@@ -92,6 +100,8 @@ class ApiStack(Stack):
         pepper: secretsmanager.ISecret,
         launch_date: str | None,
         topic: sns.ITopic,
+        user_pool: cognito.IUserPool,
+        user_pool_client: cognito.IUserPoolClient,
         deployment_config: str | None = None,
         drill: str | None = None,
         **kwargs: Any,
@@ -186,7 +196,69 @@ class ApiStack(Stack):
             access_log_settings=AccessLogs(access_logs),
         )
 
+        self._accounts(stage, environment, table, pepper, user_pool, user_pool_client)
         self._delivery(stage, topic, config_name)
+
+    def _accounts(
+        self,
+        stage: str,
+        environment: dict[str, str],
+        table: dynamodb.ITableV2,
+        pepper: secretsmanager.ISecret,
+        user_pool: cognito.IUserPool,
+        user_pool_client: cognito.IUserPoolClient,
+    ) -> None:
+        """Account routes behind the JWT authorizer, and the delete function (T207)."""
+        jwt = authorizers.HttpUserPoolAuthorizer(
+            "Players",
+            user_pool,
+            user_pool_clients=[user_pool_client],
+            authorizer_name=f"staysharp-{stage}-players",
+            identity_source=["$request.header.Authorization"],
+        )
+        live = integrations.HttpLambdaIntegration("LiveAccounts", self.alias)
+        method = apigw.HttpMethod
+        for path, methods in (
+            (ACCOUNT_PATH, [method.GET, method.PUT]),
+            (f"{ACCOUNT_PATH}/adopt", [method.POST]),
+            (f"{ACCOUNT_PATH}/progress", [method.GET, method.PUT]),
+        ):
+            self.http_api.add_routes(path=path, methods=methods, integration=live, authorizer=jwt)
+
+        delete_logs = logs.LogGroup(
+            self,
+            "AccountDeleteLogs",
+            log_group_name=f"/aws/lambda/staysharp-{stage}-account-delete",
+            retention=LOG_RETENTION,
+        )
+        self.delete_function = lambda_.Function(
+            self,
+            "AccountDelete",
+            function_name=f"staysharp-{stage}-account-delete",
+            runtime=lambda_.Runtime.PYTHON_3_13,
+            architecture=lambda_.Architecture.ARM_64,
+            handler=DELETE_HANDLER,
+            code=api_code(stage),
+            memory_size=512,
+            timeout=Duration.seconds(30),
+            reserved_concurrent_executions=2,
+            environment={**environment, "USER_POOL_ID": user_pool.user_pool_id},
+            log_group=delete_logs,
+            logging_format=lambda_.LoggingFormat.JSON,
+        )
+        table.grant_read_write_data(self.delete_function)
+        pepper.grant_read(self.delete_function)
+        self.delete_function.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["cognito-idp:AdminDeleteUser"], resources=[user_pool.user_pool_arn]
+            )
+        )
+        self.http_api.add_routes(
+            path=ACCOUNT_PATH,
+            methods=[method.DELETE],
+            integration=integrations.HttpLambdaIntegration("AccountDelete", self.delete_function),
+            authorizer=jwt,
+        )
 
     def _delivery(self, stage: str, topic: sns.ITopic, config_name: str) -> None:
         name = self.function.function_name

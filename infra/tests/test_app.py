@@ -5,10 +5,11 @@ from app import STAGES
 EXPECTED = {
     "staysharp-account",
     "staysharp-edge",
+    "staysharp-mail",
     *(
         f"staysharp-{stage}-{part}"
         for stage in STAGES
-        for part in ("ops", "data", "api", "web", "cdn-alarms")
+        for part in ("ops", "data", "auth", "api", "web", "cdn-alarms")
     ),
 }
 US_EAST_1 = {"staysharp-edge", *(f"staysharp-{stage}-cdn-alarms" for stage in STAGES)}

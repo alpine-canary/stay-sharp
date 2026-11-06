@@ -31,7 +31,20 @@ def distribution(template: TemplateOf, stage: str) -> dict[str, Any]:
 def test_api_is_never_cached_and_forwards_two_headers(template: TemplateOf, stage: str) -> None:
     config = distribution(template, stage)
     (api,) = [b for b in config["CacheBehaviors"] if b["PathPattern"] == "/api/*"]
-    assert api["CachePolicyId"] == CACHING_DISABLED
+    # Not cached (the API answers no-store) but the cache policy is what lets CloudFront pass the
+    # Authorization header on GET requests (account routes, M2); an origin request policy cannot.
+    (cache,) = resources(
+        template(f"staysharp-{stage}-web"), "AWS::CloudFront::CachePolicy"
+    ).values()
+    cache_config = cache["Properties"]["CachePolicyConfig"]
+    assert cache_config["DefaultTTL"] == 0
+    assert cache_config["MinTTL"] == 0
+    assert cache_config["MaxTTL"] == 1
+    keys = cache_config["ParametersInCacheKeyAndForwardedToOrigin"]
+    assert keys["HeadersConfig"] == {"HeaderBehavior": "whitelist", "Headers": ["Authorization"]}
+    assert keys["QueryStringsConfig"] == {"QueryStringBehavior": "none"}
+    assert keys["CookiesConfig"] == {"CookieBehavior": "none"}
+    assert api["CachePolicyId"] != CACHING_DISABLED
     assert api["ViewerProtocolPolicy"] == "https-only"
     assert "POST" in api["AllowedMethods"]
     (policy,) = resources(
@@ -72,6 +85,8 @@ def test_strict_security_headers(template: TemplateOf, stage: str) -> None:
     assert "default-src 'self'" in csp
     assert "frame-ancestors 'none'" in csp
     assert "unsafe-inline" not in csp
+    # The account pages call the Zurich user pool API directly (M2), and nothing else.
+    assert "connect-src 'self' https://cognito-idp.eu-central-2.amazonaws.com;" in csp
     assert "unsafe-eval" not in csp
     assert security["StrictTransportSecurity"]["AccessControlMaxAgeSec"] >= 31_536_000
     assert security["FrameOptions"]["FrameOption"] == "DENY"
