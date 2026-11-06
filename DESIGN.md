@@ -48,7 +48,7 @@ Every pair is measured in `front/src/contrast.test.ts` (text 4.5:1, UI parts 3:1
   the player picks Starter, so the Play button is always there.
 - **Play**: the question card on the left; on the right a status island (set, question n/5,
   timer, squares, relaxed link), and the feedback with Next under it. On a phone: status, question,
-  feedback. On a phone the code wraps instead of scrolling sideways.
+  feedback. On a phone or a tablet (under 900 px) the code wraps instead of scrolling sideways.
 - **Result**: an island with the squares (48 px), the score (72 to 88 px) and one muted line for
   bonus and time; the share card and the challenge link as cards on the right; Replay and Back as
   text links.

@@ -601,7 +601,7 @@ code {
 
 /* On a phone the code wraps (a hanging indent after the line number) instead of hiding the end
    of a line behind a sideways scroll: you cannot spot a bug you cannot read. */
-@media (max-width: 599px) {
+@media (max-width: 899px) {
   .code .in {
     min-width: 0;
   }
