@@ -1,8 +1,11 @@
 """The API Lambda: one HTTP resolver under ``/api/v1`` (research R8, R10).
 
-Every response carries ``Cache-Control: no-store``. Requests other than ``/health`` and ``/today``
-need a UUIDv4 ``X-Player-Id``. Bodies over 2 KB are refused. Validation errors are logged as field
-names and error types only, never input values. Errors are JSON ``{code, message}``.
+Every response carries ``Cache-Control: no-store``. Requests other than ``/health``, ``/today`` and
+the account routes need a UUIDv4 ``X-Player-Id``. Bodies over 2 KB are refused, except the
+progress copy (``/me/progress``, 64 KB plus its envelope). Account routes (``/me`` and below, M2)
+read the caller from the JWT authorizer's claims; of them only ``/me/adopt`` takes a player id.
+Validation errors are logged as field names and error types only, never input values. Errors
+are JSON ``{code, message}``.
 
 A synthetic ``{"selfcheck": true}`` event (sent by the pre-traffic hook to the new version)
 runs the data-free self-check instead of the resolver.
@@ -21,14 +24,23 @@ from aws_lambda_powertools.utilities.typing import LambdaContext
 from pydantic import ValidationError
 
 from staysharp import config
-from staysharp.domain.models import parse_player_id
-from staysharp.handlers import routes_challenges, routes_plays, routes_practice, routes_today
-from staysharp.handlers.http import ApiError, error_response
-from staysharp.obs import bind_player, bind_request, logger, metrics
+from staysharp.domain.models import ErrorCode, parse_player_id
+from staysharp.handlers import (
+    routes_challenges,
+    routes_me,
+    routes_plays,
+    routes_practice,
+    routes_today,
+)
+from staysharp.handlers.http import ApiError, caller_sub, error_response
+from staysharp.obs import bind_account, bind_player, bind_request, logger, metrics
 
 PREFIX = "/api/v1"
 MAX_BODY_BYTES = 2_048
 PUBLIC_PATHS = frozenset({"/health", "/today"})
+ACCOUNT_PREFIX = "/me"
+PROGRESS_PATH = "/me/progress"
+MAX_PROGRESS_BYTES = 72 * 1024
 NO_STORE = "no-store"
 
 app = APIGatewayHttpResolver(strip_prefixes=[PREFIX])
@@ -36,6 +48,7 @@ app.include_router(routes_today.router)
 app.include_router(routes_plays.router)
 app.include_router(routes_challenges.router)
 app.include_router(routes_practice.router)
+app.include_router(routes_me.router)
 
 
 def _route_path() -> str:
@@ -47,9 +60,17 @@ def edge_checks(resolver: APIGatewayHttpResolver, next_middleware: NextMiddlewar
     event = resolver.current_event
     bind_request(event.request_context.request_id)
     body = event.decoded_body or ""
-    if len(body.encode()) > MAX_BODY_BYTES:
-        raise ApiError(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, "invalid_request", "Request too large.")
-    if _route_path() not in PUBLIC_PATHS:
+    path = _route_path()
+    limit = MAX_PROGRESS_BYTES if path == PROGRESS_PATH else MAX_BODY_BYTES
+    if len(body.encode()) > limit:
+        code: ErrorCode = "too_large" if path == PROGRESS_PATH else "invalid_request"
+        raise ApiError(HTTPStatus.REQUEST_ENTITY_TOO_LARGE, code, "Request too large.")
+    if path == ACCOUNT_PREFIX or path.startswith(ACCOUNT_PREFIX + "/"):
+        sub = caller_sub(event.raw_event)
+        resolver.append_context(account_sub=sub)
+        bind_account(sub)
+        return next_middleware(resolver)
+    if path not in PUBLIC_PATHS:
         try:
             player_id = parse_player_id(event.headers.get("x-player-id"))
         except ValueError as error:

@@ -51,7 +51,9 @@ jobs:
       - name: api - integration tests (DynamoDB Local)
         run: uv run --directory api pytest -m integration
       - name: api - models match the contract
-        run: uv run --directory api python scripts/gen_models.py
+        run: |
+          uv run --directory api python scripts/gen_models.py
+          uv run --directory api python scripts/gen_models.py ../specs/002-accounts/contracts/accounts.openapi.yaml staysharp.domain.accounts
       - name: infra - install
         run: uv sync --directory infra --locked
       - name: infra - lint

@@ -119,10 +119,10 @@ export function createSession(options: SessionOptions) {
       const email = tokens ? claims(tokens.idToken).email : null;
       return typeof email === "string" ? email : null;
     },
-    /** A working access token, refreshed when needed; null when signed out. */
-    async accessToken(): Promise<string | null> {
+    /** A working access token, refreshed when needed (or when ``force``); null when signed out. */
+    async accessToken(force = false): Promise<string | null> {
       const tokens = current();
-      if (tokens && tokens.expiresAt - now() > MARGIN_MS) return tokens.accessToken;
+      if (!force && tokens && tokens.expiresAt - now() > MARGIN_MS) return tokens.accessToken;
       refreshing ??= renew().finally(() => {
         refreshing = null;
       });

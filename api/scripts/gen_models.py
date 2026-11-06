@@ -5,7 +5,9 @@ same name in ``staysharp.domain.models`` must expose exactly the same fields (by
 without a model are listed; while ``staysharp.domain.models`` does not exist yet (before task
 T025) the check reports that and passes.
 
-Usage: uv run python scripts/gen_models.py [path/to/openapi.yaml]
+Usage: uv run python scripts/gen_models.py [path/to/openapi.yaml [module]]
+(the accounts contract: ``... specs/002-accounts/contracts/accounts.openapi.yaml
+staysharp.domain.accounts``; names not found there are looked up in ``staysharp.domain.models``)
 """
 
 from __future__ import annotations
@@ -42,14 +44,17 @@ def main(argv: list[str]) -> int:
     path = Path(argv[1]) if len(argv) > 1 else DEFAULT_CONTRACT
     expected = contract_fields(yaml.safe_load(path.read_text(encoding="utf-8")))
     try:
-        module = importlib.import_module("staysharp.domain.models")
+        base = importlib.import_module("staysharp.domain.models")
     except ModuleNotFoundError:
         print(f"staysharp.domain.models not written yet; {len(expected)} schemas to cover")
         return 0
+    module = importlib.import_module(argv[2]) if len(argv) > 2 else base
 
     drift = 0
     for name, fields in sorted(expected.items()):
         actual = model_fields(module, name)
+        if actual is None and module is not base:
+            actual = model_fields(base, name)
         if actual is None:
             print(f"missing model: {name}")
             drift += 1

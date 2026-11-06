@@ -5,38 +5,32 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "../components/Link";
-import { createCognito, loadAuthConfig, type AuthConfig, type Cognito } from "./cognito";
-import { createSession, type Session } from "./session";
+import type { Progress } from "../storage";
+import { loadAuthConfig, type AuthConfig } from "./cognito";
+import { makeRuntime, type Runtime } from "./runtime";
 import { AgeQuestion } from "./views/AgeQuestion";
 import { Account as SignedIn } from "./views/Account";
 import { SignIn } from "./views/SignIn";
 
-export interface AccountDeps {
+export interface AccountPageProps {
+  /** This browser's progress, and how to replace it (adopting the account). */
+  current: () => Progress;
+  replace: (progress: Progress) => void;
+  /** Tell the app that this browser is now signed in (it starts keeping progress in step). */
+  onSignedIn: () => void;
   loadConfig?: () => Promise<AuthConfig | null>;
-  makeCognito?: (config: AuthConfig) => Cognito;
-  makeSession?: (cognito: Cognito) => Session;
+  makeRuntimeFor?: (config: AuthConfig) => Runtime;
 }
 
-function browserSession(cognito: Cognito): Session {
-  const safe = (get: () => Storage): Storage | null => {
-    try {
-      return get();
-    } catch {
-      return null;
-    }
-  };
-  return createSession({
-    session: safe(() => window.sessionStorage),
-    local: safe(() => window.localStorage),
-    refresh: (token) => cognito.refresh(token),
-  });
-}
+const defaultRuntime = (config: AuthConfig) => makeRuntime(config);
 
 export default function AccountPage({
+  current,
+  replace,
+  onSignedIn,
   loadConfig = loadAuthConfig,
-  makeCognito = (config) => createCognito(config),
-  makeSession = browserSession,
-}: AccountDeps) {
+  makeRuntimeFor = defaultRuntime,
+}: AccountPageProps) {
   const [config, setConfig] = useState<AuthConfig | null | undefined>(undefined);
   useEffect(() => {
     let live = true;
@@ -50,11 +44,24 @@ export default function AccountPage({
 
   if (config === undefined) return <Loading />;
   if (config === null) return <SignInUnavailable />;
-  return <Account cognito={makeCognito(config)} makeSession={makeSession} />;
+  return <Account config={config} makeRuntimeFor={makeRuntimeFor} current={current} replace={replace} onSignedIn={onSignedIn} />;
 }
 
-function Account({ cognito, makeSession }: { cognito: Cognito; makeSession: (c: Cognito) => Session }) {
-  const session = useMemo(() => makeSession(cognito), [cognito, makeSession]);
+function Account({
+  config,
+  makeRuntimeFor,
+  current,
+  replace,
+  onSignedIn,
+}: {
+  config: AuthConfig;
+  makeRuntimeFor: (config: AuthConfig) => Runtime;
+  current: () => Progress;
+  replace: (progress: Progress) => void;
+  onSignedIn: () => void;
+}) {
+  const runtime = useMemo(() => makeRuntimeFor(config), [config, makeRuntimeFor]);
+  const { cognito, session } = runtime;
   const [step, setStep] = useState<"age" | "sign-in" | "signed-in">(() => (session.signedIn() ? "signed-in" : "age"));
 
   if (step === "age") return <AgeQuestion onAdult={() => setStep("sign-in")} />;
@@ -65,11 +72,12 @@ function Account({ cognito, makeSession }: { cognito: Cognito; makeSession: (c: 
         onSignedIn={(tokens, keep) => {
           session.set(tokens, keep);
           setStep("signed-in");
+          onSignedIn();
         }}
       />
     );
   }
-  return <SignedIn cognito={cognito} session={session} />;
+  return <SignedIn runtime={runtime} current={current} replace={replace} />;
 }
 
 /** Same as the prerendered first screen (AccountLoading in App.tsx). */

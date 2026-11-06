@@ -38,6 +38,7 @@ test-integration:
 # The API models and the front-end types must match the contract.
 contract-check:
 	uv run --directory api python scripts/gen_models.py
+	uv run --directory api python scripts/gen_models.py ../specs/002-accounts/contracts/accounts.openapi.yaml staysharp.domain.accounts
 	$(PNPM) --dir front gen:api
 	git diff --exit-code -- front/src/api/schema.ts front/src/api/accounts-schema.ts
 

@@ -17,6 +17,10 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+  responses:
+    Refused:
+      description: Refused (invalid request, no or bad token, deleting, unavailable)
+      content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } }
   parameters:
     PlayerId:
       name: X-Player-Id
@@ -87,20 +91,22 @@ paths:
       summary: The signed-in account
       responses:
         "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Me" } } } }
-        "401": { description: No or bad token }
-        "404": { description: No account yet for this sign-in (call POST /me/adopt) }
+        "404": { description: No account yet for this sign-in (call POST /me/adopt), content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        default: { $ref: "#/components/responses/Refused" }
     put:
       summary: Change the display name
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/MeUpdate" } } } }
       responses:
         "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Me" } } } }
         "400": { description: Name refused, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        default: { $ref: "#/components/responses/Refused" }
     delete:
       summary: Delete the account and all its data (FR-114)
       description: Idempotent. 204 only once every step has finished; 503 with Retry-After if a step failed, and a retry continues.
       responses:
         "204": { description: Deleted }
-        "503": { description: "Not finished yet, retry" }
+        "503": { description: "Not finished yet, retry", content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        default: { $ref: "#/components/responses/Refused" }
   /me/adopt:
     post:
       summary: Create the account from this browser, or merge this browser's anonymous history into it
@@ -108,16 +114,19 @@ paths:
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/Adopt" } } } }
       responses:
         "200": { description: Done (also when repeated), content: { application/json: { schema: { $ref: "#/components/schemas/Adopted" } } } }
-        "409": { description: The account is being deleted, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        "409": { description: The account is being deleted or this browser belongs to another account, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        default: { $ref: "#/components/responses/Refused" }
   /me/progress:
     get:
       summary: The account's progress copy
       responses:
         "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Progress" } } } }
+        default: { $ref: "#/components/responses/Refused" }
     put:
       summary: Replace the progress copy if nobody changed it since `version`
       requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/Progress" } } } }
       responses:
         "200": { description: Stored; returns the new version, content: { application/json: { schema: { $ref: "#/components/schemas/Progress" } } } }
         "409": { description: Changed elsewhere; returns the stored copy to merge, content: { application/json: { schema: { $ref: "#/components/schemas/Progress" } } } }
-        "413": { description: Over 64 KB }
+        "413": { description: Over 64 KB, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+        default: { $ref: "#/components/responses/Refused" }

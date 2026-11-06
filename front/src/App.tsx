@@ -1,7 +1,9 @@
 // Front-end shell: one place that owns local progress, the API client and the view for the
 // current path (tasks T049, T068 to T070).
 
-import { lazy, Suspense, useCallback, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { signedInHint } from "./accountHint";
+import type { Live } from "./account/live";
 import { createClient, type ApiClient, type PlayState } from "./api/client";
 import { Link } from "./components/Link";
 import { navigate, useRoute } from "./router";
@@ -59,13 +61,49 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
   );
   const route = useRoute();
 
+  // Signed-in browsers keep their progress in step with the account (M2). The sync code is
+  // loaded only for them, after the first screen.
+  const latest = useRef(progress);
+  useEffect(() => {
+    latest.current = progress;
+  }, [progress]);
+  const live = useRef<Live | null>(null);
+  const [signedIn, setSignedIn] = useState(() => signedInHint());
+  const current = useCallback(() => latest.current, []);
+  const replace = useCallback(
+    (next: Progress) => {
+      latest.current = next;
+      store.save(next);
+      setProgress(next);
+    },
+    [store],
+  );
+  useEffect(() => {
+    if (!signedIn) return;
+    let stopped = false;
+    void import("./account/live")
+      .then((m) => m.connect(current, replace))
+      .then((connected) => {
+        if (stopped) connected?.stop();
+        else live.current = connected;
+      })
+      .catch(() => undefined);
+    return () => {
+      stopped = true;
+      live.current?.stop();
+      live.current = null;
+    };
+  }, [signedIn, current, replace]);
+
   const update = useCallback(
     (change: (p: Progress) => Progress) => {
-      setProgress((current) => {
-        const next = change(current);
+      setProgress((before) => {
+        const next = change(before);
         store.save(next);
+        latest.current = next;
         return next;
       });
+      live.current?.changed();
     },
     [store],
   );
@@ -245,7 +283,7 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
         {route.view === "privacy" && <Privacy />}
         {route.view === "account" && (
           <Suspense fallback={<AccountLoading />}>
-            <AccountPage />
+            <AccountPage current={current} replace={replace} onSignedIn={() => setSignedIn(true)} />
           </Suspense>
         )}
       </main>

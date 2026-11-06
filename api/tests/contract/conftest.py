@@ -47,8 +47,8 @@ def checked(openapi: OpenAPI, accounts_openapi: OpenAPI) -> Checked:
         result = call(method, path, **kwargs)
         contract = accounts_openapi if path.startswith("/api/v1/me") else openapi
         headers = {"X-Player-Id": kwargs["player"]} if kwargs.get("player") else {}
-        if kwargs.get("token"):
-            headers["Authorization"] = f"Bearer {kwargs['token']}"
+        if kwargs.get("sub"):
+            headers["Authorization"] = "Bearer test-token"
         raw_body = kwargs.get("body")
         request = MockRequest(
             HOST,

@@ -49,18 +49,18 @@ out.
 follows the player.
 **Independent test**: quickstart A4 to A7.
 
-- [ ] T219 [P] [US1] Test first (DynamoDB Local): create account on first adopt (one transaction, `attribute_not_exists`), second adopt returns the same result, a `deleting` account refuses: `api/tests/integration/test_accounts.py`
-- [ ] T220 [P] [US1] Test first (DynamoDB Local): merge an anonymous id with overlapping days into the primary id: the first finished daily per date and level wins, the other becomes a replay record, challenge results follow, a repeated merge changes nothing, a crash half-way then a retry gives the same end state: `api/tests/integration/test_merge.py`
-- [ ] T221 [P] [US1] Test first (DynamoDB Local): progress copy with versions (200, 409 with the stored copy, 413 over 64 KB, outline validated against the schema): `api/tests/integration/test_progress_copy.py`
-- [ ] T222 [P] [US1] Contract tests for `/me`, `/me/adopt`, `/me/progress` (no e-mail in any response, additionalProperties false): `api/tests/contract/test_me.py`
-- [ ] T223 [US1] Store: `api/src/staysharp/store/accounts.py` (account, player links, progress copy)
-- [ ] T224 [US1] Store: `api/src/staysharp/store/merge.py` (re-key plays and answers per play in one transaction, merge record written last)
-- [ ] T225 [US1] Routes: `api/src/staysharp/handlers/routes_me.py` (`GET /me`, `POST /me/adopt`, `GET` and `PUT /me/progress`), registered in `api/src/staysharp/handlers/api.py`
-- [ ] T226 [P] [US1] Test first: pure merge of two `Progress` values per level (days union with the first result kept, longest = max of recomputed and stored, freeze weeks combined, skill counts and practice boxes combined, never more than one result per date): `front/src/account/merge.test.ts`
-- [ ] T227 [US1] Merge: `front/src/account/merge.ts`
-- [ ] T228 [US1] Test first, then sync: send after each change with the last version, on 409 merge and retry (at most 3 times, backoff), offline queue, pull on open and on focus: `front/src/account/sync.ts`, `sync.test.ts`
-- [ ] T229 [US1] After sign-in: call adopt, switch this browser to the primary player id, pull and merge progress, tell the player when two histories were combined: `front/src/account/views/Account.tsx`, `front/src/storage.ts`
-- [ ] T230 [US1] e2e: create on browser A with 3 days, sign in on browser B with its own day, both show the merged streak; play on B, reopen A, today shows as played: `front/tests/e2e/accounts.spec.ts`
+- [X] T219 [P] [US1] Test first (DynamoDB Local): create account on first adopt (one transaction, `attribute_not_exists`), second adopt returns the same result, a `deleting` account refuses: `api/tests/integration/test_accounts.py`
+- [X] T220 [P] [US1] Test first (DynamoDB Local): merge an anonymous id with overlapping days into the primary id: the first finished daily per date and level wins, the other becomes a replay record, challenge results follow, a repeated merge changes nothing, a crash half-way then a retry gives the same end state: `api/tests/integration/test_merge.py`
+- [X] T221 [P] [US1] Test first (DynamoDB Local): progress copy with versions (200, 409 with the stored copy, 413 over 64 KB, outline validated against the schema): `api/tests/integration/test_progress_copy.py`
+- [X] T222 [P] [US1] Contract tests for `/me`, `/me/adopt`, `/me/progress` (no e-mail in any response, additionalProperties false): `api/tests/contract/test_me.py`
+- [X] T223 [US1] Store: `api/src/staysharp/store/accounts.py` (account, player links, progress copy)
+- [X] T224 [US1] Store: `api/src/staysharp/store/merge.py` (re-key plays and answers per play in one transaction, merge record written last)
+- [X] T225 [US1] Routes: `api/src/staysharp/handlers/routes_me.py` (`GET /me`, `POST /me/adopt`, `GET` and `PUT /me/progress`), registered in `api/src/staysharp/handlers/api.py`
+- [X] T226 [P] [US1] Test first: pure merge of two `Progress` values per level (days union with the first result kept, longest = max of recomputed and stored, freeze weeks combined, skill counts and practice boxes combined, never more than one result per date): `front/src/account/merge.test.ts`
+- [X] T227 [US1] Merge: `front/src/account/merge.ts`
+- [X] T228 [US1] Test first, then sync: send after each change with the last version, on 409 merge and retry (at most 3 times, backoff), offline queue, pull on open and on focus: `front/src/account/sync.ts`, `sync.test.ts`
+- [X] T229 [US1] After sign-in: call adopt, switch this browser to the primary player id, pull and merge progress, tell the player when two histories were combined: `front/src/account/views/Account.tsx`, `front/src/storage.ts`
+- [X] T230 [US1] e2e: create on browser A with 3 days, sign in on browser B with its own day, both show the merged streak; play on B, reopen A, today shows as played: `front/tests/e2e/accounts.spec.ts`
 
 ## Phase 5: US3 - Delete my account (P1)
 
@@ -95,7 +95,7 @@ follows the player.
 
 ## Phase 10: Polish
 
-- [ ] T244 [P] Display name: rules and blocked words, `PUT /me`: `api/src/staysharp/domain/names.py`, tests in `api/tests/unit/test_names.py`
+- [X] T244 [P] Display name: rules and blocked words, `PUT /me`: `api/src/staysharp/domain/names.py`, tests in `api/tests/unit/test_names.py`
 - [ ] T245 [P] axe on every account screen in light and dark, and accessible authentication checks (paste in the code field, no CAPTCHA): `front/tests/e2e/a11y.spec.ts`
 - [ ] T246 [P] Lighthouse 100 on `/account` mobile and desktop; first-screen bundle size unchanged (a test fails if the main chunk grows by more than 1 KB): `front/lighthouserc.json`, `front/tests/bundle.test.ts`
 - [ ] T247 [P] Log check during the account e2e run: no e-mail, name, code, token or IP in captured logs (FR-117): `api/tests/integration/test_logs_no_pii.py`

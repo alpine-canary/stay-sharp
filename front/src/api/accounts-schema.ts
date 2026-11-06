@@ -26,20 +26,16 @@ export interface paths {
                         "application/json": components["schemas"]["Me"];
                     };
                 };
-                /** @description No or bad token */
-                401: {
-                    headers: {
-                        [name: string]: unknown;
-                    };
-                    content?: never;
-                };
                 /** @description No account yet for this sign-in (call POST /me/adopt) */
                 404: {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
                 };
+                default: components["responses"]["Refused"];
             };
         };
         /** Change the display name */
@@ -74,6 +70,7 @@ export interface paths {
                         "application/json": components["schemas"]["Error"];
                     };
                 };
+                default: components["responses"]["Refused"];
             };
         };
         post?: never;
@@ -102,8 +99,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
                 };
+                default: components["responses"]["Refused"];
             };
         };
         options?: never;
@@ -145,7 +145,7 @@ export interface paths {
                         "application/json": components["schemas"]["Adopted"];
                     };
                 };
-                /** @description The account is being deleted */
+                /** @description The account is being deleted or this browser belongs to another account */
                 409: {
                     headers: {
                         [name: string]: unknown;
@@ -154,6 +154,7 @@ export interface paths {
                         "application/json": components["schemas"]["Error"];
                     };
                 };
+                default: components["responses"]["Refused"];
             };
         };
         delete?: never;
@@ -188,6 +189,7 @@ export interface paths {
                         "application/json": components["schemas"]["Progress"];
                     };
                 };
+                default: components["responses"]["Refused"];
             };
         };
         /** Replace the progress copy if nobody changed it since `version` */
@@ -227,8 +229,11 @@ export interface paths {
                     headers: {
                         [name: string]: unknown;
                     };
-                    content?: never;
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
                 };
+                default: components["responses"]["Refused"];
             };
         };
         post?: never;
@@ -278,8 +283,9 @@ export interface components {
         };
         Error: {
             /** @enum {string} */
-            code: "bad_request" | "unauthorized" | "not_found" | "conflict" | "too_large" | "deleting" | "unavailable";
+            code: "invalid_request" | "unauthorized" | "not_found" | "conflict" | "too_large" | "deleting" | "unavailable";
             message: string;
+            requestId?: string;
         };
         perLevel: {
             senior: Record<string, never>;
@@ -315,7 +321,17 @@ export interface components {
             };
         };
     };
-    responses: never;
+    responses: {
+        /** @description Refused (invalid request, no or bad token, deleting, unavailable) */
+        Refused: {
+            headers: {
+                [name: string]: unknown;
+            };
+            content: {
+                "application/json": components["schemas"]["Error"];
+            };
+        };
+    };
     parameters: {
         PlayerId: string;
     };

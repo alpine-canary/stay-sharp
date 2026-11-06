@@ -31,13 +31,14 @@ def http_event(
     body: Any = None,
     player: str | None = PLAYER,
     headers: dict[str, str] | None = None,
+    sub: str | None = None,
 ) -> dict[str, Any]:
     all_headers = {"content-type": "application/json"}
     if player is not None:
         all_headers["x-player-id"] = player
     all_headers.update(headers or {})
     raw = body if isinstance(body, str) or body is None else json.dumps(body)
-    return {
+    event: dict[str, Any] = {
         "version": "2.0",
         "routeKey": "$default",
         "rawPath": path,
@@ -64,6 +65,12 @@ def http_event(
         "body": raw,
         "isBase64Encoded": False,
     }
+    if sub is not None:
+        # What the API Gateway JWT authorizer passes on for a valid access token (M2).
+        event["requestContext"]["authorizer"] = {
+            "jwt": {"claims": {"sub": sub, "token_use": "access"}, "scopes": None}
+        }
+    return event
 
 
 def call(method: str, path: str, **kwargs: Any) -> dict[str, Any]:

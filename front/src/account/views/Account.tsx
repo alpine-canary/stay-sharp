@@ -1,11 +1,15 @@
-// The signed-in account page (US2 passkeys now; adopt, sync, delete and sign out come with
-// their stories).
+// The signed-in account page: this browser joined to the account (US1), passkeys (US2).
 
 import { useCallback, useEffect, useState } from "react";
 import { Link } from "../../components/Link";
+import type { Progress } from "../../storage";
+import { AccountApiError } from "../api";
 import { SignInError, type Cognito, type PasskeyInfo } from "../cognito";
+import { joinAccount } from "../join";
 import { createPasskey, passkeysSupported } from "../passkeys";
+import type { Runtime } from "../runtime";
 import type { Session } from "../session";
+import { SYNC_KEY } from "../sync";
 
 export interface PasskeyMaker {
   supported: () => boolean;
@@ -15,17 +19,76 @@ export interface PasskeyMaker {
 const BROWSER: PasskeyMaker = { supported: passkeysSupported, create: createPasskey };
 
 export interface AccountProps {
-  cognito: Cognito;
-  session: Session;
+  runtime: Runtime;
+  current: () => Progress;
+  replace: (progress: Progress) => void;
   passkeys?: PasskeyMaker;
 }
 
-export function Account({ cognito, session, passkeys = BROWSER }: AccountProps) {
+type Joining = { state: "working" } | { state: "done"; created: boolean; combined: boolean } | { state: "failed"; message: string };
+
+function remember(version: number) {
+  try {
+    window.localStorage.setItem(SYNC_KEY, JSON.stringify({ version, pending: false }));
+  } catch {
+    // The next sync starts from version 0 and merges: nothing is lost.
+  }
+}
+
+/** Make sure this browser is the account's (after sign-in, or if that was cut short). */
+function useJoin({ api }: Runtime, current: () => Progress, replace: (p: Progress) => void): Joining {
+  const [joining, setJoining] = useState<Joining>({ state: "working" });
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      const me = await api.me();
+      if (me && me.primaryPlayerId === current().playerId) return { state: "done", created: false, combined: false } as const;
+      const joined = await joinAccount(api, current, replace);
+      remember(joined.version);
+      return { state: "done", created: joined.created, combined: joined.combined } as const;
+    })().then(
+      (result) => {
+        if (live) setJoining(result);
+      },
+      (error: unknown) => {
+        if (!live) return;
+        const message =
+          error instanceof AccountApiError && error.code === "conflict"
+            ? "This browser is signed in to another account. Sign out of it first."
+            : error instanceof AccountApiError && error.code === "deleting"
+              ? "This account is being deleted."
+              : "Your account could not be reached. Your progress is safe on this device; try again later.";
+        setJoining({ state: "failed", message });
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [api, current, replace]);
+  return joining;
+}
+
+export function Account({ runtime, current, replace, passkeys = BROWSER }: AccountProps) {
+  const { cognito, session } = runtime;
+  const joining = useJoin(runtime, current, replace);
   return (
     <>
-      <section className="card narrow">
+      <section className="card narrow" aria-busy={joining.state === "working"}>
         <h1 className="text-3xl">Your account</h1>
         <p>Signed in as {session.email() ?? "you"}.</p>
+        {joining.state === "working" && <p role="status">Saving your progress to your account…</p>}
+        {joining.state === "done" && (
+          <p role="status">
+            {joining.combined
+              ? "We put this device's games together with your account's. Each day counts once."
+              : "Your streak and progress are saved to your account. Sign in on another device to pick them up."}
+          </p>
+        )}
+        {joining.state === "failed" && (
+          <p className="form-error" role="alert">
+            {joining.message}
+          </p>
+        )}
         <p>
           <Link href="/">Go to today's set</Link>
         </p>

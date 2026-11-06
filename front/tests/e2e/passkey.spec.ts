@@ -32,7 +32,7 @@ test("add a passkey, then sign in with it instead of a code", async ({ page }) =
   const address = `passkey-${crypto.randomUUID().slice(0, 8)}@example.test`;
   await signInWithCode(page, address);
   await page.getByRole("button", { name: "Add a passkey" }).click();
-  await expect(page.getByRole("status")).toContainText("Passkey added.");
+  await expect(page.getByText("Passkey added. Next time, sign in with it instead of a code.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Remove Passkey" })).toBeVisible();
 
   // Signed out on this tab (sign-out itself comes with US6): no tokens left.
