@@ -99,7 +99,18 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
           Stay Sharp
         </Link>
         <span className="by">
-          by <a href="https://www.lumineth.com/">lumineth.com</a>
+          by{" "}
+          <a href="https://www.lumineth.com/">
+            {/* Lumineth's mark, as on www.lumineth.com (white tile on the dark page). */}
+            <svg className="lm" viewBox="0 0 48 48" aria-hidden="true">
+              <rect className="lm-tile" width="48" height="48" rx="11" />
+              <rect className="lm-stem" x="12" y="9" width="8.5" height="30" rx="4.25" />
+              <rect x="12" y="30.5" width="24" height="8.5" rx="4.25" fill="#0E7C66" />
+              <path d="M12 34.75a4.25 4.25 0 0 1 4.25-4.25h4.25V39h-4.25A4.25 4.25 0 0 1 12 34.75z" fill="#5FD3B4" />
+              <rect x="28.8" y="10.8" width="7.4" height="7.4" rx="1.3" transform="rotate(45 32.5 14.5)" fill="#5FD3B4" />
+            </svg>
+            lumineth.com
+          </a>
         </span>
       </header>
       {notice && <StorageNotice notice={notice} onDismiss={() => setNotice(null)} />}

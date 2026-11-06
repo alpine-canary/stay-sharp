@@ -1237,3 +1237,46 @@ code {
 .by a {
   color: inherit;
 }
+
+.by {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.by a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.lm {
+  width: 22px;
+  height: 22px;
+  flex: none;
+}
+
+.lm-tile {
+  fill: #0f2a44;
+}
+
+.lm-stem {
+  fill: #ffffff;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .lm-tile {
+    fill: #ffffff;
+  }
+  :root:not([data-theme="light"]) .lm-stem {
+    fill: #0f2a44;
+  }
+}
+
+:root[data-theme="dark"] .lm-tile {
+  fill: #ffffff;
+}
+
+:root[data-theme="dark"] .lm-stem {
+  fill: #0f2a44;
+}
