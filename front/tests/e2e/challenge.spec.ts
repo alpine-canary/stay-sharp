@@ -71,5 +71,5 @@ test("an unknown link gets a plain message and today's daily", async ({ page }) 
   await page.goto("/c/ABCDEFGHJKMN");
   await expect(page.getByRole("heading", { name: "This challenge link does not work" })).toBeVisible();
   await page.getByRole("link", { name: "Play today's daily" }).click();
-  await expect(page.getByRole("heading", { level: 1, name: /Today's set #\d+/ })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: /Today's set #\d+/ })).toBeVisible();
 });

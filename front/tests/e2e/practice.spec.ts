@@ -6,7 +6,9 @@ import { expect, test } from "@playwright/test";
 test("practise two past questions, then the streak is unchanged", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("radio", { name: "Senior" }).check();
-  const streak = await page.locator(".stats > div").first().textContent();
+  // A new browser has no daily yet: the home shows "How it plays" instead of a streak.
+  const noStreak = page.getByRole("heading", { name: "Five questions, five minutes" });
+  await expect(noStreak).toBeVisible();
   await page.getByRole("link", { name: "Practise past questions" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Practise past questions" })).toBeVisible();
 
@@ -28,5 +30,7 @@ test("practise two past questions, then the streak is unchanged", async ({ page 
   }
 
   await page.getByRole("link", { name: "Stay Sharp, home" }).click();
-  await expect(page.locator(".stats > div").first()).toHaveText(streak ?? "");
+  // Practice never starts a streak.
+  await expect(noStreak).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Your progress" })).toHaveCount(0);
 });

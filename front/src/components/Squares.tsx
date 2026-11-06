@@ -9,6 +9,8 @@ export interface SquaresProps {
   /** Index of the question on screen, if any. */
   current?: number | undefined;
   label?: string;
+  /** The result view: bigger squares that come in one after another. */
+  large?: boolean;
 }
 
 const SYMBOL: Record<string, string> = { "1": "✓", "0.5": "½", "0": "✗" };
@@ -19,9 +21,9 @@ export function gradeWord(grade: number | null | undefined): string {
   return grade === null || grade === undefined ? "not answered" : (WORD[String(grade)] ?? "not answered");
 }
 
-export function Squares({ grades, decks, current, label = "Your answers" }: SquaresProps) {
+export function Squares({ grades, decks, current, label = "Your answers", large = false }: SquaresProps) {
   return (
-    <ol className="squares" aria-label={label}>
+    <ol className={large ? "squares large" : "squares"} aria-label={label}>
       {Array.from({ length: 5 }, (_, i) => {
         const g = grades[i];
         const key = g === null || g === undefined ? null : String(g);
@@ -29,7 +31,7 @@ export function Squares({ grades, decks, current, label = "Your answers" }: Squa
         const classes = [key ? CLASS[key] : "", current === i ? "cur" : ""].filter(Boolean).join(" ");
         return (
           <li key={i} className={classes || undefined} aria-current={current === i ? "step" : undefined}>
-            <span aria-hidden="true">{key ? SYMBOL[key] : "·"}</span>
+            <span aria-hidden="true">{key ? SYMBOL[key] : ""}</span>
             <span className="sr-only">
               Question {i + 1}
               {deck ? ` (${deck})` : ""}: {gradeWord(g)}

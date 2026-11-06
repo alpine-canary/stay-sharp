@@ -4,7 +4,7 @@ import { expect, type Page } from "@playwright/test";
 
 export async function chooseSeniorAndStart(page: Page): Promise<void> {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: /Today's set #\d+/ })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: /Today's set #\d+/ })).toBeVisible();
   await page.getByRole("radio", { name: "Senior" }).check();
   await page.getByRole("link", { name: "Play today's set" }).click();
   await expect(page.getByText(/1\/5/)).toBeVisible();

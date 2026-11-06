@@ -58,7 +58,7 @@ export function ChallengeLink({ client, playId }: ChallengeLinkProps) {
           <div className="row">
             <button
               type="button"
-              className="btn"
+              className="btn ghost"
               onClick={() => {
                 void copyOrSelect(state.url, box.current).then(setCopy);
               }}

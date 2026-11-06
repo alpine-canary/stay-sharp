@@ -81,7 +81,7 @@ describe("Play", () => {
 
     expect(api.answer).toHaveBeenCalledWith("2026-11-20.senior.daily", 0, { choiceId: "AAAAAAAA", line: 2 });
     const feedback = await screen.findByRole("status");
-    expect(feedback).toHaveTextContent("Right · +0.2 speed bonus");
+    expect(feedback).toHaveTextContent("Right +0.2 speed bonus");
     expect(feedback).toHaveTextContent("Division by zero.");
   });
 

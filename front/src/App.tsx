@@ -85,12 +85,23 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
     <div className="wrap">
       <header className="top">
         <Link href="/" className="mark" aria-label="Stay Sharp, home">
-          <i aria-hidden="true" />
+          <svg viewBox="0 0 32 32" aria-hidden="true">
+            <rect width="32" height="32" rx="8" fill="#0b1f33" />
+            <path
+              d="M9 16.5l4.5 4.5L23 11"
+              fill="none"
+              stroke="#5fd3b4"
+              strokeWidth="3.2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
           Stay Sharp
         </Link>
+        <span className="by">by Lumineth</span>
       </header>
       {notice && <StorageNotice notice={notice} onDismiss={() => setNotice(null)} />}
-      <main id="main" className="grid gap-5">
+      <main id="main" className="grid gap-6 content-start">
         {route.view === "home" && (
           <Home
             client={client}
@@ -149,7 +160,12 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
         {route.view === "privacy" && <Privacy />}
       </main>
       <footer className="site-foot">
-        <Link href="/privacy">Privacy</Link>
+        <span>
+          © 2026 <a href="https://www.lumineth.com/">Lumineth</a>
+        </span>
+        <nav aria-label="Legal">
+          <Link href="/privacy">Privacy</Link>
+        </nav>
       </footer>
     </div>
   );
@@ -174,8 +190,8 @@ function StorageNotice({ notice, onDismiss }: { notice: Exclude<Notice, null>; o
 
 function ChooseLevelFirst() {
   return (
-    <section className="card">
-      <h1 className="text-2xl">Choose a level first</h1>
+    <section className="card narrow">
+      <h1 className="text-3xl">Choose a level first</h1>
       <p>
         <Link href="/">Go to today's set</Link> and pick Senior or Starter.
       </p>
@@ -185,8 +201,8 @@ function ChooseLevelFirst() {
 
 function NotFound() {
   return (
-    <section className="card">
-      <h1 className="text-2xl">Page not found</h1>
+    <section className="card narrow">
+      <h1 className="text-3xl">Page not found</h1>
       <p>
         <Link href="/">Go to today's set</Link>
       </p>

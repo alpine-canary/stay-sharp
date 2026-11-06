@@ -206,20 +206,37 @@ export function Play({ client, level, mode, relaxed: relaxedPref, challenge, onF
 
   const label = `${mode === "replay" ? "Replay" : "Daily"} #${play.gameNumber}`;
 
-  return (
-    <>
-      <div className="qhead">
-        <Squares grades={play.grades} decks={decks} current={question.index} label="Progress" />
-        <span className="hint">
-          {label} · {question.index + 1}/5{mode === "replay" ? " · not scored" : ""}
-        </span>
-      </div>
+  const relaxedPanel = !play.relaxed && (
+    <div className="grid gap-2" aria-label="Relaxed mode" role="group">
+      {!confirmRelax ? (
+        <p className="hint">
+          Need more time?{" "}
+          <button type="button" className="link-btn" onClick={() => setConfirmRelax(true)}>
+            Switch to relaxed mode
+          </button>
+        </p>
+      ) : (
+        <>
+          <p>No timer and no speed bonus for the rest of this set. You cannot switch it back for this set.</p>
+          <div className="row">
+            <button type="button" className="btn" onClick={relax} disabled={busy}>
+              Switch to relaxed
+            </button>
+            <button type="button" className="btn ghost" onClick={() => setConfirmRelax(false)}>
+              Keep the timer
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  );
 
-      <section className="card" aria-labelledby={`${formId}-title`}>
+  return (
+    <div className="playgrid">
+      <section className="island status" aria-label="Your set">
         <div className="qhead">
           <span className="eyebrow">
-            {deckName(question.deck)}
-            {question.language && question.language !== "text" ? ` · ${question.language}` : ""}
+            {label} · {question.index + 1}/5{mode === "replay" ? " · not scored" : ""}
           </span>
           {!play.relaxed && question.targetSeconds !== undefined && (
             <Timer
@@ -231,6 +248,15 @@ export function Play({ client, level, mode, relaxed: relaxedPref, challenge, onF
           )}
           {play.relaxed && <span className="hint">Relaxed · no timer</span>}
         </div>
+        <Squares grades={play.grades} decks={decks} current={question.index} label="Progress" />
+        {relaxedPanel}
+      </section>
+
+      <section className="card question" aria-labelledby={`${formId}-title`}>
+        <span className="eyebrow">
+          {deckName(question.deck)}
+          {question.language && question.language !== "text" ? ` · ${question.language}` : ""}
+        </span>
 
         <h1 id={`${formId}-title`} className="qtitle" tabIndex={-1} ref={titleRef}>
           {question.prompt}
@@ -266,7 +292,7 @@ export function Play({ client, level, mode, relaxed: relaxedPref, challenge, onF
 
           {!result && (
             <div className="row">
-              <button type="submit" className="btn" disabled={!ready || busy}>
+              <button type="submit" className="btn big" disabled={!ready || busy}>
                 {busy ? "Checking..." : "Check"}
               </button>
               {needsLine && line === null && <span className="hint">Pick a line first</span>}
@@ -279,8 +305,10 @@ export function Play({ client, level, mode, relaxed: relaxedPref, challenge, onF
             <p>{error}</p>
           </div>
         )}
+      </section>
 
-        {result && (
+      {result && (
+        <section className="card after" aria-label="Feedback">
           <Feedback
             ref={feedbackRef}
             result={result}
@@ -289,41 +317,13 @@ export function Play({ client, level, mode, relaxed: relaxedPref, challenge, onF
             line={line}
             conflict={conflict}
           />
-        )}
-
-        {result && (
           <div className="row">
-            <button type="button" className="btn" onClick={next} disabled={busy}>
+            <button type="button" className="btn big" onClick={next} disabled={busy}>
               {last ? "See my result" : "Next question"}
             </button>
           </div>
-        )}
-      </section>
-
-      {!play.relaxed && (
-        <section className="notice" aria-label="Relaxed mode">
-          {!confirmRelax ? (
-            <p className="hint">
-              Need more time?{" "}
-              <button type="button" className="link-btn" onClick={() => setConfirmRelax(true)}>
-                Switch to relaxed mode
-              </button>
-            </p>
-          ) : (
-            <>
-              <p>No timer and no speed bonus for the rest of this set. You cannot switch it back for this set.</p>
-              <div className="row">
-                <button type="button" className="btn" onClick={relax} disabled={busy}>
-                  Switch to relaxed
-                </button>
-                <button type="button" className="btn ghost" onClick={() => setConfirmRelax(false)}>
-                  Keep the timer
-                </button>
-              </div>
-            </>
-          )}
         </section>
       )}
-    </>
+    </div>
   );
 }

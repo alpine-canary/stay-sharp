@@ -81,76 +81,61 @@ export function Result({ client, playId, progress }: ResultProps) {
   const decks = DECK_ORDER[play.level].map(deckName);
   const levelName = play.level === "senior" ? "Senior" : "Starter";
 
+  const time = formatSeconds((play.elapsedMs ?? 0) / 1000);
   return (
-    <section className="card" aria-labelledby="result-title">
-      <span className="eyebrow">
-        {replay ? "Replay" : "Daily"} #{play.gameNumber} · {play.date} · {levelName}
-        {replay ? " · not scored" : ""}
-      </span>
-      <h1 id="result-title" className="text-2xl">
-        {play.finished ? "Your result" : "Not finished yet"}
-      </h1>
-      <Squares grades={play.grades} decks={decks} label="Your answers, question by question" />
-      <div className="score">
-        <div>
+    <div className="split">
+      <section className="island" aria-labelledby="result-title">
+        <span className="eyebrow">
+          {replay ? "Replay" : "Daily"} #{play.gameNumber} · {play.date} · {levelName}
+          {replay ? " · not scored" : ""}
+        </span>
+        <h1 id="result-title" className="text-3xl">
+          {play.finished ? "Your result" : "Not finished yet"}
+        </h1>
+        <Squares grades={play.grades} decks={decks} label="Your answers, question by question" large />
+        <div className="score">
           <div className="big">{formatScore(play.score)}/5</div>
-          <div className="lab">score{replay ? " (not scored)" : ""}</div>
+          <div className="lab">
+            score{replay ? " (not scored)" : ""} ·{" "}
+            {play.relaxed ? "relaxed, no bonus" : `speed bonus +${formatScore(play.bonus)}`} · time {time}
+          </div>
         </div>
-        <div>
-          <div className="big">{play.relaxed ? "-" : `+${formatScore(play.bonus)}`}</div>
-          <div className="lab">{play.relaxed ? "relaxed, no bonus" : "speed bonus"}</div>
-        </div>
-        <div>
-          <div className="big">{formatSeconds((play.elapsedMs ?? 0) / 1000)}</div>
-          <div className="lab">time</div>
-        </div>
-      </div>
-      <ol className="decks">
-        {decks.map((deck, i) => (
-          <li key={deck}>
-            <span className="n">{i + 1}</span>
-            <span>
-              {deck} · <span className="hint">{gradeText(play.grades[i])}</span>
-            </span>
-          </li>
-        ))}
-      </ol>
-      {play.finished && !replay && (
-        <ShareCard
-          gameNumber={play.gameNumber}
-          level={play.level}
-          grades={play.grades}
-          score={play.score}
-          bonus={play.bonus}
-          relaxed={play.relaxed}
-          elapsedMs={play.elapsedMs ?? 0}
-          streak={streak(Object.keys(progress.days[play.level]), play.date).current}
-          address={window.location.host}
-        />
-      )}
-      {play.finished && !replay && <ChallengeLink client={client} playId={play.playId} />}
-      <div className="row">
         {!play.finished && (
-          <Link href={replay ? "/play?mode=replay" : "/play"} className="btn">
-            Continue
-          </Link>
+          <div className="row">
+            <Link href={replay ? "/play?mode=replay" : "/play"} className="btn big">
+              Continue
+            </Link>
+          </div>
+        )}
+      </section>
+
+      <div className="stack">
+        {play.finished && !replay && (
+          <div className="card">
+            <ShareCard
+              gameNumber={play.gameNumber}
+              level={play.level}
+              grades={play.grades}
+              score={play.score}
+              bonus={play.bonus}
+              relaxed={play.relaxed}
+              elapsedMs={play.elapsedMs ?? 0}
+              streak={streak(Object.keys(progress.days[play.level]), play.date).current}
+              address={window.location.host}
+            />
+          </div>
         )}
         {play.finished && !replay && (
-          <Link href="/play?mode=replay" className="btn ghost">
-            Replay (not scored)
-          </Link>
+          <div className="card">
+            <ChallengeLink client={client} playId={play.playId} />
+          </div>
         )}
-        <Link href="/" className="btn ghost">
-          Back to today
-        </Link>
+        <nav className="row" aria-label="What next">
+          {play.finished && !replay && <Link href="/play?mode=replay">Replay (not scored)</Link>}
+          <Link href="/">Back to today</Link>
+        </nav>
       </div>
-    </section>
+    </div>
   );
 }
 
-function gradeText(grade: number | null | undefined): string {
-  if (grade === 1) return "right";
-  if (grade === 0.5) return "half right";
-  if (grade === 0) return "wrong";
-  return "not answered";
-}

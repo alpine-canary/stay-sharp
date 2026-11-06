@@ -44,7 +44,7 @@ export function ProgressCard({ progress, level, today }: ProgressCardProps) {
   else freezeNote = `${Math.min(thisWeek, 5)} of 5 dailies this week. Finish 5 to earn one.`;
 
   return (
-    <section className="card" aria-labelledby="progress-title">
+    <aside className="island" aria-labelledby="progress-title">
       <h2 id="progress-title" className="text-2xl">
         Your progress
       </h2>
@@ -103,7 +103,7 @@ export function ProgressCard({ progress, level, today }: ProgressCardProps) {
         Your progress is kept in this browser only. Another browser or device, a private window, or
         clearing this site's data starts from zero.
       </p>
-    </section>
+    </aside>
   );
 }
 
