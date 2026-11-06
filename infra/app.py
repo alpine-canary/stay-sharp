@@ -117,6 +117,10 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
             domain_name=SITE_DOMAIN if prod else None,
             certificate=edge.certificate if prod else None,
             web_acl_arn=edge.web_acl.attr_arn,
+            auth_config={
+                "endpoint": f"https://cognito-idp.{REGION}.amazonaws.com/",
+                "clientId": auth.client.user_pool_client_id,
+            },
             env=main_env,
             cross_region_references=True,
         )

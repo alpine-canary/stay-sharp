@@ -9,6 +9,7 @@ const HEADINGS: Record<string, RegExp> = {
   "/result?play=prerender": /Loading your result/,
   "/practice": /Choose a level first/,
   "/privacy": /What we keep, and where/,
+  "/account": /<h1[^>]*>Account<\/h1>/,
   "/c/AAAAAAAAAAAA": /Loading the challenge/,
 };
 
@@ -24,7 +25,7 @@ describe("prerender", () => {
 
   it("covers every path the site router serves", () => {
     expect(Object.values(PAGES).sort()).toEqual(
-      ["c.html", "index.html", "play.html", "practice.html", "privacy.html", "result.html"].sort(),
+      ["account.html", "c.html", "index.html", "play.html", "practice.html", "privacy.html", "result.html"].sort(),
     );
   });
 });

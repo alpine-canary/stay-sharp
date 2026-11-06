@@ -122,6 +122,7 @@ ROUTER_CASES = [
     ("/result", "/result.html", None),
     ("/practice/", "/practice.html", None),
     ("/privacy", "/privacy.html", None),
+    ("/account", "/account.html", None),
     ("/c/ABCDEFGHJKLM", "/c.html", None),
     ("/assets/index-abc123.js", "/assets/index-abc123.js", None),
     ("/fonts/inter.woff2", "/fonts/inter.woff2", None),
@@ -180,6 +181,20 @@ def test_site_upload_splits_assets_and_pages_and_comes_before_the_switch(tmp_pat
     site_sets = [files for files in contents.values() if any("index" in f for f in files)]
     assert ["index-abc.js"] in contents.values()
     assert ["index.html"] in site_sets
+
+    # The sign-in settings for the account pages (M2): public ids only, written with the pages.
+    (pages,) = [p for p in uploads.values() if p["DestinationBucketKeyPrefix"] == "site/abc123/"]
+    assert "PlayersWebsite" in json.dumps(pages.get("SourceMarkers", []))
+    (auth_json,) = [
+        a / "auth.json"
+        for a in Path(assembly.directory).glob("asset.*")
+        if (a / "auth.json").is_file()
+    ]
+    # The client id is filled in at deploy time (a marker here).
+    written = auth_json.read_text()
+    assert '"endpoint":"https://cognito-idp.eu-central-2.amazonaws.com/"' in written
+    assert '"clientId":' in written
+    assert len(pages["SourceObjectKeys"]) == 2
 
 
 def test_no_upload_without_site_dist(template: TemplateOf) -> None:

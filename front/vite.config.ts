@@ -11,7 +11,12 @@ export default defineConfig({
   },
   server: {
     port: 5173,
-    proxy: { "/api": "http://localhost:3001" },
+    // /auth.json and /cognito: the local fake sign-in (python -m staysharp.local with FAKE_COGNITO=1).
+    proxy: {
+      "/api": "http://localhost:3001",
+      "/auth.json": "http://localhost:3001",
+      "/cognito": "http://localhost:3001",
+    },
   },
   test: {
     environment: "jsdom",

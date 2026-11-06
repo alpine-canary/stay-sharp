@@ -77,3 +77,11 @@ def test_without_the_flag_there_is_no_fake(monkeypatch: pytest.MonkeyPatch) -> N
     result = local.route("POST", "/cognito", {}, b"{}")
     assert result["statusCode"] >= 400
     assert "UserSub" not in result["body"]
+
+
+def test_auth_json_points_at_the_fake(monkeypatch: pytest.MonkeyPatch) -> None:
+    import json
+
+    _local_fake(monkeypatch)
+    result = local.route("GET", "/auth.json", {}, b"")
+    assert json.loads(result["body"]) == {"endpoint": "/cognito", "clientId": "fake-client"}

@@ -15,6 +15,7 @@ export const PAGES: Record<string, string> = {
   "/result?play=prerender": "result.html",
   "/practice": "practice.html",
   "/privacy": "privacy.html",
+  "/account": "account.html",
   "/c/AAAAAAAAAAAA": "c.html",
 };
 

@@ -10,8 +10,8 @@ Two parts:
   anywhere else, and ``staysharp.local`` refuses any stage but ``local``.
 - **User pool API**: ``handle`` answers the JSON calls the website makes to Cognito
   (``X-Amz-Target: AWSCognitoIdentityProviderService.<Action>``): sign up without a password,
-  confirm, choice-based sign-in (``USER_AUTH``) with an e-mail code, refresh, global sign-out.
-  Users live in memory. Every code is ``FAKE_COGNITO_CODE`` (default ``123456``). Set
+  confirm, resend the sign-up code, choice-based sign-in (``USER_AUTH``) with an e-mail code,
+  refresh, global sign-out. Users live in memory. Every code is ``FAKE_COGNITO_CODE`` (default ``123456``). Set
   ``FAKE_COGNITO_DOWN=1`` to answer 503 to every call (quickstart A14).
 
 Nothing here logs an e-mail address, a code or a token.
@@ -63,6 +63,7 @@ def issue(
     client_id: str = CLIENT_ID,
     now: float | None = None,
     lifetime: int = ACCESS_SECONDS,
+    email: str | None = None,
 ) -> str:
     issued = int(time.time() if now is None else now)
     header = {"alg": "HS256", "typ": "JWT", "kid": "fake"}
@@ -81,6 +82,9 @@ def issue(
     if token_use == "id":
         claims["aud"] = client_id
         del claims["client_id"]
+        if email is not None:
+            claims["email"] = email
+            claims["email_verified"] = True
     head = _b64(json.dumps(header, separators=(",", ":")).encode())
     body = _b64(json.dumps(claims, separators=(",", ":")).encode())
     signing_input = f"{head}.{body}".encode()
@@ -170,12 +174,16 @@ def _new_session(email: str) -> str:
     return session
 
 
+def _email_of(sub: str) -> str | None:
+    return next((email for email, user in _STATE.users.items() if user.sub == sub), None)
+
+
 def _tokens(sub: str, *, with_refresh: bool = True) -> dict[str, Any]:
     # Tokens issued in the same second as a sign-out must still be valid afterwards.
     now = max(time.time(), _STATE.revoked_before.get(sub, 0))
     result: dict[str, Any] = {
         "AccessToken": issue(sub, now=now),
-        "IdToken": issue(sub, token_use="id", now=now),
+        "IdToken": issue(sub, token_use="id", now=now, email=_email_of(sub)),
         "ExpiresIn": ACCESS_SECONDS,
         "TokenType": "Bearer",
     }
@@ -211,6 +219,15 @@ def _confirm_sign_up(params: dict[str, Any]) -> dict[str, Any]:
         raise CognitoError("CodeMismatchException", "Invalid code")
     user.confirmed = True
     return {"Session": _new_session(email)}
+
+
+def _resend(params: dict[str, Any]) -> dict[str, Any]:
+    _client(params)
+    email = _email(params)
+    user = _STATE.users.get(email)
+    if user is None or user.confirmed:
+        raise CognitoError("InvalidParameterException", "User is already confirmed")
+    return {"CodeDeliveryDetails": {"DeliveryMedium": "EMAIL", "AttributeName": "email"}}
 
 
 def _initiate_auth(params: dict[str, Any]) -> dict[str, Any]:
@@ -277,6 +294,7 @@ def admin_delete_user(sub: str) -> None:
 ACTIONS = {
     "SignUp": _sign_up,
     "ConfirmSignUp": _confirm_sign_up,
+    "ResendConfirmationCode": _resend,
     "InitiateAuth": _initiate_auth,
     "RespondToAuthChallenge": _respond,
     "GlobalSignOut": _global_sign_out,

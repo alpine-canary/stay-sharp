@@ -6,7 +6,8 @@ Serves the same resolver as Lambda on http://127.0.0.1:3001 against DynamoDB Loc
 and refuses any stage but ``local``.
 
 With ``FAKE_COGNITO=1`` it also stands in for the sign-in service (``testing.fake_cognito``):
-``POST /cognito`` answers the user pool API calls the website makes, and requests to
+``GET /auth.json`` points the website at it, ``POST /cognito`` answers the user pool API calls
+the website makes, and requests to
 ``/api/v1/me`` and below need a valid fake access token, whose claims are passed on as the API
 Gateway JWT authorizer does (401 without one, before the function runs).
 """
@@ -72,6 +73,7 @@ def to_event(method: str, target: str, headers: dict[str, str], body: bytes) -> 
 
 ACCOUNT_PREFIX = "/api/v1/me"
 COGNITO_PATH = "/cognito"
+AUTH_CONFIG_PATH = "/auth.json"
 
 
 def fake_cognito_on() -> bool:
@@ -100,6 +102,16 @@ def authorize(event: dict[str, Any]) -> bool:
 
 def route(method: str, target: str, headers: dict[str, str], body: bytes) -> dict[str, Any]:
     """One local request to a Lambda-style result (status, headers, body)."""
+    if fake_cognito_on() and urlsplit(target).path == AUTH_CONFIG_PATH and method == "GET":
+        from testing import fake_cognito
+
+        # What the web stack writes to auth.json in a stage, pointing at the fake.
+        config = {"endpoint": COGNITO_PATH, "clientId": fake_cognito.CLIENT_ID}
+        return {
+            "statusCode": 200,
+            "headers": {"Content-Type": "application/json", "Cache-Control": "no-store"},
+            "body": json.dumps(config),
+        }
     if fake_cognito_on() and urlsplit(target).path == COGNITO_PATH and method == "POST":
         from testing import fake_cognito
 

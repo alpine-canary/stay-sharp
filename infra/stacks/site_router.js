@@ -12,6 +12,7 @@ var APP_PATHS = {
   "/result": "/result.html",
   "/practice": "/practice.html",
   "/privacy": "/privacy.html",
+  "/account": "/account.html",
 };
 var CHALLENGE = /^\/c\/[A-Z2-7]{12}\/?$/;
 

@@ -1283,3 +1283,111 @@ code {
 :root[data-theme="dark"] .lm-stem {
   fill: #0f2a44;
 }
+
+/* --- Account (M2) ------------------------------------------------------------------------- */
+
+.top-links {
+  display: inline-flex;
+  align-items: center;
+  gap: 18px;
+  font-size: 15px;
+}
+
+.top-links > a {
+  color: var(--ink);
+  font-weight: 600;
+  text-underline-offset: 3px;
+  min-height: 24px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.form {
+  display: grid;
+  gap: 16px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field label {
+  font-weight: 600;
+}
+
+.field input {
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1px solid var(--line-strong);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink);
+  font: 400 17px/1.3 var(--body);
+  width: 100%;
+  max-width: 28rem;
+}
+
+.field input[autocomplete="one-time-code"] {
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.12em;
+  max-width: 14rem;
+}
+
+.field input:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.field input[aria-invalid="true"] {
+  border-color: var(--bad);
+}
+
+.form-error {
+  color: var(--bad);
+  font-weight: 600;
+  margin: 0;
+}
+
+.form-links,
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  align-items: center;
+  margin: 0;
+}
+
+/* Header: mark and Account on the first line, "by lumineth.com" under the mark on a phone;
+   one line from 640 px (mark, by, Account). */
+.top {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "mark links" "by by";
+  row-gap: 4px;
+}
+
+.top .mark {
+  grid-area: mark;
+}
+
+.top .top-links {
+  grid-area: links;
+}
+
+.top .by {
+  grid-area: by;
+  padding-left: 38px;
+}
+
+@media (min-width: 640px) {
+  .top {
+    grid-template-columns: 1fr auto auto;
+    grid-template-areas: "mark by links";
+    column-gap: 24px;
+  }
+
+  .top .by {
+    padding-left: 0;
+  }
+}

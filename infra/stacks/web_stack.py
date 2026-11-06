@@ -59,6 +59,7 @@ class WebStack(Stack):
         domain_name: str | None = None,
         certificate: acm.ICertificate | None = None,
         web_acl_arn: str | None = None,
+        auth_config: dict[str, str] | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -185,14 +186,19 @@ class WebStack(Stack):
             },
         )
         if site_dist:
-            self._upload_site(site_dist, site_commit)
+            self._upload_site(site_dist, site_commit, auth_config)
 
-    def _upload_site(self, site_dist: str, site_commit: str) -> None:
+    def _upload_site(
+        self, site_dist: str, site_commit: str, auth_config: dict[str, str] | None
+    ) -> None:
         """Upload the built site under ``site/<commit>/`` before the origin path points there.
 
         Hashed files under ``assets/`` never change: cached for a year. Everything else (the
         HTML) is revalidated on each request, so a new release is seen at once. Older commits
         stay in the bucket, so pointing back at one is an instant revert (W6).
+
+        ``auth.json`` (M2) tells the account pages where to sign in: the user pool API endpoint
+        and the website client id, both public. Written with the pages, so it follows reverts.
         """
         prefix = f"site/{site_commit}/"
         common: dict[str, Any] = {
@@ -210,10 +216,13 @@ class WebStack(Stack):
             ],
             **common,
         )
+        page_sources = [s3deploy.Source.asset(site_dist, exclude=["assets", "assets/**"])]
+        if auth_config:
+            page_sources.append(s3deploy.Source.json_data("auth.json", auth_config))
         pages = s3deploy.BucketDeployment(
             self,
             "SitePages",
-            sources=[s3deploy.Source.asset(site_dist, exclude=["assets", "assets/**"])],
+            sources=page_sources,
             destination_key_prefix=prefix,
             cache_control=[s3deploy.CacheControl.from_string("public, max-age=0, must-revalidate")],
             **common,

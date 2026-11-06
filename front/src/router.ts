@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from "react";
 
-export type View = "home" | "play" | "result" | "practice" | "privacy" | "challenge" | "not-found";
+export type View = "home" | "play" | "result" | "practice" | "privacy" | "account" | "challenge" | "not-found";
 
 export const VIEW_PATHS: Record<Exclude<View, "challenge" | "not-found">, string> = {
   home: "/",
@@ -11,6 +11,7 @@ export const VIEW_PATHS: Record<Exclude<View, "challenge" | "not-found">, string
   result: "/result",
   practice: "/practice",
   privacy: "/privacy",
+  account: "/account",
 };
 
 const CHALLENGE = /^\/c\/([A-Z2-7]{12})\/?$/;

@@ -50,5 +50,20 @@ for (const scheme of ["light", "dark"] as const) {
     await page.goto("/practice");
     await expect(page.getByRole("button", { name: "Check" })).toBeVisible();
     await shot(page, "7-practice");
+
+    // Accounts (M2), with the local fake sign-in.
+    if (!process.env.BASE_URL) {
+      await page.goto("/account");
+      await expect(page.getByRole("heading", { name: "Are you 16 or older?" })).toBeVisible();
+      await shot(page, "8-account-age");
+      await page.getByRole("button", { name: "Yes, I am 16 or older" }).click();
+      await page.getByLabel("E-mail address").fill(`shots-${scheme}-${info.project.name}@example.test`);
+      await shot(page, "9-account-email");
+      await page.getByRole("button", { name: "Send me a code" }).click();
+      await page.getByLabel("Code").fill("000000");
+      await page.getByRole("button", { name: "Sign in" }).click();
+      await expect(page.getByRole("alert")).toBeVisible();
+      await shot(page, "10-account-code-error");
+    }
   });
 }

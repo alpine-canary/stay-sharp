@@ -35,13 +35,13 @@ out.
 **Goal**: an e-mail code or a passkey signs a player in; no password anywhere.
 **Independent test**: create, sign out, sign in with a code; add a passkey and sign in with it.
 
-- [ ] T212 [P] [US2] Test first: the USER_AUTH flow over fetch (start with e-mail, answer `EMAIL_OTP`, choose `WEB_AUTHN`, refresh, errors mapped to plain messages that never say whether the e-mail exists) against a mocked Cognito: `front/src/account/cognito.test.ts`
-- [ ] T213 [US2] Cognito client: `front/src/account/cognito.ts` (sign up without password, start sign-in, answer code, refresh, sign out globally)
-- [ ] T214 [P] [US2] Test first: session storage (memory and sessionStorage; refresh token in localStorage only with "keep me signed in"; cleared on sign out): `front/src/account/session.test.ts`
-- [ ] T215 [US2] Session: `front/src/account/session.ts`
-- [ ] T216 [US2] Sign-in screen: e-mail, code field (one-time-code autocomplete, paste allowed, no time pressure beyond the 10-minute expiry, resend), errors in plain words, keyboard and screen reader friendly: `front/src/account/views/SignIn.tsx` with `SignIn.test.tsx`
+- [X] T212 [P] [US2] Test first: the USER_AUTH flow over fetch (start with e-mail, answer `EMAIL_OTP`, choose `WEB_AUTHN`, refresh, errors mapped to plain messages that never say whether the e-mail exists) against a mocked Cognito: `front/src/account/cognito.test.ts`
+- [X] T213 [US2] Cognito client: `front/src/account/cognito.ts` (sign up without password, start sign-in, answer code, refresh, sign out globally)
+- [X] T214 [P] [US2] Test first: session storage (memory and sessionStorage; refresh token in localStorage only with "keep me signed in"; cleared on sign out): `front/src/account/session.test.ts`
+- [X] T215 [US2] Session: `front/src/account/session.ts`
+- [X] T216 [US2] Sign-in screen: e-mail, code field (one-time-code autocomplete, paste allowed, no time pressure beyond the 10-minute expiry, resend), errors in plain words, keyboard and screen reader friendly: `front/src/account/views/SignIn.tsx` with `SignIn.test.tsx`
 - [ ] T217 [US2] Test first, then passkeys: add, list, remove, sign in (`navigator.credentials`), Playwright virtual authenticator: `front/src/account/passkeys.ts`, `front/tests/e2e/passkey.spec.ts`
-- [ ] T218 [US2] Lazy account chunk and `/account` route: router entry, prerendered first screen, site router path to `account.html`: `front/src/router.ts`, `front/src/prerender.tsx`, `infra/stacks/site_router.js`
+- [X] T218 [US2] Lazy account chunk and `/account` route: router entry, prerendered first screen, site router path to `account.html`: `front/src/router.ts`, `front/src/prerender.tsx`, `infra/stacks/site_router.js`
 
 ## Phase 4: US1 - Keep my streak on another device (P1)
 
@@ -81,8 +81,8 @@ follows the player.
 
 ## Phase 7: US5 - Under 16 (P2)
 
-- [ ] T239 [P] [US5] Test first: "No" stores nothing and sends no request; "Yes" leads to the e-mail step; the answer is sent as `adult: true` only: `front/src/account/views/AgeQuestion.test.tsx`
-- [ ] T240 [US5] Age question and friendly under-16 page: `front/src/account/views/AgeQuestion.tsx`
+- [X] T239 [P] [US5] Test first: "No" stores nothing and sends no request; "Yes" leads to the e-mail step; the answer is sent as `adult: true` only: `front/src/account/views/AgeQuestion.test.tsx`
+- [X] T240 [US5] Age question and friendly under-16 page: `front/src/account/views/AgeQuestion.tsx`
 
 ## Phase 8: US6 - Sign out (P3)
 

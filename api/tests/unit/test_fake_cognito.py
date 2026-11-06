@@ -76,6 +76,8 @@ def test_sign_up_without_password_then_sign_in() -> None:
     assert claims is not None
     assert claims["sub"] == fc.sub_for(EMAIL)
     assert result["RefreshToken"]
+    id_claims = json.loads(fc._unb64(result["IdToken"].split(".")[1]))  # noqa: SLF001
+    assert id_claims["email"] == EMAIL.lower()
 
 
 def test_sign_up_with_a_password_is_refused() -> None:
@@ -164,3 +166,10 @@ def test_down_answers_503(monkeypatch: pytest.MonkeyPatch) -> None:
 
 def test_unknown_action() -> None:
     assert fc.handle("AWSCognitoIdentityProviderService.AdminGetUser", b"{}")[0] == 400
+
+
+def test_resend_the_sign_up_code() -> None:
+    call("SignUp", Username=EMAIL)
+    assert call("ResendConfirmationCode", Username=EMAIL)[0] == 200
+    sign_up_and_sign_in_again = call("ResendConfirmationCode", Username="nobody@example.test")
+    assert sign_up_and_sign_in_again[0] == 400

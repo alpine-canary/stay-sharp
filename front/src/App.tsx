@@ -1,7 +1,7 @@
 // Front-end shell: one place that owns local progress, the API client and the view for the
 // current path (tasks T049, T068 to T070).
 
-import { useCallback, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useMemo, useState } from "react";
 import { createClient, type ApiClient, type PlayState } from "./api/client";
 import { Link } from "./components/Link";
 import { navigate, useRoute } from "./router";
@@ -22,6 +22,19 @@ import { Practice } from "./views/Practice";
 import { Privacy } from "./views/Privacy";
 import { Result } from "./views/Result";
 
+// The account code is its own chunk, loaded only on /account (research A9). The fallback is
+// also the prerendered first screen of the page; it lives here so it stays out of that chunk.
+const AccountPage = lazy(() => import("./account/AccountPage"));
+
+function AccountLoading() {
+  return (
+    <section className="card narrow" aria-busy="true">
+      <h1 className="text-3xl">Account</h1>
+      <p>Loading…</p>
+    </section>
+  );
+}
+
 export interface AppProps {
   store?: ProgressStore;
   client?: ApiClient;
@@ -33,11 +46,15 @@ function search(name: string): string | null {
 
 export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
   const store = useMemo(() => givenStore ?? createStore(), [givenStore]);
-  const [{ progress: initial, notice: initialNotice }] = useState(() => store.load());
+  const [{ progress: initial, notice: initialNotice }] = useState(() =>
+    store.load(),
+  );
   const [progress, setProgress] = useState<Progress>(initial);
   const [notice, setNotice] = useState<Notice>(initialNotice);
   const client = useMemo(
-    () => givenClient ?? createClient({ playerId: () => store.load().progress.playerId }),
+    () =>
+      givenClient ??
+      createClient({ playerId: () => store.load().progress.playerId }),
     [givenClient, store],
   );
   const route = useRoute();
@@ -56,7 +73,8 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
   const finished = useCallback(
     (play: PlayState) => {
       // Keyed by the play's server date: a play finished after midnight counts for its own day.
-      if (play.mode === "daily" && play.finished) update((p) => recordDay(p, play));
+      if (play.mode === "daily" && play.finished)
+        update((p) => recordDay(p, play));
       navigate(`/result?play=${play.playId}`);
       window.scrollTo(0, 0);
     },
@@ -64,16 +82,24 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
   );
 
   const answered = useCallback(
-    (level: Level, playMode: "daily" | "replay", deck: string, grade: number, duplicate: boolean) => {
+    (
+      level: Level,
+      playMode: "daily" | "replay",
+      deck: string,
+      grade: number,
+      duplicate: boolean,
+    ) => {
       // Replays are not scored, so they do not count in the skill view either.
-      if (playMode === "daily") update((p) => recordAnswer(p, { level, deck, grade, duplicate }));
+      if (playMode === "daily")
+        update((p) => recordAnswer(p, { level, deck, grade, duplicate }));
     },
     [update],
   );
 
   const challengeFinished = useCallback(
     (play: PlayState) => {
-      if (play.mode === "daily" && play.finished) update((p) => recordDay(p, play));
+      if (play.mode === "daily" && play.finished)
+        update((p) => recordDay(p, play));
     },
     [update],
   );
@@ -97,22 +123,52 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
           </svg>
           Stay Sharp
         </Link>
+        <nav className="top-links" aria-label="Site">
+          <Link href="/account">Account</Link>
+        </nav>
         <span className="by">
           by{" "}
           <a href="https://www.lumineth.com/">
             {/* Lumineth's mark, as on www.lumineth.com (white tile on the dark page). */}
             <svg className="lm" viewBox="0 0 48 48" aria-hidden="true">
               <rect className="lm-tile" width="48" height="48" rx="11" />
-              <rect className="lm-stem" x="12" y="9" width="8.5" height="30" rx="4.25" />
-              <rect x="12" y="30.5" width="24" height="8.5" rx="4.25" fill="#0E7C66" />
-              <path d="M12 34.75a4.25 4.25 0 0 1 4.25-4.25h4.25V39h-4.25A4.25 4.25 0 0 1 12 34.75z" fill="#5FD3B4" />
-              <rect x="28.8" y="10.8" width="7.4" height="7.4" rx="1.3" transform="rotate(45 32.5 14.5)" fill="#5FD3B4" />
+              <rect
+                className="lm-stem"
+                x="12"
+                y="9"
+                width="8.5"
+                height="30"
+                rx="4.25"
+              />
+              <rect
+                x="12"
+                y="30.5"
+                width="24"
+                height="8.5"
+                rx="4.25"
+                fill="#0E7C66"
+              />
+              <path
+                d="M12 34.75a4.25 4.25 0 0 1 4.25-4.25h4.25V39h-4.25A4.25 4.25 0 0 1 12 34.75z"
+                fill="#5FD3B4"
+              />
+              <rect
+                x="28.8"
+                y="10.8"
+                width="7.4"
+                height="7.4"
+                rx="1.3"
+                transform="rotate(45 32.5 14.5)"
+                fill="#5FD3B4"
+              />
             </svg>
             lumineth.com
           </a>
         </span>
       </header>
-      {notice && <StorageNotice notice={notice} onDismiss={() => setNotice(null)} />}
+      {notice && (
+        <StorageNotice notice={notice} onDismiss={() => setNotice(null)} />
+      )}
       <main id="main" className="grid gap-6 content-start">
         {route.view === "home" && (
           <Home
@@ -132,13 +188,21 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
               relaxed={progress.relaxed}
               onFinished={finished}
               onAnswered={({ mode: playMode, deck, grade, duplicate }) => {
-                if (progress.level) answered(progress.level, playMode, deck, grade, duplicate);
+                if (progress.level)
+                  answered(progress.level, playMode, deck, grade, duplicate);
               }}
             />
           ) : (
             <ChooseLevelFirst />
           ))}
-        {route.view === "result" && <Result key={search("play")} client={client} playId={search("play")} progress={progress} />}
+        {route.view === "result" && (
+          <Result
+            key={search("play")}
+            client={client}
+            playId={search("play")}
+            progress={progress}
+          />
+        )}
         {route.view === "challenge" && route.challengeId && (
           <Challenge
             key={route.challengeId}
@@ -163,13 +227,19 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
               onAnswered={(answer) => {
                 const level = progress.level;
                 // Boxes only: practice never touches the streak, the freeze or the skill view.
-                if (level) update((p) => recordPracticeAnswer(p, level, answer));
+                if (level)
+                  update((p) => recordPracticeAnswer(p, level, answer));
               }}
             />
           ) : (
             <ChooseLevelFirst />
           ))}
         {route.view === "privacy" && <Privacy />}
+        {route.view === "account" && (
+          <Suspense fallback={<AccountLoading />}>
+            <AccountPage />
+          </Suspense>
+        )}
       </main>
       <footer className="site-foot">
         <span>
@@ -183,7 +253,13 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
   );
 }
 
-function StorageNotice({ notice, onDismiss }: { notice: Exclude<Notice, null>; onDismiss: () => void }) {
+function StorageNotice({
+  notice,
+  onDismiss,
+}: {
+  notice: Exclude<Notice, null>;
+  onDismiss: () => void;
+}) {
   const text =
     notice === "reset"
       ? "Your saved progress on this browser could not be read, so it was reset."
@@ -205,7 +281,8 @@ function ChooseLevelFirst() {
     <section className="card narrow">
       <h1 className="text-3xl">Choose a level first</h1>
       <p>
-        <Link href="/">Go to today's set</Link> and pick Starter, Junior or Senior.
+        <Link href="/">Go to today's set</Link> and pick Starter, Junior or
+        Senior.
       </p>
     </section>
   );

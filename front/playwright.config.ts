@@ -30,7 +30,8 @@ export default defineConfig({
             command: "uv run --directory ../api python -m staysharp.local",
             url: "http://127.0.0.1:3001/api/v1/health",
             reuseExistingServer: !process.env.CI,
-            env: { STAYSHARP_CLOCK_FILE: CLOCK_FILE },
+            // FAKE_COGNITO: the local stand-in for sign-in (every code is 123456).
+            env: { STAYSHARP_CLOCK_FILE: CLOCK_FILE, FAKE_COGNITO: "1" },
           },
           { command: "corepack pnpm dev --strictPort", url: baseURL, reuseExistingServer: !process.env.CI },
         ],
