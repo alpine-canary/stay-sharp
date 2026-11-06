@@ -31,12 +31,26 @@ export interface Pending {
   session: string;
 }
 
-export type SignInErrorKind = "email" | "code" | "expired" | "throttled" | "unavailable" | "unknown";
+export type SignInErrorKind = "email" | "code" | "expired" | "passkey" | "throttled" | "unavailable" | "unknown";
+
+export interface PasskeyPending {
+  email: string;
+  session: string;
+  /** WebAuthn request options as Cognito sends them (base64url fields). */
+  options: Record<string, unknown>;
+}
+
+export interface PasskeyInfo {
+  id: string;
+  name: string;
+  createdAt: number | null;
+}
 
 const MESSAGES: Record<SignInErrorKind, string> = {
   email: "Please enter a valid e-mail address.",
   code: "That code did not work. Check it, or ask for a new one.",
   expired: "That code has expired. Ask for a new one.",
+  passkey: "That passkey did not work here. Send yourself a code instead.",
   throttled: "Too many tries. Wait a few minutes, then ask for a new code.",
   unavailable: "Sign-in is not available right now. You can keep playing; try again later.",
   unknown: "Something went wrong. Please try again.",
@@ -201,6 +215,71 @@ export function createCognito(
         }
         return emailChallenge(pending.email);
       });
+    },
+
+    /** Sign in with a passkey: the options for navigator.credentials.get. */
+    async startPasskey(rawEmail: string): Promise<PasskeyPending> {
+      const email = rawEmail.trim().toLowerCase();
+      if (!EMAIL.test(email)) throw new SignInError("email");
+      return friendly(async () => {
+        const body = await call("InitiateAuth", {
+          ClientId: config.clientId,
+          AuthFlow: "USER_AUTH",
+          AuthParameters: { USERNAME: email, PREFERRED_CHALLENGE: "WEB_AUTHN" },
+        });
+        const parameters = (body.ChallengeParameters ?? {}) as Record<string, string>;
+        if (body.ChallengeName !== "WEB_AUTHN" || typeof body.Session !== "string" || !parameters.CREDENTIAL_REQUEST_OPTIONS) {
+          throw new SignInError("passkey");
+        }
+        return { email, session: body.Session, options: JSON.parse(parameters.CREDENTIAL_REQUEST_OPTIONS) as Record<string, unknown> };
+      });
+    },
+
+    async finishPasskey(pending: PasskeyPending, credential: Record<string, unknown>): Promise<Tokens> {
+      try {
+        return await friendly(async () =>
+          tokens(
+            await call("RespondToAuthChallenge", {
+              ClientId: config.clientId,
+              ChallengeName: "WEB_AUTHN",
+              Session: pending.session,
+              ChallengeResponses: { USERNAME: pending.email, CREDENTIAL: JSON.stringify(credential) },
+            }),
+          ),
+        );
+      } catch (error) {
+        if (error instanceof SignInError && error.kind !== "unavailable" && error.kind !== "throttled") {
+          throw new SignInError("passkey");
+        }
+        throw error;
+      }
+    },
+
+    async startRegistration(accessToken: string): Promise<Record<string, unknown>> {
+      return friendly(async () => {
+        const body = await call("StartWebAuthnRegistration", { AccessToken: accessToken });
+        return body.CredentialCreationOptions as Record<string, unknown>;
+      });
+    },
+
+    async completeRegistration(accessToken: string, credential: Record<string, unknown>): Promise<void> {
+      await friendly(() => call("CompleteWebAuthnRegistration", { AccessToken: accessToken, Credential: credential }));
+    },
+
+    async listPasskeys(accessToken: string): Promise<PasskeyInfo[]> {
+      return friendly(async () => {
+        const body = await call("ListWebAuthnCredentials", { AccessToken: accessToken });
+        const list = Array.isArray(body.Credentials) ? (body.Credentials as Record<string, unknown>[]) : [];
+        return list.map((c) => ({
+          id: String(c.CredentialId),
+          name: typeof c.FriendlyCredentialName === "string" && c.FriendlyCredentialName ? c.FriendlyCredentialName : "Passkey",
+          createdAt: typeof c.CreatedAt === "number" ? c.CreatedAt * 1000 : null,
+        }));
+      });
+    },
+
+    async removePasskey(accessToken: string, credentialId: string): Promise<void> {
+      await friendly(() => call("DeleteWebAuthnCredential", { AccessToken: accessToken, CredentialId: credentialId }));
     },
 
     async refresh(refreshToken: string): Promise<Tokens> {

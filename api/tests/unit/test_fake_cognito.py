@@ -173,3 +173,77 @@ def test_resend_the_sign_up_code() -> None:
     assert call("ResendConfirmationCode", Username=EMAIL)[0] == 200
     sign_up_and_sign_in_again = call("ResendConfirmationCode", Username="nobody@example.test")
     assert sign_up_and_sign_in_again[0] == 400
+
+
+def _browser_answer(challenge: str, credential_id: str) -> dict[str, Any]:
+    client_data = json.dumps({"type": "webauthn.get", "challenge": challenge}).encode()
+    return {
+        "id": credential_id,
+        "type": "public-key",
+        "response": {"clientDataJSON": fc._b64(client_data)},
+    }  # noqa: SLF001
+
+
+def test_passkey_add_list_sign_in_and_remove() -> None:
+    access = sign_up_and_sign_in()["AccessToken"]
+    status, start = call("StartWebAuthnRegistration", AccessToken=access)
+    assert status == 200
+    options = start["CredentialCreationOptions"]
+    assert options["rp"]["id"] == "localhost"
+    status, _ = call(
+        "CompleteWebAuthnRegistration",
+        AccessToken=access,
+        Credential=_browser_answer(options["challenge"], "cred-1"),
+    )
+    assert status == 200
+    _, listed = call("ListWebAuthnCredentials", AccessToken=access)
+    assert [c["CredentialId"] for c in listed["Credentials"]] == ["cred-1"]
+
+    _, challenge = call(
+        "InitiateAuth",
+        AuthFlow="USER_AUTH",
+        AuthParameters={"USERNAME": EMAIL, "PREFERRED_CHALLENGE": "WEB_AUTHN"},
+    )
+    assert challenge["ChallengeName"] == "WEB_AUTHN"
+    request = json.loads(challenge["ChallengeParameters"]["CREDENTIAL_REQUEST_OPTIONS"])
+    assert request["allowCredentials"] == [{"type": "public-key", "id": "cred-1"}]
+    status, signed = call(
+        "RespondToAuthChallenge",
+        ChallengeName="WEB_AUTHN",
+        Session=challenge["Session"],
+        ChallengeResponses={
+            "USERNAME": EMAIL,
+            "CREDENTIAL": json.dumps(_browser_answer(request["challenge"], "cred-1")),
+        },
+    )
+    assert status == 200
+    assert fc.verify(signed["AuthenticationResult"]["AccessToken"]) is not None
+
+    call("DeleteWebAuthnCredential", AccessToken=access, CredentialId="cred-1")
+    _, listed = call("ListWebAuthnCredentials", AccessToken=access)
+    assert listed["Credentials"] == []
+
+
+def test_passkey_with_the_wrong_challenge_is_refused() -> None:
+    access = sign_up_and_sign_in()["AccessToken"]
+    _, start = call("StartWebAuthnRegistration", AccessToken=access)
+    call(
+        "CompleteWebAuthnRegistration",
+        AccessToken=access,
+        Credential=_browser_answer(start["CredentialCreationOptions"]["challenge"], "cred-1"),
+    )
+    _, challenge = call(
+        "InitiateAuth",
+        AuthFlow="USER_AUTH",
+        AuthParameters={"USERNAME": EMAIL, "PREFERRED_CHALLENGE": "WEB_AUTHN"},
+    )
+    status, body = call(
+        "RespondToAuthChallenge",
+        ChallengeName="WEB_AUTHN",
+        Session=challenge["Session"],
+        ChallengeResponses={
+            "USERNAME": EMAIL,
+            "CREDENTIAL": json.dumps(_browser_answer("old", "cred-1")),
+        },
+    )
+    assert (status, body["__type"]) == (400, "NotAuthorizedException")

@@ -13,6 +13,8 @@ Two parts:
   confirm, resend the sign-up code, choice-based sign-in (``USER_AUTH``) with an e-mail code,
   refresh, global sign-out. Users live in memory. Every code is ``FAKE_COGNITO_CODE``
   (default ``123456``). Set ``FAKE_COGNITO_DOWN=1`` to answer 503 to every call (A14).
+  Passkeys: add, list, remove, sign in. The fake checks that the browser answered the challenge
+  it was given with a known credential id; it does not verify signatures (Cognito does).
 
 Nothing here logs an e-mail address, a code or a token.
 """
@@ -128,15 +130,24 @@ class CognitoError(Exception):
 
 
 @dataclass
+class _Passkey:
+    credential_id: str
+    created_at: float
+    name: str = "Passkey"
+
+
+@dataclass
 class _User:
     sub: str
     confirmed: bool = False
+    passkeys: list[_Passkey] = field(default_factory=list)
 
 
 @dataclass
 class _State:
     users: dict[str, _User] = field(default_factory=dict)  # by lower-case e-mail
     sessions: dict[str, str] = field(default_factory=dict)  # session -> e-mail
+    challenges: dict[str, str] = field(default_factory=dict)  # session or sub -> challenge
     refresh: dict[str, str] = field(default_factory=dict)  # refresh token -> sub
     # Tokens issued before this time (per sub) are refused: global sign-out, deleted user.
     revoked_before: dict[str, float] = field(default_factory=dict)
@@ -247,7 +258,28 @@ def _initiate_auth(params: dict[str, Any]) -> dict[str, Any]:
     session = params.get("Session")
     if session and _STATE.sessions.pop(str(session), None) == email and user and user.confirmed:
         return _tokens(user.sub)
-    if auth.get("PREFERRED_CHALLENGE", "EMAIL_OTP") != "EMAIL_OTP":
+    preferred = auth.get("PREFERRED_CHALLENGE", "EMAIL_OTP")
+    if preferred == "WEB_AUTHN":
+        new_session = _new_session(email)
+        challenge = _b64(secrets.token_bytes(32))
+        _STATE.challenges[new_session] = challenge
+        allowed = [
+            {"type": "public-key", "id": key.credential_id}
+            for key in (user.passkeys if user else [])
+        ]
+        options = {
+            "challenge": challenge,
+            "rpId": _rp_id(),
+            "timeout": 180000,
+            "userVerification": "preferred",
+            "allowCredentials": allowed,
+        }
+        return {
+            "ChallengeName": "WEB_AUTHN",
+            "Session": new_session,
+            "ChallengeParameters": {"CREDENTIAL_REQUEST_OPTIONS": json.dumps(options)},
+        }
+    if preferred != "EMAIL_OTP":
         raise CognitoError("InvalidParameterException", "Unsupported challenge")
     # Like a pool that prevents user existence errors: an unknown e-mail gets a challenge too,
     # and no code ever matches it.
@@ -258,8 +290,110 @@ def _initiate_auth(params: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def _rp_id() -> str:
+    return os.environ.get("FAKE_COGNITO_RP_ID", "localhost")
+
+
+def _client_challenge(credential: dict[str, Any]) -> str | None:
+    """The challenge the browser signed (from clientDataJSON); the signature is not checked."""
+    try:
+        client_data = json.loads(_unb64(str(credential["response"]["clientDataJSON"])))
+        return str(client_data["challenge"])
+    except (KeyError, TypeError, ValueError):
+        return None
+
+
+def _respond_web_authn(params: dict[str, Any]) -> dict[str, Any]:
+    session = str(params.get("Session"))
+    email = _STATE.sessions.get(session)
+    user = _STATE.users.get(email or "")
+    expected = _STATE.challenges.pop(session, None)
+    try:
+        credential = json.loads((params.get("ChallengeResponses") or {}).get("CREDENTIAL", ""))
+    except ValueError:
+        credential = {}
+    known = {key.credential_id for key in (user.passkeys if user else [])}
+    if (
+        user is None
+        or expected is None
+        or credential.get("id") not in known
+        or _client_challenge(credential) != expected
+    ):
+        raise CognitoError("NotAuthorizedException", "Incorrect username or passkey")
+    del _STATE.sessions[session]
+    return _tokens(user.sub)
+
+
+def _signed_in_user(params: dict[str, Any]) -> _User:
+    claims = verify(str(params.get("AccessToken", "")))
+    user = next((u for u in _STATE.users.values() if claims and u.sub == claims["sub"]), None)
+    if user is None:
+        raise CognitoError("NotAuthorizedException", "Invalid Access Token")
+    return user
+
+
+def _start_registration(params: dict[str, Any]) -> dict[str, Any]:
+    user = _signed_in_user(params)
+    challenge = _b64(secrets.token_bytes(32))
+    _STATE.challenges[user.sub] = challenge
+    email = _email_of(user.sub) or user.sub
+    return {
+        "CredentialCreationOptions": {
+            "challenge": challenge,
+            "rp": {"id": _rp_id(), "name": "Stay Sharp"},
+            "user": {"id": _b64(user.sub.encode()), "name": email, "displayName": email},
+            "pubKeyCredParams": [
+                {"type": "public-key", "alg": -7},
+                {"type": "public-key", "alg": -257},
+            ],
+            "timeout": 180000,
+            "excludeCredentials": [
+                {"type": "public-key", "id": key.credential_id} for key in user.passkeys
+            ],
+            "authenticatorSelection": {
+                "residentKey": "required",
+                "userVerification": "preferred",
+            },
+        }
+    }
+
+
+def _complete_registration(params: dict[str, Any]) -> dict[str, Any]:
+    user = _signed_in_user(params)
+    credential = params.get("Credential") or {}
+    expected = _STATE.challenges.pop(user.sub, None)
+    if expected is None or _client_challenge(credential) != expected or not credential.get("id"):
+        raise CognitoError("WebAuthnChallengeNotFoundException", "Registration failed")
+    user.passkeys.append(_Passkey(credential_id=str(credential["id"]), created_at=time.time()))
+    return {}
+
+
+def _list_passkeys(params: dict[str, Any]) -> dict[str, Any]:
+    user = _signed_in_user(params)
+    return {
+        "Credentials": [
+            {
+                "CredentialId": key.credential_id,
+                "FriendlyCredentialName": key.name,
+                "RelyingPartyId": _rp_id(),
+                "AuthenticatorAttachment": "platform",
+                "CreatedAt": key.created_at,
+            }
+            for key in user.passkeys
+        ]
+    }
+
+
+def _delete_passkey(params: dict[str, Any]) -> dict[str, Any]:
+    user = _signed_in_user(params)
+    user.passkeys = [k for k in user.passkeys if k.credential_id != params.get("CredentialId")]
+    return {}
+
+
 def _respond(params: dict[str, Any]) -> dict[str, Any]:
     _client(params)
+    if params.get("ChallengeName") == "WEB_AUTHN":
+        return _respond_web_authn(params)
     if params.get("ChallengeName") != "EMAIL_OTP":
         raise CognitoError("InvalidParameterException", "Unsupported challenge")
     responses = params.get("ChallengeResponses") or {}
@@ -298,6 +432,10 @@ ACTIONS = {
     "InitiateAuth": _initiate_auth,
     "RespondToAuthChallenge": _respond,
     "GlobalSignOut": _global_sign_out,
+    "StartWebAuthnRegistration": _start_registration,
+    "CompleteWebAuthnRegistration": _complete_registration,
+    "ListWebAuthnCredentials": _list_passkeys,
+    "DeleteWebAuthnCredential": _delete_passkey,
 }
 TARGET_PREFIX = "AWSCognitoIdentityProviderService."
 

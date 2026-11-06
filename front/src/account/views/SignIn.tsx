@@ -4,17 +4,26 @@
 
 import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { SignInError, type Cognito, type Pending, type Tokens } from "../cognito";
+import { passkeysSupported, usePasskey } from "../passkeys";
+
+export interface PasskeyDevice {
+  supported: () => boolean;
+  get: (options: Record<string, unknown>) => Promise<Record<string, unknown>>;
+}
+
+const BROWSER_PASSKEYS: PasskeyDevice = { supported: passkeysSupported, get: usePasskey };
 
 export interface SignInProps {
   cognito: Cognito;
   onSignedIn: (tokens: Tokens, keep: boolean) => void;
+  passkeys?: PasskeyDevice;
 }
 
 function message(error: unknown): string {
   return error instanceof SignInError ? error.message : new SignInError("unknown").message;
 }
 
-export function SignIn({ cognito, onSignedIn }: SignInProps) {
+export function SignIn({ cognito, onSignedIn, passkeys = BROWSER_PASSKEYS }: SignInProps) {
   const [pending, setPending] = useState<Pending | null>(null);
   const [keep, setKeep] = useState(false);
   return pending ? (
@@ -26,7 +35,14 @@ export function SignIn({ cognito, onSignedIn }: SignInProps) {
       onSignedIn={(tokens) => onSignedIn(tokens, keep)}
     />
   ) : (
-    <EmailStep cognito={cognito} keep={keep} onKeep={setKeep} onPending={setPending} />
+    <EmailStep
+      cognito={cognito}
+      keep={keep}
+      onKeep={setKeep}
+      onPending={setPending}
+      passkeys={passkeys}
+      onSignedIn={(tokens) => onSignedIn(tokens, keep)}
+    />
   );
 }
 
@@ -35,13 +51,18 @@ function EmailStep({
   keep,
   onKeep,
   onPending,
+  passkeys,
+  onSignedIn,
 }: {
   cognito: Cognito;
   keep: boolean;
   onKeep: (keep: boolean) => void;
   onPending: (pending: Pending) => void;
+  passkeys: PasskeyDevice;
+  onSignedIn: (tokens: Tokens) => void;
 }) {
   const id = useId();
+  const [canPasskey] = useState(() => passkeys.supported());
   const [email, setEmail] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -52,6 +73,25 @@ function EmailStep({
     setError(null);
     try {
       onPending(await cognito.start(email));
+    } catch (failure) {
+      setError(message(failure));
+      setBusy(false);
+    }
+  }
+
+  async function withPasskey() {
+    setBusy(true);
+    setError(null);
+    try {
+      const pending = await cognito.startPasskey(email);
+      let credential: Record<string, unknown>;
+      try {
+        credential = await passkeys.get(pending.options);
+      } catch {
+        // Cancelled, or no passkey for this site on this device.
+        throw new SignInError("passkey");
+      }
+      onSignedIn(await cognito.finishPasskey(pending, credential));
     } catch (failure) {
       setError(message(failure));
       setBusy(false);
@@ -92,6 +132,13 @@ function EmailStep({
           {busy ? "Sending…" : "Send me a code"}
         </button>
       </div>
+      {canPasskey && (
+        <p className="form-links">
+          <button type="button" className="link-btn" onClick={withPasskey} disabled={busy}>
+            Sign in with a passkey instead
+          </button>
+        </p>
+      )}
     </form>
   );
 }

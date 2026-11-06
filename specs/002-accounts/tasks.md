@@ -40,7 +40,7 @@ out.
 - [X] T214 [P] [US2] Test first: session storage (memory and sessionStorage; refresh token in localStorage only with "keep me signed in"; cleared on sign out): `front/src/account/session.test.ts`
 - [X] T215 [US2] Session: `front/src/account/session.ts`
 - [X] T216 [US2] Sign-in screen: e-mail, code field (one-time-code autocomplete, paste allowed, no time pressure beyond the 10-minute expiry, resend), errors in plain words, keyboard and screen reader friendly: `front/src/account/views/SignIn.tsx` with `SignIn.test.tsx`
-- [ ] T217 [US2] Test first, then passkeys: add, list, remove, sign in (`navigator.credentials`), Playwright virtual authenticator: `front/src/account/passkeys.ts`, `front/tests/e2e/passkey.spec.ts`
+- [X] T217 [US2] Test first, then passkeys: add, list, remove, sign in (`navigator.credentials`), Playwright virtual authenticator: `front/src/account/passkeys.ts`, `front/tests/e2e/passkey.spec.ts`
 - [X] T218 [US2] Lazy account chunk and `/account` route: router entry, prerendered first screen, site router path to `account.html`: `front/src/router.ts`, `front/src/prerender.tsx`, `infra/stacks/site_router.js`
 
 ## Phase 4: US1 - Keep my streak on another device (P1)

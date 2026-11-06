@@ -156,4 +156,47 @@ describe("cognito client", () => {
     await cognito.signOut("acc");
     expect(calls[0]?.body).toEqual({ AccessToken: "acc" });
   });
+
+  it("signs in with a passkey: request options in, credential out", async () => {
+    const options = { challenge: "AQID", rpId: "localhost", allowCredentials: [] };
+    const { cognito, calls } = scripted({
+      InitiateAuth: [200, { ChallengeName: "WEB_AUTHN", Session: "wa", ChallengeParameters: { CREDENTIAL_REQUEST_OPTIONS: JSON.stringify(options) } }],
+      RespondToAuthChallenge: [200, { AuthenticationResult: TOKENS }],
+    });
+    const pending = await cognito.startPasskey(EMAIL);
+    expect(pending.options).toEqual(options);
+    expect(calls[0]?.body).toMatchObject({ AuthParameters: { USERNAME: EMAIL, PREFERRED_CHALLENGE: "WEB_AUTHN" } });
+    await cognito.finishPasskey(pending, { id: "cred" });
+    expect(calls[1]?.body).toEqual({
+      ClientId: "client-1",
+      ChallengeName: "WEB_AUTHN",
+      Session: "wa",
+      ChallengeResponses: { USERNAME: EMAIL, CREDENTIAL: JSON.stringify({ id: "cred" }) },
+    });
+  });
+
+  it("a refused passkey says to use a code instead", async () => {
+    const { cognito } = scripted({
+      InitiateAuth: [200, { ChallengeName: "WEB_AUTHN", Session: "wa", ChallengeParameters: { CREDENTIAL_REQUEST_OPTIONS: "{}" } }],
+      RespondToAuthChallenge: err("NotAuthorizedException"),
+    });
+    const pending = await cognito.startPasskey(EMAIL);
+    const failure = (await cognito.finishPasskey(pending, {}).catch((e: unknown) => e)) as SignInError;
+    expect(failure.kind).toBe("passkey");
+  });
+
+  it("adds, lists and removes passkeys with the access token", async () => {
+    const { cognito, calls } = scripted({
+      StartWebAuthnRegistration: [200, { CredentialCreationOptions: { challenge: "AQID" } }],
+      CompleteWebAuthnRegistration: [200, {}],
+      ListWebAuthnCredentials: [200, { Credentials: [{ CredentialId: "c1", FriendlyCredentialName: "", CreatedAt: 1700000000 }] }],
+      DeleteWebAuthnCredential: [200, {}],
+    });
+    expect(await cognito.startRegistration("acc")).toEqual({ challenge: "AQID" });
+    await cognito.completeRegistration("acc", { id: "c1" });
+    expect(await cognito.listPasskeys("acc")).toEqual([{ id: "c1", name: "Passkey", createdAt: 1700000000000 }]);
+    await cognito.removePasskey("acc", "c1");
+    expect(calls.map((c) => c.body.AccessToken)).toEqual(["acc", "acc", "acc", "acc"]);
+    expect(calls[3]?.body.CredentialId).toBe("c1");
+  });
 });

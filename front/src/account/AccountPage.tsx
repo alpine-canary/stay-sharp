@@ -8,6 +8,7 @@ import { Link } from "../components/Link";
 import { createCognito, loadAuthConfig, type AuthConfig, type Cognito } from "./cognito";
 import { createSession, type Session } from "./session";
 import { AgeQuestion } from "./views/AgeQuestion";
+import { Account as SignedIn } from "./views/Account";
 import { SignIn } from "./views/SignIn";
 
 export interface AccountDeps {
@@ -68,15 +69,7 @@ function Account({ cognito, makeSession }: { cognito: Cognito; makeSession: (c: 
       />
     );
   }
-  return (
-    <section className="card narrow">
-      <h1 className="text-3xl">Your account</h1>
-      <p>Signed in as {session.email() ?? "you"}.</p>
-      <p>
-        <Link href="/">Go to today's set</Link>
-      </p>
-    </section>
-  );
+  return <SignedIn cognito={cognito} session={session} />;
 }
 
 /** Same as the prerendered first screen (AccountLoading in App.tsx). */
