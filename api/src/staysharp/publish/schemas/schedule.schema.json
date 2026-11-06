@@ -6,7 +6,7 @@
   "additionalProperties": false,
   "required": ["level", "days"],
   "properties": {
-    "level": { "enum": ["senior", "starter"] },
+    "level": { "enum": ["senior", "junior", "starter"] },
     "targets": {
       "type": "object",
       "description": "Target seconds per deck; copied into each daily set at publish.",

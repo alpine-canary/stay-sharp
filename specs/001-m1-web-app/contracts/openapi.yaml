@@ -22,14 +22,14 @@ components:
       name: playId
       in: path
       required: true
-      schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}\.(senior|starter)\.(daily|replay)$' }
+      schema: { type: string, pattern: '^\d{4}-\d{2}-\d{2}\.(senior|junior|starter)\.(daily|replay)$' }
     Index:
       name: index
       in: path
       required: true
       schema: { type: integer, minimum: 0, maximum: 4 }
   schemas:
-    Level: { type: string, enum: [senior, starter] }
+    Level: { type: string, enum: [senior, junior, starter] }
     Grade: { type: number, enum: [0, 0.5, 1] }
     Error:
       type: object

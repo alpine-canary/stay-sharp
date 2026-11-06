@@ -8,7 +8,7 @@ import { Choices } from "../components/Choices";
 import { CodeBlock } from "../components/CodeBlock";
 import { Feedback } from "../components/Feedback";
 import { Link } from "../components/Link";
-import { DECK_ORDER, LINE_DECKS, deckName } from "../decks";
+import { DECK_ORDER, LINE_DECKS, deckName, LEVEL_NAMES } from "../decks";
 import { preferred, type PracticeAnswer, type PracticeState } from "../progress/boxes";
 import type { Level } from "../storage";
 
@@ -125,7 +125,7 @@ export function Practice({ client, level, practice, onAnswered }: PracticeProps)
   return (
     <>
       <section className="card" aria-labelledby={`${formId}-intro`}>
-        <span className="eyebrow">Practice · {level === "senior" ? "Senior" : "Starter"}</span>
+        <span className="eyebrow">Practice · {LEVEL_NAMES[level]}</span>
         <h1 id={`${formId}-intro`} className="text-2xl">
           Practise past questions
         </h1>

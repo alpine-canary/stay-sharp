@@ -77,7 +77,7 @@ def test_low_stock_alarm_per_level_and_missing_data_breaches(
 ) -> None:
     every = alarms(ops(template, stage)).values()
     found = [a for a in every if a["MetricName"] == "StockDaysAhead"]
-    assert sorted(dims(a)["Level"] for a in found) == ["senior", "starter"]
+    assert sorted(dims(a)["Level"] for a in found) == ["junior", "senior", "starter"]
     for alarm in found:
         assert dims(alarm)["Stage"] == stage
         assert alarm["ComparisonOperator"] == "LessThanThreshold"

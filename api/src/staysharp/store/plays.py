@@ -43,7 +43,7 @@ class PlayRef:
     def parse(cls, play_id: str) -> PlayRef:
         """Parse a ``playId`` already checked against the contract pattern."""
         day, level, mode = play_id.split(".")
-        if level not in ("senior", "starter") or mode not in ("daily", "replay"):
+        if level not in ("senior", "junior", "starter") or mode not in ("daily", "replay"):
             raise ValueError("malformed play id")
         return cls(dt.date.fromisoformat(day), level, mode)  # type: ignore[arg-type]
 

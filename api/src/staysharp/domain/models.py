@@ -23,7 +23,7 @@ from pydantic import (
 )
 from pydantic.alias_generators import to_camel
 
-Level = Literal["senior", "starter"]
+Level = Literal["senior", "junior", "starter"]
 Mode = Literal["daily", "replay"]
 SeniorDeck = Literal["spot", "better", "fail", "acronym", "news"]
 StarterDeck = Literal["logic", "readcode", "whatif", "words", "aisense"]
@@ -33,6 +33,8 @@ Language = Literal["python", "typescript", "php", "sql", "cdk", "text"]
 # FR-001: one question per deck, in this order.
 DECKS: dict[Level, tuple[Deck, ...]] = {
     "senior": ("spot", "better", "fail", "acronym", "news"),
+    # Junior plays Senior's decks with easier questions: a deck no longer tells the level.
+    "junior": ("spot", "better", "fail", "acronym", "news"),
     "starter": ("logic", "readcode", "whatif", "words", "aisense"),
 }
 # Decks where the player also picks a line (grade 0.5 possible).
@@ -42,7 +44,7 @@ Qid = Annotated[str, StringConstraints(pattern=r"^[a-z0-9_]{3,64}$")]
 ChoiceId = Annotated[str, StringConstraints(pattern=r"^[A-Z2-7]{8}$")]
 ChallengeId = Annotated[str, StringConstraints(pattern=r"^[A-Z2-7]{12}$")]
 PlayId = Annotated[
-    str, StringConstraints(pattern=r"^\d{4}-\d{2}-\d{2}\.(senior|starter)\.(daily|replay)$")
+    str, StringConstraints(pattern=r"^\d{4}-\d{2}-\d{2}\.(senior|junior|starter)\.(daily|replay)$")
 ]
 Line = Annotated[int, Field(ge=1, le=30)]
 

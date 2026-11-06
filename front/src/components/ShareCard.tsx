@@ -3,6 +3,7 @@
 // the site address: never a question, an answer or a deck name.
 
 import { useRef, useState } from "react";
+import { LEVEL_NAMES } from "../decks";
 import type { Level } from "../storage";
 import { gradeWord } from "./Squares";
 
@@ -33,7 +34,7 @@ function duration(ms: number): string {
 }
 
 export function shareText(input: ShareInput): string {
-  const level = input.level === "senior" ? "Senior" : "Starter";
+  const level = LEVEL_NAMES[input.level];
   const squares = Array.from({ length: 5 }, (_, i) => SQUARE[String(input.grades[i])] ?? "⬜").join("");
   const speed = input.relaxed ? "relaxed" : `speed +${figure(input.bonus)}`;
   return [

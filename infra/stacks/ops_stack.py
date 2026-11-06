@@ -240,7 +240,7 @@ class OpsStack(Stack):
                 period=period,
             )
 
-        for level in ("senior", "starter"):
+        for level in ("senior", "junior", "starter"):
             make_alarm(
                 self,
                 f"StockLow{level.capitalize()}",

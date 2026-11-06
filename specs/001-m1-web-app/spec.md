@@ -39,6 +39,13 @@ pipeline. Acceptance criteria must include: answers invisible in the browser bef
 the same answer sent twice counts once; a scoring error raises the alarm; a failing canary rolls
 back by itself."
 
+
+### Session 2026-11-06
+
+- Q: Should there be a level between Starter and Senior? -> A: Yes, **Junior**, at M1. It plays
+  Senior's five decks with easier questions (simpler code, more common traps), so the same game
+  gets harder as a player moves up. A deck no longer tells the level on its own; plays,
+  challenges and the skill view carry the level.
 ## User Scenarios & Testing *(mandatory)*
 
 Actors:
@@ -293,6 +300,7 @@ rejects the invalid one with a clear reason and accepts the rest.
 - **FR-001**: The system MUST publish one daily set per date and level, unlocked at 00:00
   Europe/Zurich, made of exactly five questions, one per deck of that level, in a fixed order:
   - Senior: Spot the bug, Could do better, What if it fails?, Acronym or tool, AI this week.
+  - Junior: the same five decks as Senior, with easier questions.
   - Starter (12+): Logic puzzle, Read the code, What happens if…, Tech words, AI sense.
 - **FR-002**: The system MUST serve the same daily set to every player of a level on a given date.
 - **FR-003**: The system MUST NOT send the correct answer, the explanation, or anything from which
@@ -311,6 +319,8 @@ rejects the invalid one with a clear reason and accepts the rest.
   never alters past results):
   - Senior: Spot the bug 60 s, Could do better 45 s, What if it fails? 45 s, Acronym or tool 20 s,
     AI this week 30 s.
+  - Junior: Spot the bug 75 s, Could do better 60 s, What if it fails? 60 s, Acronym or tool
+    25 s, AI this week 30 s.
   - Starter: Logic puzzle 60 s, Read the code 45 s, What happens if… 30 s, Tech words 20 s, AI
     sense 30 s.
 - **FR-005c**: There MUST be no hard time limit. A "relaxed" setting, remembered on the browser,
@@ -330,7 +340,7 @@ rejects the invalid one with a clear reason and accepts the rest.
 - **FR-008**: A partly played daily MUST resume at the first unanswered question on the same day.
 - **FR-009**: A daily can be replayed after it is finished; replays are graded and explained but
   marked "not scored" and change nothing.
-- **FR-010**: The player MUST be able to choose Senior or Starter (12+), change it later, and the
+- **FR-010**: The player MUST be able to choose Starter (12+), Junior or Senior, change it later, and the
   choice is remembered on the browser. Each level has its own streak, skill view and game history.
 
 **Anonymous identity**
@@ -425,7 +435,8 @@ rejects the invalid one with a clear reason and accepts the rest.
 - **Question**: one item of content. Deck, level, prompt, optional code or diagram, four choices,
   correct choice, correct lines (Spot the bug), explanation, source and date (AI this week),
   approval status, version, and the deck's target time.
-- **Level**: Senior or Starter (12+); each has its own five decks and target times.
+- **Level**: Starter (12+), Junior or Senior; each has its five decks and target times (Junior
+  shares Senior's decks, with easier questions and longer targets).
 - **Daily set**: a date and a level, with five question references in deck order and the target
   time per deck in force that day. Has a game number (#n) counted from launch day.
 - **Anonymous player**: a random id per browser. No personal data.
@@ -476,7 +487,7 @@ rejects the invalid one with a clear reason and accepts the rest.
 
 ## Assumptions
 
-- **Levels at launch**: Senior and Starter (12+). Mid and Lead come later, with their own stock.
+- **Levels at launch**: Starter (12+), Junior and Senior. Lead comes later, with its own stock.
 - **Time**: a speed bonus, never a hard limit (see Clarifications).
 - **Game number**: #1 is the M1 launch day for everyone; the number is the same at every level.
 - **AI this week** questions are written by hand in M1 from public, dated sources; the automated

@@ -26,11 +26,15 @@ def load(path: Path) -> dict[str, Any]:
     return data
 
 
-def test_there_is_one_sample_per_deck_for_both_levels() -> None:
-    decks = {(q["level"], q["deck"]) for q in map(load, FILES)}
-    for level, level_decks in DECKS.items():
+def test_there_is_one_sample_per_deck_of_every_level() -> None:
+    # Junior plays Senior's decks: Senior's samples cover it until people write Junior ones
+    # (questions are written by people, never by a model).
+    decks = {q["deck"] for q in map(load, FILES)}
+    for level_decks in DECKS.values():
         for deck in level_decks:
-            assert (level, deck) in decks
+            assert deck in decks
+    levels = {q["level"] for q in map(load, FILES)}
+    assert {"senior", "starter"} <= levels
 
 
 def test_prototype_has_14_days_of_5_questions() -> None:

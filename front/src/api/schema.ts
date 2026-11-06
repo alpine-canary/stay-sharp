@@ -418,6 +418,33 @@ export interface paths {
                         };
                     };
                 };
+                /** @description Invalid request, or a deck of another level. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description No past question for that level and deck yet (code not_ready). */
+                404: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description More than 200 practice questions today for this player (code rate_limited). */
+                429: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
             };
         };
         delete?: never;
@@ -461,8 +488,30 @@ export interface paths {
                         "application/json": components["schemas"]["AnswerResult"];
                     };
                 };
-                /** @description A different answer was already recorded for this attempt. */
+                /** @description Unknown choice, line missing or outside the code, or no such attempt (unknown, another player's, or older than 14 days). */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+                /** @description A different answer was already recorded for this attempt; the stored result is returned. */
                 409: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": {
+                            /** @constant */
+                            code: "conflict";
+                            recorded: components["schemas"]["AnswerResult"];
+                        };
+                    };
+                };
+                /** @description Temporary storage failure after retries. Safe to retry. */
+                503: {
                     headers: {
                         [name: string]: unknown;
                     };
@@ -606,7 +655,7 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /** @enum {string} */
-        Level: "senior" | "starter";
+        Level: "senior" | "junior" | "starter";
         /** @enum {number} */
         Grade: 0 | 0.5 | 1;
         Error: {

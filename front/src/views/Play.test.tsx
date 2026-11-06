@@ -193,6 +193,6 @@ describe("Play", () => {
     await user.click(await screen.findByRole("radio", { name: /Right one/ }));
     await user.click(screen.getByRole("button", { name: "Check" }));
     await screen.findByRole("status");
-    expect(onAnswered).toHaveBeenCalledWith({ mode: "daily", deck: "better", grade: 1, duplicate });
+    expect(onAnswered).toHaveBeenCalledWith({ level: "senior", mode: "daily", deck: "better", grade: 1, duplicate });
   });
 });

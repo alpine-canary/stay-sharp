@@ -27,7 +27,7 @@
   3. **What if it fails?** - a small system diagram + a failure ("the e-mail arrives twice", "the supplier API hangs"). Pick what happens / what protects it.
   4. **Acronym or tool** - "HNSW is…", "What does a DLQ hold?", "CDK vs CloudFormation?".
   5. **AI this week** - one question on recent AI news, always with date and source link shown after answering.
-- **Levels**: Senior and **Starter (12+)** at M1; Mid and Lead later. Mid, Senior and Lead share the developer decks at different depths; Lead adds Run topics (incidents, post-mortems, SLAs, change freezes). Starter, for teenagers and beginners, has its own decks: Logic puzzle, Read the code, What happens if…, Tech words, AI sense.
+- **Levels**: **Starter (12+)**, **Junior** and Senior at M1 (Junior added 2026-11-06, in place of the planned "Mid"); Lead later. Junior, Senior and Lead share the developer decks at different depths; Lead adds Run topics (incidents, post-mortems, SLAs, change freezes). Starter, for teenagers and beginners, has its own decks: Logic puzzle, Read the code, What happens if…, Tech words, AI sense.
 - **Scoring**: grade per question (1, 0.5 for half-right Spot the bug, 0) + a speed bonus of 0.2 for a right answer within the deck's target time, measured on the server. No hard time limit; a "relaxed" setting turns the timer and bonus off (WCAG 2.2.1). **Explanation shown after every answer** - learning is the point.
 - **Streak** like LinkedIn's games; a missed day breaks it (one "freeze" per week).
 - **Share card** (no spoilers):

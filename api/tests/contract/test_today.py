@@ -53,7 +53,11 @@ def test_today_uses_the_zurich_day(checked: Checked) -> None:
         "date": "2026-11-21",
         "gameNumber": 6,
         "weekStart": "2026-11-16",
-        "levels": [{"level": "senior", "ready": True}, {"level": "starter", "ready": False}],
+        "levels": [
+            {"level": "senior", "ready": True},
+            {"level": "junior", "ready": False},
+            {"level": "starter", "ready": False},
+        ],
     }
 
 

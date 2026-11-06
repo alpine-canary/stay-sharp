@@ -43,7 +43,11 @@ class Recorder:
 
 
 def test_the_handler_emits_one_value_per_level(monkeypatch: pytest.MonkeyPatch) -> None:
-    stored = {"senior": days(1, 2, 3, 4, 5, 6, 7, 8), "starter": days(1, 2)}
+    stored = {
+        "senior": days(1, 2, 3, 4, 5, 6, 7, 8),
+        "junior": days(1, 2, 3),
+        "starter": days(1, 2),
+    }
     queries: list[dict[str, Any]] = []
 
     def query_all(query: dict[str, Any], **_: Any) -> list[dict[str, Any]]:
@@ -59,9 +63,10 @@ def test_the_handler_emits_one_value_per_level(monkeypatch: pytest.MonkeyPatch) 
 
     result = stock_check.run()
 
-    assert result == {"senior": 8, "starter": 2}
+    assert result == {"senior": 8, "junior": 3, "starter": 2}
     assert recorder.emitted == [
         ("StockDaysAhead", 8, ("Level", "senior")),
+        ("StockDaysAhead", 3, ("Level", "junior")),
         ("StockDaysAhead", 2, ("Level", "starter")),
     ]
     # Only STOCK# keys, strictly after today (the role allows nothing else).

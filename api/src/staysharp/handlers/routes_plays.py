@@ -39,7 +39,7 @@ from staysharp.store.plays import Play, PlayRef
 
 router = APIGatewayHttpRouter()
 
-PLAY_ID = re.compile(r"^\d{4}-\d{2}-\d{2}\.(senior|starter)\.(daily|replay)$")
+PLAY_ID = re.compile(r"^\d{4}-\d{2}-\d{2}\.(senior|junior|starter)\.(daily|replay)$")
 NOT_READY = "Today's set is not ready yet. Please come back a little later."
 
 

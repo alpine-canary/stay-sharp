@@ -373,8 +373,13 @@ otherwise.
 
 US2 and US3, then US4 and US5, each checked in dev on its own before the next.
 
+## Added 2026-11-06: Junior level
+
+- [x] T125 Junior level between Starter and Senior: server levels, play ids, question and schedule schemas, OpenAPI contract, stock alarm per level, seed targets, website level choice and labels, challenge level from the play, progress upgrade that adds Junior without losing a streak (spec clarification 2026-11-06)
+- [ ] T126 [maintainer] Write and approve Junior questions (5 samples, then the launch stock in the private content repository); until then local fixtures reuse Senior's samples
+
 ## Notes
 
 - 124 tasks; T001, T012 and T013 already done on 2026-11-03.
-- Maintainer actions: T012, T015 to T017, T084, T093, T122 to T124.
+- Maintainer actions: T012, T015 to T017, T084, T093, T122 to T124, T126.
 - Each task is one commit (Conventional Commits) on a feature branch; a person reviews and merges.

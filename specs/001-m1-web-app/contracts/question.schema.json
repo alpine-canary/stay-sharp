@@ -7,7 +7,7 @@
   "required": ["id", "level", "deck", "prompt", "choices", "answer", "explanation", "status"],
   "properties": {
     "id": { "type": "string", "pattern": "^[a-z0-9_]{3,64}$", "description": "Stable and meaningless: no date or schedule information (publish refuses date-like patterns)." },
-    "level": { "enum": ["senior", "starter"] },
+    "level": { "enum": ["senior", "junior", "starter"] },
     "deck": { "enum": ["spot", "better", "fail", "acronym", "news", "logic", "readcode", "whatif", "words", "aisense"] },
     "language": { "enum": ["python", "typescript", "php", "sql", "cdk", "text"] },
     "prompt": { "type": "string", "minLength": 1, "maxLength": 400 },

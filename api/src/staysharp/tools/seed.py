@@ -33,6 +33,7 @@ SAMPLES = ROOT / "content" / "samples"
 ALLOWED_STAGES = ("local", "dev")
 TARGETS: dict[Level, dict[Deck, int]] = {
     "senior": {"spot": 60, "better": 45, "fail": 45, "acronym": 20, "news": 30},
+    "junior": {"spot": 75, "better": 60, "fail": 60, "acronym": 25, "news": 30},
     "starter": {"logic": 60, "readcode": 45, "whatif": 30, "words": 20, "aisense": 30},
 }
 

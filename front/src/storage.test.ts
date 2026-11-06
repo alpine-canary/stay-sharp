@@ -83,6 +83,22 @@ describe("store", () => {
     expect(JSON.parse(storage.getItem(STORAGE_KEY) ?? "{}")).not.toHaveProperty("boxes");
   });
 
+  it("adds the Junior level to progress saved before it existed, keeping the streak", () => {
+    const storage = new MemoryStorage();
+    const old = JSON.parse(JSON.stringify(freshProgress())) as Record<string, Record<string, unknown>>;
+    for (const field of ["days", "freeze", "longest", "deckStats", "practice"]) delete old[field]?.junior;
+    (old.days as Record<string, Record<string, unknown>>).senior = { "2026-11-20": { score: 4, bonus: 0, relaxed: false } };
+    (old.longest as Record<string, number>).senior = 9;
+    storage.setItem(STORAGE_KEY, JSON.stringify(old));
+    const { progress, notice } = createStore(storage).load();
+    expect(notice).toBeNull();
+    expect(progress.days.senior["2026-11-20"]?.score).toBe(4);
+    expect(progress.longest.senior).toBe(9);
+    expect(progress.days.junior).toEqual({});
+    expect(progress.freeze.junior).toEqual({ held: 0, earnedWeek: null, usedOn: [] });
+    expect(progress.practice.junior).toEqual({ seen: 0, cards: {} });
+  });
+
   it("resets another version", () => {
     const storage = new MemoryStorage();
     storage.setItem(STORAGE_KEY, JSON.stringify({ ...freshProgress(), version: 2 }));

@@ -10,7 +10,7 @@ import { Link } from "../components/Link";
 import { copyOrSelect, MANUAL_COPY, type CopyStatus } from "../components/ShareCard";
 import { Squares } from "../components/Squares";
 import { formatSeconds } from "../components/Timer";
-import { DECK_ORDER, deckName } from "../decks";
+import { DECK_ORDER, LEVEL_NAMES, deckName } from "../decks";
 import { formatScore } from "./Result";
 import { Play, type PlayProps } from "./Play";
 
@@ -29,7 +29,7 @@ type State =
   | { status: "gone"; expired: boolean }
   | { status: "failed" };
 
-const LEVEL = { senior: "Senior", starter: "Starter" } as const;
+const LEVEL = LEVEL_NAMES;
 
 export function Challenge({ client, challengeId, relaxed, onFinished, onAnswered }: ChallengeProps) {
   const [state, setState] = useState<State>({ status: "loading" });

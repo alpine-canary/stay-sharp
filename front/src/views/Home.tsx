@@ -9,7 +9,8 @@ import { Squares } from "../components/Squares";
 import { DECK_ORDER, deckName } from "../decks";
 import type { Level, Progress } from "../storage";
 
-const LEVEL_LABELS: Record<Level, string> = { senior: "Senior", starter: "Starter (12+)" };
+// From the easiest; Senior is chosen until the player picks another.
+const LEVEL_LABELS: Record<Level, string> = { starter: "Starter (12+)", junior: "Junior", senior: "Senior" };
 
 type TodayState = { status: "loading" } | { status: "ready"; today: Today } | { status: "down"; message: string };
 
@@ -47,7 +48,7 @@ export function Home({ client, progress, onLevel, onRelaxed }: HomeProps) {
   };
 
   // Senior is chosen until the player picks another level, so the first screen always has a
-  // Play button (Starter is one tap away).
+  // Play button (Junior and Starter are one tap away).
   const level: Level = progress.level ?? "senior";
   useEffect(() => {
     if (progress.level === null) onLevel("senior");

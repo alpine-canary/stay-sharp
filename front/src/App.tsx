@@ -4,7 +4,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { createClient, type ApiClient, type PlayState } from "./api/client";
 import { Link } from "./components/Link";
-import { levelOfDeck } from "./decks";
 import { navigate, useRoute } from "./router";
 import {
   createStore,
@@ -147,9 +146,9 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
             challengeId={route.challengeId}
             relaxed={progress.relaxed}
             onFinished={challengeFinished}
-            onAnswered={({ mode: playMode, deck, grade, duplicate }) => {
+            onAnswered={({ level, mode: playMode, deck, grade, duplicate }) => {
               // The level of a challenge is the challenge's, whatever level this browser chose.
-              answered(levelOfDeck(deck), playMode, deck, grade, duplicate);
+              answered(level, playMode, deck, grade, duplicate);
             }}
           />
         )}
@@ -206,7 +205,7 @@ function ChooseLevelFirst() {
     <section className="card narrow">
       <h1 className="text-3xl">Choose a level first</h1>
       <p>
-        <Link href="/">Go to today's set</Link> and pick Senior or Starter.
+        <Link href="/">Go to today's set</Link> and pick Starter, Junior or Senior.
       </p>
     </section>
   );

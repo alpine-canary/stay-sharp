@@ -4,8 +4,9 @@ A daily 5-minute game for developers who work with coding agents. Agents write m
 Stay Sharp keeps the skills that are left to you in use: spot the bug, improve working code,
 reason about failures, know the words and follow this week's AI news.
 
-Five questions a day, the same for everyone, with an explanation after each answer. A Starter
-level (from 12 years old) has its own five decks. No account: progress stays in your browser.
+Five questions a day, the same for everyone, with an explanation after each answer. Three
+levels: Starter (from 12 years old, its own five decks), Junior and Senior (the same decks, Junior
+with easier questions). No account: progress stays in your browser.
 
 ## What you can do
 

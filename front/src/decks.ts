@@ -15,13 +15,13 @@ export const DECK_NAMES: Record<string, string> = {
 
 export const DECK_ORDER = {
   senior: ["spot", "better", "fail", "acronym", "news"],
+  // Junior plays Senior's decks with easier questions.
+  junior: ["spot", "better", "fail", "acronym", "news"],
   starter: ["logic", "readcode", "whatif", "words", "aisense"],
 } as const;
 
-/** The level a deck belongs to. */
-export function levelOfDeck(deck: string): "senior" | "starter" {
-  return (DECK_ORDER.senior as readonly string[]).includes(deck) ? "senior" : "starter";
-}
+/** Level names shown to players, from the easiest. */
+export const LEVEL_NAMES = { starter: "Starter", junior: "Junior", senior: "Senior" } as const;
 
 /** Decks where the player also picks a line. */
 export const LINE_DECKS = new Set(["spot"]);

@@ -8,7 +8,7 @@ import { Link } from "../components/Link";
 import { ShareCard } from "../components/ShareCard";
 import { Squares } from "../components/Squares";
 import { formatSeconds } from "../components/Timer";
-import { DECK_ORDER, deckName } from "../decks";
+import { DECK_ORDER, deckName, LEVEL_NAMES } from "../decks";
 import { streak } from "../progress/streak";
 import type { Progress } from "../storage";
 
@@ -79,7 +79,7 @@ export function Result({ client, playId, progress }: ResultProps) {
   const { play } = state;
   const replay = play.mode === "replay";
   const decks = DECK_ORDER[play.level].map(deckName);
-  const levelName = play.level === "senior" ? "Senior" : "Starter";
+  const levelName = LEVEL_NAMES[play.level];
 
   const time = formatSeconds((play.elapsedMs ?? 0) / 1000);
   return (

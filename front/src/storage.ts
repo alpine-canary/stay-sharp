@@ -7,8 +7,8 @@ import { freshPractice, recordPractice, type PracticeAnswer, type PracticeState 
 export const STORAGE_KEY = "staysharp.v1";
 export const VERSION = 1;
 
-export type Level = "senior" | "starter";
-export const LEVELS: readonly Level[] = ["senior", "starter"];
+export type Level = "senior" | "junior" | "starter";
+export const LEVELS: readonly Level[] = ["senior", "junior", "starter"];
 
 export interface DayResult {
   score: number;
@@ -57,7 +57,7 @@ export function newPlayerId(): string {
 }
 
 function perLevel<T>(make: () => T): Record<Level, T> {
-  return { senior: make(), starter: make() };
+  return { senior: make(), junior: make(), starter: make() };
 }
 
 export function freshProgress(playerId: string = newPlayerId()): Progress {
@@ -139,6 +139,34 @@ function isPractice(v: unknown): boolean {
 /** Data saved before practice existed has an empty `boxes` map instead of `practice`. Nothing
  * ever wrote to `boxes`, so it is replaced without losing anything. */
 function upgrade(v: unknown): unknown {
+  return addLevels(practiceFromBoxes(v));
+}
+
+/** Data saved before the Junior level existed has no entry for it in the per-level maps: the
+ * entries are added empty, so nobody loses a streak. */
+const PER_LEVEL_FIELDS: Record<string, () => unknown> = {
+  days: () => ({}),
+  freeze: () => ({ held: 0, earnedWeek: null, usedOn: [] }),
+  longest: () => 0,
+  deckStats: () => ({}),
+  practice: freshPractice,
+};
+
+function addLevels(v: unknown): unknown {
+  if (!isObject(v)) return v;
+  const out: Json = { ...v };
+  for (const [field, make] of Object.entries(PER_LEVEL_FIELDS)) {
+    const map = out[field];
+    if (isObject(map) && LEVELS.some((level) => !(level in map))) {
+      const filled: Json = { ...map };
+      for (const level of LEVELS) if (!(level in filled)) filled[level] = make();
+      out[field] = filled;
+    }
+  }
+  return out;
+}
+
+function practiceFromBoxes(v: unknown): unknown {
   if (!isObject(v) || "practice" in v || !("boxes" in v)) return v;
   if (!isObject(v.boxes) || Object.keys(v.boxes).length > 0) return v;
   const rest: Json = { ...v };
