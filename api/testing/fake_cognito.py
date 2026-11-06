@@ -11,8 +11,8 @@ Two parts:
 - **User pool API**: ``handle`` answers the JSON calls the website makes to Cognito
   (``X-Amz-Target: AWSCognitoIdentityProviderService.<Action>``): sign up without a password,
   confirm, resend the sign-up code, choice-based sign-in (``USER_AUTH``) with an e-mail code,
-  refresh, global sign-out. Users live in memory. Every code is ``FAKE_COGNITO_CODE`` (default ``123456``). Set
-  ``FAKE_COGNITO_DOWN=1`` to answer 503 to every call (quickstart A14).
+  refresh, global sign-out. Users live in memory. Every code is ``FAKE_COGNITO_CODE``
+  (default ``123456``). Set ``FAKE_COGNITO_DOWN=1`` to answer 503 to every call (A14).
 
 Nothing here logs an e-mail address, a code or a token.
 """
