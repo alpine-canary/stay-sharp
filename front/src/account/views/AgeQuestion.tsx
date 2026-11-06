@@ -17,7 +17,7 @@ export function AgeQuestion({ onAdult }: { onAdult: () => void }) {
           Yes, I am 16 or older
         </button>
         <button type="button" className="btn ghost" onClick={() => setUnder16(true)}>
-          No
+          No, I am under 16
         </button>
       </div>
     </section>
@@ -35,7 +35,8 @@ function Under16() {
         You can keep playing without an account
       </h1>
       <p>
-        Every game, every level and practice work the same without an account. Your streak stays on this device.
+        The daily games, all the levels and practice work the same without an account. Your streak stays in this
+        browser.
       </p>
       <p>
         <Link href="/">Back to today's set</Link>

@@ -14,7 +14,7 @@ describe("AgeQuestion (FR-116)", () => {
     render(<AgeQuestion onAdult={vi.fn()} />);
     expect(screen.getByRole("heading", { level: 1, name: "Are you 16 or older?" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Yes, I am 16 or older" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "No" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "No, I am under 16" })).toBeInTheDocument();
     expect(screen.queryByLabelText(/e-mail/i)).toBeNull();
   });
 
@@ -23,7 +23,7 @@ describe("AgeQuestion (FR-116)", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     const onAdult = vi.fn();
     render(<AgeQuestion onAdult={onAdult} />);
-    await user.click(screen.getByRole("button", { name: "No" }));
+    await user.click(screen.getByRole("button", { name: "No, I am under 16" }));
     const heading = screen.getByRole("heading", { level: 1, name: "You can keep playing without an account" });
     expect(heading).toHaveFocus();
     expect(screen.getByRole("link", { name: "Back to today's set" })).toHaveAttribute("href", "/");

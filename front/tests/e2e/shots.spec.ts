@@ -64,6 +64,12 @@ for (const scheme of ["light", "dark"] as const) {
       await page.getByRole("button", { name: "Sign in" }).click();
       await expect(page.getByRole("alert")).toBeVisible();
       await shot(page, "10-account-code-error");
+      await page.getByLabel("Code").fill("123456");
+      await page.getByRole("button", { name: "Sign in" }).click();
+      await expect(page.getByText(/saved to your account/)).toBeVisible();
+      await shot(page, "11-account");
+      await page.getByRole("button", { name: "Delete my account" }).click();
+      await shot(page, "12-account-delete-confirm");
     }
   });
 }

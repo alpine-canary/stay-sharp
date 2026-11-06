@@ -52,7 +52,7 @@ const MESSAGES: Record<SignInErrorKind, string> = {
   expired: "That code has expired. Ask for a new one.",
   passkey: "That passkey did not work here. Send yourself a code instead.",
   throttled: "Too many tries. Wait a few minutes, then ask for a new code.",
-  unavailable: "Sign-in is not available right now. You can keep playing; try again later.",
+  unavailable: "Sign-in is not available right now. You can keep playing. Try again later.",
   unknown: "Something went wrong. Please try again.",
 };
 

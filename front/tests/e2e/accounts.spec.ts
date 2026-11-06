@@ -44,7 +44,7 @@ test("under 16: no request leaves the page (A3)", async ({ page }) => {
   const before = await stored();
   const requests: string[] = [];
   page.on("request", (request) => requests.push(new URL(request.url()).pathname));
-  await page.getByRole("button", { name: "No" }).click();
+  await page.getByRole("button", { name: "No, I am under 16" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "You can keep playing without an account" })).toBeVisible();
   expect(requests.filter((path) => path.startsWith("/cognito") || path.startsWith("/api/"))).toEqual([]);
   expect(await stored()).toEqual(before);
@@ -104,7 +104,7 @@ test("a second device joins: both show the combined streak, and today's game fol
   const b = await browserWithDays(browser, [shift(today, -4)]);
   await expect(streakOf(b)).toHaveText("0");
   await signIn(b, address);
-  await expect(b.getByText("We put this device's games together with your account's. Each day counts once.")).toBeVisible();
+  await expect(b.getByText("We added this browser's games to your account. Each day counts once.")).toBeVisible();
   await b.goto("/");
   await expect(streakOf(b)).toHaveText("4");
 

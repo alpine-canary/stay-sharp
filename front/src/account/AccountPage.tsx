@@ -114,7 +114,7 @@ function SignInUnavailable() {
   return (
     <section className="card narrow">
       <h1 className="text-3xl">Sign-in is not available right now</h1>
-      <p>You can keep playing: your streak stays on this device. Try again later.</p>
+      <p>You can keep playing: your streak stays in this browser. Try again later.</p>
       <p>
         <Link href="/">Go to today's set</Link>
       </p>

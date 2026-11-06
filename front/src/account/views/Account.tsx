@@ -69,10 +69,10 @@ function useJoin({ api }: Runtime, current: () => Progress, replace: (p: Progres
         if (!live) return;
         const message =
           error instanceof AccountApiError && error.code === "conflict"
-            ? "This browser is signed in to another account. Sign out of it first."
+            ? "This browser already belongs to another account."
             : error instanceof AccountApiError && error.code === "deleting"
               ? "This account is being deleted."
-              : "Your account could not be reached. Your progress is safe on this device; try again later.";
+              : "Your account could not be reached. Your progress is safe in this browser. Try again later.";
         setJoining({ state: "failed", message });
       },
     );
@@ -90,12 +90,12 @@ export function Account({ runtime, current, replace, onGone = () => undefined, p
     <>
       <section className="card narrow" aria-busy={joining.state === "working"}>
         <h1 className="text-3xl">Your account</h1>
-        <p>Signed in as {session.email() ?? "you"}.</p>
+        <p>{session.email() ? `Signed in as ${session.email()}.` : "You are signed in."}</p>
         {joining.state === "working" && <p role="status">Saving your progress to your account…</p>}
         {joining.state === "done" && (
           <p role="status">
             {joining.combined
-              ? "We put this device's games together with your account's. Each day counts once."
+              ? "We added this browser's games to your account. Each day counts once."
               : "Your streak and progress are saved to your account. Sign in on another device to pick them up."}
           </p>
         )}

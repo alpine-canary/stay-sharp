@@ -29,7 +29,7 @@ export function DeleteAccount({ api, onDeleted }: DeleteAccountProps) {
     } catch (failure) {
       setError(
         failure instanceof AccountApiError && failure.status === 503
-          ? "Not finished yet. Please try again in a minute."
+          ? "Deleting has started but is not finished. Please try again in a minute."
           : "Your account could not be reached. Nothing was deleted yet; please try again later.",
       );
       setStep("confirm");
@@ -58,7 +58,7 @@ export function DeleteAccount({ api, onDeleted }: DeleteAccountProps) {
           <h2 id="delete-title" className="text-2xl" ref={confirm} tabIndex={-1}>
             Delete your account for good?
           </h2>
-          <p>Your streak and progress go too, on this device and the others. You can still play without an account.</p>
+          <p>Your streak and progress go too, on all your devices. You can still play without an account.</p>
           {error && (
             <p className="form-error" role="alert">
               {error}

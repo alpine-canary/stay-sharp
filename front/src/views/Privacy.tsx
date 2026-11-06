@@ -58,13 +58,13 @@ export function Privacy() {
         your devices. With an account, we also keep:
       </p>
       <ul>
-        <li>your e-mail address, used only to send you sign-in codes. No newsletter;</li>
+        <li>your e-mail address, used only to send you sign-in codes (no newsletter);</li>
         <li>that you said you are 16 or older;</li>
         <li>
           your passkeys, if you add some: only the public part. Your face, your fingerprint and your screen lock
           never leave your device;
         </li>
-        <li>a copy of your progress, and the games of all your devices under one random code.</li>
+        <li>a copy of your progress, and the games from all your devices, under one random code.</li>
       </ul>
       <p>
         All of it stays in Zurich, Switzerland. Our logs never keep your e-mail address or your sign-in codes.

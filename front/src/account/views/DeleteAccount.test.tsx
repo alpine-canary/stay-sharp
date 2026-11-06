@@ -32,7 +32,7 @@ describe("DeleteAccount (T234)", () => {
     render(<DeleteAccount api={a} onDeleted={onDeleted} />);
     await user.click(screen.getByRole("button", { name: "Delete my account" }));
     await user.click(screen.getByRole("button", { name: "Yes, delete everything" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("Not finished yet. Please try again in a minute.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("Deleting has started but is not finished. Please try again in a minute.");
     expect(onDeleted).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Yes, delete everything" })).toBeEnabled();
   });
