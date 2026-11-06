@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from "react";
 import { ApiError, type ApiClient, type PlayState } from "../api/client";
+import { AccountOffer } from "../components/AccountOffer";
 import { ChallengeLink } from "../components/ChallengeLink";
 import { Link } from "../components/Link";
 import { ShareCard } from "../components/ShareCard";
@@ -129,6 +130,13 @@ export function Result({ client, playId, progress }: ResultProps) {
           <div className="card">
             <ChallengeLink client={client} playId={play.playId} />
           </div>
+        )}
+        {play.finished && !replay && (
+          <AccountOffer
+            streak={streak(Object.keys(progress.days[play.level]), play.date).current}
+            finishedDailies={Object.values(progress.days).reduce((n, days) => n + Object.keys(days).length, 0)}
+            today={play.date}
+          />
         )}
         <nav className="row" aria-label="What next">
           {play.finished && !replay && <Link href="/play?mode=replay">Replay (not scored)</Link>}

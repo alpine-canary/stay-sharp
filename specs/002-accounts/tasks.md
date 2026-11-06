@@ -75,9 +75,9 @@ follows the player.
 
 ## Phase 6: US4 - Asked at the right moment (P2)
 
-- [ ] T236 [P] [US4] Test first: offer rules (never before the first finished daily; streak 3 or more in this level; hidden 7 days after dismiss; never when signed in): `front/src/components/AccountOffer.test.tsx`
-- [ ] T237 [US4] Offer on the result screen and an "Account" link in the header (no Cognito code in the main bundle; the link loads the chunk): `front/src/components/AccountOffer.tsx`, `front/src/App.tsx`, `front/src/views/Result.tsx`
-- [ ] T238 [US4] e2e: a fresh browser sees no prompt through home, play, result (SC-105): `front/tests/e2e/accounts.spec.ts`
+- [X] T236 [P] [US4] Test first: offer rules (never before the first finished daily; streak 3 or more in this level; hidden 7 days after dismiss; never when signed in): `front/src/components/AccountOffer.test.tsx`
+- [X] T237 [US4] Offer on the result screen and an "Account" link in the header (no Cognito code in the main bundle; the link loads the chunk): `front/src/components/AccountOffer.tsx`, `front/src/App.tsx`, `front/src/views/Result.tsx`
+- [X] T238 [US4] e2e: a fresh browser sees no prompt through home, play, result (SC-105): `front/tests/e2e/accounts.spec.ts`
 
 ## Phase 7: US5 - Under 16 (P2)
 

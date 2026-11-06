@@ -151,3 +151,35 @@ test("delete the account: gone on the server, this browser starts again", async 
   await signIn(page, address);
   await expect(page.getByText(/Your streak and progress are saved to your account/)).toBeVisible();
 });
+
+// --- US4: asked at the right moment (T238, A1, A2, SC-105) ----------------------------------------
+
+async function playToday(page: Page) {
+  await chooseSeniorAndStart(page);
+  for (const index of [0, 1, 2, 3, 4]) {
+    await answerByKeyboard(page, index);
+    await next(page, index === 4);
+  }
+  await expect(page.getByRole("heading", { name: "Your result", exact: true })).toBeVisible();
+}
+
+test("a new player sees no sign-up prompt through home, play and result", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByText(/create an account|streak on your phone/i)).toHaveCount(0);
+  await playToday(page);
+  await expect(page.getByText(/create an account|streak on your phone/i)).toHaveCount(0);
+});
+
+test("a 3-day streak gets the offer once; Not now hides it", async ({ browser, request }) => {
+  const today = ((await (await request.get("/api/v1/today")).json()) as { date: string }).date;
+  const page = await browserWithDays(browser, [shift(today, -2), shift(today, -1)]);
+  await playToday(page);
+  const offer = page.getByRole("heading", { name: "Keep your 3-day streak on your phone too?" });
+  await expect(offer).toBeVisible();
+  await page.getByRole("button", { name: "Not now" }).click();
+  await expect(offer).toHaveCount(0);
+  await page.reload();
+  await expect(page.getByRole("heading", { name: "Your result", exact: true })).toBeVisible();
+  await expect(offer).toHaveCount(0);
+  await page.context().close();
+});
