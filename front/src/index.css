@@ -1408,3 +1408,128 @@ code {
   padding: 10px 0;
   border-bottom: 1px solid var(--line);
 }
+
+/* Header on a phone (user request 2026-11-06): one line, "by Lumineth", Account as an icon. */
+.top {
+  grid-template-columns: 1fr auto auto;
+  grid-template-areas: "mark by links";
+  column-gap: 16px;
+}
+
+.top .by {
+  padding-left: 0;
+}
+
+.account-link svg {
+  width: 26px;
+  height: 26px;
+}
+
+.top-links > a.account-link {
+  min-width: 44px;
+  min-height: 44px;
+  justify-content: center;
+}
+
+.account-word,
+.by-long {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.by-long {
+  display: none;
+}
+
+@media (min-width: 640px) {
+  .top {
+    column-gap: 24px;
+  }
+
+  .account-link svg {
+    display: none;
+  }
+
+  .top-links > a.account-link {
+    min-width: 0;
+    min-height: 24px;
+  }
+
+  .account-word,
+  .by-long {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+
+  .by-long {
+    display: inline;
+  }
+
+  .by-short {
+    display: none;
+  }
+}
+
+/* Header polish (2026-11-06): quiet "by Lumineth", round account button, even rhythm. */
+.top {
+  column-gap: 14px;
+}
+
+.by a {
+  text-decoration: none;
+  color: var(--ink);
+}
+
+.by a:hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.top-links > a.account-link {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
+  border: 1px solid var(--line-strong);
+  border-radius: 50%;
+  color: var(--ink);
+  transition:
+    background-color 150ms ease,
+    transform 160ms var(--ease-out);
+}
+
+.top-links > a.account-link:hover {
+  background: var(--surface);
+}
+
+.top-links > a.account-link:active {
+  transform: scale(0.96);
+}
+
+.account-link svg {
+  width: 20px;
+  height: 20px;
+}
+
+@media (min-width: 640px) {
+  .top {
+    column-gap: 28px;
+  }
+
+  .top-links > a.account-link {
+    width: auto;
+    height: auto;
+    min-height: 36px;
+    padding: 0 16px;
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 600;
+  }
+}

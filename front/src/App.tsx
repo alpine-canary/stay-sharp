@@ -124,7 +124,14 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
           Stay Sharp
         </Link>
         <nav className="top-links" aria-label="Site">
-          <Link href="/account">Account</Link>
+          <Link href="/account" className="account-link">
+            {/* A person icon on a phone, the word from 640 px; the name stays "Account". */}
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <circle cx="12" cy="8.5" r="4" fill="none" stroke="currentColor" strokeWidth="2" />
+              <path d="M4.5 20.5c1.2-3.6 4.1-5.5 7.5-5.5s6.3 1.9 7.5 5.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+            </svg>
+            <span className="account-word">Account</span>
+          </Link>
         </nav>
         <span className="by">
           by{" "}
@@ -162,7 +169,8 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
                 fill="#5FD3B4"
               />
             </svg>
-            lumineth.com
+            <span className="by-short">Lumineth</span>
+            <span className="by-long">lumineth.com</span>
           </a>
         </span>
       </header>
