@@ -46,6 +46,9 @@ const TEXT: [string, string][] = [
   ["half", "half-soft"],
   ["ink", "good-soft"],
   ["ink", "bad-soft"],
+  // The feedback box is tinted with the verdict colour (no side bar).
+  ["ink", "half-soft"],
+  ["good", "half-soft"],
   ["on-verdict", "good"],
   ["on-verdict", "bad"],
   ["on-verdict", "half"],

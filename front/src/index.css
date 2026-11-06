@@ -757,26 +757,27 @@ code {
 
 /* --- Feedback, squares, score --------------------------------------------------------------- */
 
+/* The verdict tints the whole box (no side bar); the coloured word says it in text too. */
 .fb {
-  border-left: 4px solid var(--line);
+  border: 1px solid var(--line);
   background: var(--bg);
   padding: 16px 18px;
-  border-radius: 0 12px 12px 0;
+  border-radius: 12px;
   display: grid;
   gap: 8px;
   animation: rise 200ms var(--ease-out) both;
 }
 
 .fb.v1 {
-  border-color: var(--good);
+  background: var(--good-soft);
 }
 
 .fb.v05 {
-  border-color: var(--half);
+  background: var(--half-soft);
 }
 
 .fb.v0 {
-  border-color: var(--bad);
+  background: var(--bad-soft);
 }
 
 .fb .verdict {
