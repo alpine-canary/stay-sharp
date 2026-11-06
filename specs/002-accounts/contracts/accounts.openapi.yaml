@@ -1,0 +1,118 @@
+openapi: 3.1.0
+info:
+  title: Stay Sharp API - accounts
+  version: 1.1.0
+  description: |
+    M2 account routes, added to the M1 API (specs/001-m1-web-app/contracts/openapi.yaml), served
+    under /api/v1 on the same origin. Every route here needs a Cognito access token
+    (Authorization: Bearer), checked by the API Gateway JWT authorizer before the function runs.
+    Sign-in itself (e-mail code, passkey) talks to the Cognito user pool API from the browser and
+    is not part of this contract. Every response has Cache-Control: no-store. No response ever
+    contains the e-mail address.
+servers:
+  - url: /api/v1
+components:
+  securitySchemes:
+    cognito:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    PlayerId:
+      name: X-Player-Id
+      in: header
+      required: true
+      schema: { type: string, format: uuid }
+  schemas:
+    Me:
+      type: object
+      additionalProperties: false
+      required: [primaryPlayerId, createdAt]
+      properties:
+        primaryPlayerId: { type: string, format: uuid }
+        displayName: { type: [string, "null"], minLength: 2, maxLength: 24 }
+        createdAt: { type: string, format: date-time }
+    MeUpdate:
+      type: object
+      additionalProperties: false
+      required: [displayName]
+      properties:
+        displayName: { type: [string, "null"], minLength: 2, maxLength: 24, pattern: "^[\\p{L}\\p{N} _-]+$" }
+    Adopt:
+      type: object
+      additionalProperties: false
+      required: [adult]
+      properties:
+        adult:
+          const: true
+          description: The player answered "16 or older"; under 16 no request is ever sent.
+    Adopted:
+      type: object
+      additionalProperties: false
+      required: [primaryPlayerId, created, merged]
+      properties:
+        primaryPlayerId: { type: string, format: uuid }
+        created: { type: boolean, description: "true when this call created the account" }
+        merged:
+          type: object
+          additionalProperties: false
+          required: [plays, replays]
+          properties:
+            plays: { type: integer, minimum: 0, description: "plays moved from this browser's id" }
+            replays: { type: integer, minimum: 0, description: "plays that became unscored replays (same date and level already played)" }
+    Progress:
+      type: object
+      additionalProperties: false
+      required: [version, body]
+      properties:
+        version: { type: integer, minimum: 0 }
+        body: { $ref: "progress.schema.json" }
+    Error:
+      type: object
+      additionalProperties: false
+      required: [code, message]
+      properties:
+        code: { type: string, enum: [bad_request, unauthorized, not_found, conflict, too_large, deleting, unavailable] }
+        message: { type: string }
+security:
+  - cognito: []
+paths:
+  /me:
+    get:
+      summary: The signed-in account
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Me" } } } }
+        "401": { description: No or bad token }
+        "404": { description: No account yet for this sign-in (call POST /me/adopt) }
+    put:
+      summary: Change the display name
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/MeUpdate" } } } }
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Me" } } } }
+        "400": { description: Name refused, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+    delete:
+      summary: Delete the account and all its data (FR-114)
+      description: Idempotent. 204 only once every step has finished; 503 with Retry-After if a step failed, and a retry continues.
+      responses:
+        "204": { description: Deleted }
+        "503": { description: Not finished yet, retry }
+  /me/adopt:
+    post:
+      summary: Create the account from this browser, or merge this browser's anonymous history into it
+      parameters: [{ $ref: "#/components/parameters/PlayerId" }]
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/Adopt" } } } }
+      responses:
+        "200": { description: Done (also when repeated), content: { application/json: { schema: { $ref: "#/components/schemas/Adopted" } } } }
+        "409": { description: The account is being deleted, content: { application/json: { schema: { $ref: "#/components/schemas/Error" } } } }
+  /me/progress:
+    get:
+      summary: The account's progress copy
+      responses:
+        "200": { description: OK, content: { application/json: { schema: { $ref: "#/components/schemas/Progress" } } } }
+    put:
+      summary: Replace the progress copy if nobody changed it since `version`
+      requestBody: { required: true, content: { application/json: { schema: { $ref: "#/components/schemas/Progress" } } } }
+      responses:
+        "200": { description: Stored; returns the new version, content: { application/json: { schema: { $ref: "#/components/schemas/Progress" } } } }
+        "409": { description: Changed elsewhere; returns the stored copy to merge, content: { application/json: { schema: { $ref: "#/components/schemas/Progress" } } } }
+        "413": { description: Over 64 KB }

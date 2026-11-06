@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://stay-sharp.lumineth.com/schema/progress.v1.json",
+  "title": "Progress copy (the browser's local progress, front/src/storage.ts)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "level", "relaxed", "days", "freeze", "longest", "deckStats", "practice"],
+  "properties": {
+    "version": { "const": 1 },
+    "level": { "enum": ["senior", "junior", "starter", null] },
+    "relaxed": { "type": "boolean" },
+    "days": { "$ref": "#/$defs/perLevel", "description": "date -> { score, bonus, relaxed }" },
+    "freeze": { "$ref": "#/$defs/perLevel" },
+    "longest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["senior", "junior", "starter"],
+      "properties": {
+        "senior": { "type": "integer", "minimum": 0 },
+        "junior": { "type": "integer", "minimum": 0 },
+        "starter": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "deckStats": { "$ref": "#/$defs/perLevel" },
+    "practice": { "$ref": "#/$defs/perLevel" }
+  },
+  "$defs": {
+    "perLevel": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["senior", "junior", "starter"],
+      "properties": {
+        "senior": { "type": "object" },
+        "junior": { "type": "object" },
+        "starter": { "type": "object" }
+      }
+    }
+  },
+  "description": "The player id is not part of the copy: each browser keeps its own until it adopts the account's primary id. The server checks this outline and the 64 KB limit; the browser checks the details with isProgress()."
+}
