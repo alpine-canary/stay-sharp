@@ -15,9 +15,9 @@ out.
 
 ## Phase 1: Setup
 
-- [ ] T201 Add the accounts contract to the API contract tests and the front type generator: `specs/002-accounts/contracts/accounts.openapi.yaml` read by `api/tests/contract/conftest.py` and `front/scripts/gen-api.mjs` (writes `front/src/api/accounts-schema.ts`)
-- [ ] T202 [P] Copy `specs/002-accounts/contracts/progress.schema.json` into `api/src/staysharp/publish/schemas/progress.schema.json` with a test that the two stay identical in `api/tests/unit/test_schemas.py`
-- [ ] T203 [P] Fake Cognito token issuer for local runs and tests (RS256 key generated at test start, JWKS served by the local server): `api/testing/fake_cognito.py`, used by `api/src/staysharp/local.py` when `FAKE_COGNITO=1`
+- [X] T201 Add the accounts contract to the API contract tests and the front type generator: `specs/002-accounts/contracts/accounts.openapi.yaml` read by `api/tests/contract/conftest.py` and `front/scripts/gen-api.mjs` (writes `front/src/api/accounts-schema.ts`)
+- [X] T202 [P] Copy `specs/002-accounts/contracts/progress.schema.json` into `api/src/staysharp/publish/schemas/progress.schema.json` with a test that the two stay identical in `api/tests/unit/test_schemas.py`
+- [X] T203 [P] Fake Cognito token issuer for local runs and tests (HMAC-signed test tokens checked by the local server the way the JWT authorizer checks real ones, plus the user pool API calls the website makes, at `POST /cognito`): `api/testing/fake_cognito.py`, used by `api/src/staysharp/local.py` when `FAKE_COGNITO=1`
 
 ## Phase 2: Foundations (blocks every story)
 
@@ -26,7 +26,7 @@ out.
 - [ ] T206 Test first: JWT authorizer on `/api/v1/me*` only, M1 routes stay public, the API role cannot call Cognito admin actions, the delete function alone can call `AdminDeleteUser` on this pool: `infra/tests/test_api_stack.py`
 - [ ] T207 API stack: JWT authorizer, `/me` routes on the API function, account jobs function (daily schedule), sparse index `GSI_INACTIVE` on `lastActiveMonth`: `infra/stacks/api_stack.py`, `infra/stacks/data_stack.py`
 - [ ] T208 [P] `account_hash` (HMAC of `sub` with the stage pepper) and a log check that no e-mail, token or code pattern is ever logged: `api/src/staysharp/obs.py`, `api/tests/unit/test_obs.py`
-- [ ] T209 [P] Claims reader for requests that passed the authorizer (`sub`, token use = access): `api/src/staysharp/handlers/http.py` with tests in `api/tests/unit/test_http.py`
+- [X] T209 [P] Claims reader for requests that passed the authorizer (`sub`, token use = access): `api/src/staysharp/handlers/http.py` with tests in `api/tests/unit/test_http.py`
 - [ ] T210 [maintainer] Add the SES DKIM and the mail-from records to the `lumineth.com` zone, verify the sender address for dev, and request SES production access before prod; steps in `docs/runbooks/account-setup.md` section 5
 - [ ] T211 Verify the service facts research.md relies on, on the dev pool (Cognito in eu-central-2 with `EMAIL_OTP` and `WEB_AUTHN`, SES region, passwordless self sign-up), and record the result in `specs/002-accounts/research.md`
 

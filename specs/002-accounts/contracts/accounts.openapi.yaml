@@ -37,7 +37,11 @@ components:
       additionalProperties: false
       required: [displayName]
       properties:
-        displayName: { type: [string, "null"], minLength: 2, maxLength: 24, pattern: "^[\\p{L}\\p{N} _-]+$" }
+        displayName:
+          type: [string, "null"]
+          minLength: 2
+          maxLength: 24
+          description: Letters, digits, space, underscore and hyphen only (checked by the API, see data-model.md); no links, no blocked words.
     Adopt:
       type: object
       additionalProperties: false
@@ -72,8 +76,9 @@ components:
       additionalProperties: false
       required: [code, message]
       properties:
-        code: { type: string, enum: [bad_request, unauthorized, not_found, conflict, too_large, deleting, unavailable] }
+        code: { type: string, enum: [invalid_request, unauthorized, not_found, conflict, too_large, deleting, unavailable] }
         message: { type: string }
+        requestId: { type: string }
 security:
   - cognito: []
 paths:
@@ -95,7 +100,7 @@ paths:
       description: Idempotent. 204 only once every step has finished; 503 with Retry-After if a step failed, and a retry continues.
       responses:
         "204": { description: Deleted }
-        "503": { description: Not finished yet, retry }
+        "503": { description: "Not finished yet, retry" }
   /me/adopt:
     post:
       summary: Create the account from this browser, or merge this browser's anonymous history into it

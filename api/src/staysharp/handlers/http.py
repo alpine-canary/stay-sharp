@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from http import HTTPStatus
+from typing import Any
 
 from aws_lambda_powertools.event_handler import Response
 from pydantic import BaseModel
@@ -35,3 +36,18 @@ class ApiError(Exception):
         self.status = status
         self.code = code
         self.message = message
+
+
+def caller_sub(raw_event: dict[str, Any]) -> str:
+    """The Cognito user id of a request that passed the JWT authorizer (T209).
+
+    API Gateway checks the token (signature, issuer, expiry, client) before the function runs
+    and passes its claims in ``requestContext.authorizer.jwt.claims``. Only access tokens are
+    accepted: an id token carries the same ``sub`` but is not meant for APIs.
+    """
+    context = raw_event.get("requestContext") or {}
+    claims = ((context.get("authorizer") or {}).get("jwt") or {}).get("claims") or {}
+    sub = claims.get("sub")
+    if claims.get("token_use") != "access" or not isinstance(sub, str) or not sub:
+        raise ApiError(HTTPStatus.UNAUTHORIZED, "unauthorized", "Please sign in again.")
+    return sub

@@ -4,6 +4,11 @@ Serves the same resolver as Lambda on http://127.0.0.1:3001 against DynamoDB Loc
 ``staysharp-local``; seed it first with ``python -m staysharp.tools.seed --fixtures
 --create-table``). The Vite dev server proxies ``/api`` here. Local only: it binds to 127.0.0.1
 and refuses any stage but ``local``.
+
+With ``FAKE_COGNITO=1`` it also stands in for the sign-in service (``testing.fake_cognito``):
+``POST /cognito`` answers the user pool API calls the website makes, and requests to
+``/api/v1/me`` and below need a valid fake access token, whose claims are passed on as the API
+Gateway JWT authorizer does (401 without one, before the function runs).
 """
 
 from __future__ import annotations
@@ -65,17 +70,67 @@ def to_event(method: str, target: str, headers: dict[str, str], body: bytes) -> 
     }
 
 
+ACCOUNT_PREFIX = "/api/v1/me"
+COGNITO_PATH = "/cognito"
+
+
+def fake_cognito_on() -> bool:
+    return os.environ.get("FAKE_COGNITO") == "1"
+
+
+def authorize(event: dict[str, Any]) -> bool:
+    """What the API Gateway JWT authorizer does for the account routes, with the fake tokens.
+
+    ``True`` when the request may go on (not an account route, or a valid token, whose claims
+    are now in the event); ``False`` for a 401.
+    """
+    if not event["rawPath"].startswith(ACCOUNT_PREFIX):
+        return True
+    from testing import fake_cognito
+
+    scheme, _, token = event["headers"].get("authorization", "").partition(" ")
+    claims = fake_cognito.verify(token) if scheme.lower() == "bearer" else None
+    if claims is None:
+        return False
+    event["requestContext"]["authorizer"] = {
+        "jwt": {"claims": {name: str(value) for name, value in claims.items()}, "scopes": None}
+    }
+    return True
+
+
+def route(method: str, target: str, headers: dict[str, str], body: bytes) -> dict[str, Any]:
+    """One local request to a Lambda-style result (status, headers, body)."""
+    if fake_cognito_on() and urlsplit(target).path == COGNITO_PATH and method == "POST":
+        from testing import fake_cognito
+
+        lower = {name.lower(): value for name, value in headers.items()}
+        status, answer = fake_cognito.handle(lower.get("x-amz-target", ""), body)
+        return {
+            "statusCode": status,
+            "headers": {"Content-Type": "application/x-amz-json-1.1", "Cache-Control": "no-store"},
+            "body": json.dumps(answer),
+        }
+    event = to_event(method, target, headers, body)
+    if fake_cognito_on() and not authorize(event):
+        return {
+            "statusCode": 401,
+            "headers": {"Content-Type": "application/json"},
+            "body": json.dumps({"message": "Unauthorized"}),
+        }
+    from staysharp.handlers import api
+
+    with _ONE_AT_A_TIME:
+        result: dict[str, Any] = api.handler(event, LocalContext())
+    return result
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "staysharp-local"
 
     def _serve(self) -> None:
-        from staysharp.handlers import api
-
         length = int(self.headers.get("Content-Length") or 0)
         body = self.rfile.read(length) if length else b""
-        event = to_event(self.command, self.path, dict(self.headers.items()), body)
-        with _ONE_AT_A_TIME:
-            result = api.handler(event, LocalContext())
+        result = route(self.command, self.path, dict(self.headers.items()), body)
         payload = (result.get("body") or "").encode()
         self.send_response(int(result.get("statusCode", 500)))
         for name, value in (result.get("headers") or {}).items():
@@ -86,6 +141,8 @@ class Handler(BaseHTTPRequestHandler):
 
     do_GET = _serve  # noqa: N815 - http.server naming
     do_POST = _serve  # noqa: N815
+    do_PUT = _serve  # noqa: N815
+    do_DELETE = _serve  # noqa: N815
 
     def log_message(self, format: str, *args: Any) -> None:  # noqa: A002 - base class name
         # Method and path only: no headers, no body.
@@ -110,6 +167,8 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     server = ThreadingHTTPServer((HOST, args.port), Handler)
     print(f"Stay Sharp API on http://{HOST}:{args.port}/api/v1 (table {os.environ['TABLE_NAME']})")
+    if fake_cognito_on():
+        print(f"Fake sign-in on http://{HOST}:{args.port}{COGNITO_PATH} (every code: 123456)")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

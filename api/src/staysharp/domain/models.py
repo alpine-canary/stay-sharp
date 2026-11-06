@@ -210,6 +210,9 @@ class CreateChallengeRequest(Strict):
 
 ErrorCode = Literal[
     "invalid_request",
+    "unauthorized",  # account routes only (M2)
+    "too_large",  # account routes only (M2)
+    "deleting",  # account routes only (M2)
     "not_found",
     "not_ready",
     "conflict",

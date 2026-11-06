@@ -39,7 +39,7 @@ test-integration:
 contract-check:
 	uv run --directory api python scripts/gen_models.py
 	$(PNPM) --dir front gen:api
-	git diff --exit-code -- front/src/api/schema.ts
+	git diff --exit-code -- front/src/api/schema.ts front/src/api/accounts-schema.ts
 
 # No AWS credentials needed (committed cdk.context.json, --no-lookups).
 synth:

@@ -20,7 +20,8 @@ API_DIR = Path(__file__).resolve().parents[2] / "api"
 PLATFORM = "aarch64-manylinux_2_28"
 # Not shipped to Lambda: laptop tools and caches. The prod asset must also never contain the
 # fault-injection module (research R10, W11); it lives outside src/ in api/testing/.
-EXCLUDE = shutil.ignore_patterns("__pycache__", "*.pyc", "tools", "publish")
+# The local sign-in stand-in (fake_cognito) never ships either.
+EXCLUDE = shutil.ignore_patterns("__pycache__", "*.pyc", "tools", "publish", "fake_cognito.py")
 
 
 def copy_package(output_dir: str | Path, *, with_testing: bool) -> None:

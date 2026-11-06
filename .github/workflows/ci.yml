@@ -89,7 +89,7 @@ jobs:
       - name: types generated from the contract are up to date
         run: |
           pnpm --dir front gen:api
-          git diff --exit-code -- front/src/api/schema.ts
+          git diff --exit-code -- front/src/api/schema.ts front/src/api/accounts-schema.ts
       - name: lint
         run: pnpm --dir front lint
       - name: types
