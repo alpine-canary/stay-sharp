@@ -26,6 +26,8 @@ test("first question interactive under 2 s on a throttled phone", async ({ brows
   const home = await setup.newPage();
   await home.goto("/");
   await home.getByRole("radio", { name: "Senior" }).check();
+  // Senior is preselected: wait until the app has saved it (the Play button shows then).
+  await expect(home.getByRole("link", { name: "Play today's set" })).toBeVisible();
   const storageState = await setup.storageState();
   await setup.close();
 

@@ -15,24 +15,18 @@ dev stage. A scenario counts as passed for release only when it passed where the
 | V7 | Publish rules | 2026-11-05 | local (unit and integration) | Pass |
 | V8 | Scoring alarm (fault drill) | 2026-11-05 | dev | Pass: paging alarm in 71 s, clean log line (commit 7e82b8e) |
 | V9 | Canary rollback (canary drill) | 2026-11-05 | dev | Pass: self-check stop in 132 s, alarm rollback in 190 s (commit 78b0c71) |
-| V10 | Accessibility and Lighthouse | 2026-11-05 | local and dev | axe: no violation on any view, light and dark, local and dev; relaxed reachable before and during a play. Lighthouse on dev, desktop: 100 x4 on every page. Mobile: Accessibility, Best Practices, SEO 100 on every page; **Performance 94 to 99 with Lighthouse's default simulated throttling (fails the 100 target)**, 100 with applied (devtools) throttling (first paint 1.4 s) |
+| V10 | Accessibility and Lighthouse | 2026-11-06 | local and dev | axe: no violation on any view, light and dark, local and dev; relaxed reachable before and during a play. Lighthouse on dev (new design, Junior level), mobile and desktop: 100 x4 on every page (home, play, practice, privacy). Locally, mobile performance still varies between 99 and 100 from run to run |
 | V11 | Infra rules | 2026-11-05 | local (CDK assertions, 104 tests) | Pass |
 | V12 | Budget | 2026-11-05 | local (CDK assertions) | Pass |
 | V13 | Replay is not an answer key | 2026-11-05 | local (integration) | Pass |
 | V14 | Practice cannot reach future content | 2026-11-05 | local (integration); practice route smoke-tested on dev | Pass |
 | V15 | Storage failure paths | 2026-11-05 | local (integration) | Pass |
 | V16 | Midnight | 2026-11-05 | local, mocked server clock | Pass |
-| V17 | First question under 2 s on a throttled phone | 2026-11-05 | dev | Pass: 1.1 to 1.4 s |
+| V17 | First question under 2 s on a throttled phone | 2026-11-06 | dev | Pass: 1.6 to 1.7 s (new design) |
 | V18 | Public leak guard | 2026-11-05 | local (fingerprint unit tests) | Unit part passes. The push of a branch with a future prompt needs the GitHub repositories and secrets (maintainer) |
 
 ## Open before release
 
-- **V10 mobile performance**: every page now ships its first screen in the HTML (prerender), so
-  a real throttled load paints in 1.4 s and scores 100. Lighthouse's default *simulated*
-  throttling still estimates 1.7 to 2.5 s: it counts every file that finished before the paint
-  in the fast unthrottled run (the 78 KB script, three fonts, `/api/v1/today`). Decision for the
-  maintainer: measure with applied throttling, or cut those bytes further (split the script,
-  fewer fonts) and accept that simulation may still land under 100.
 - **V18 end to end** and **T084, T093**: GitHub repositories, branch protection and secrets.
 - **T119**: the manual keyboard and screen reader check by a person
   (`docs/accessibility-check.md`).
