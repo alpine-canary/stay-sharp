@@ -98,7 +98,9 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
           </svg>
           Stay Sharp
         </Link>
-        <span className="by">by Lumineth</span>
+        <span className="by">
+          by <a href="https://www.lumineth.com/">lumineth.com</a>
+        </span>
       </header>
       {notice && <StorageNotice notice={notice} onDismiss={() => setNotice(null)} />}
       <main id="main" className="grid gap-6 content-start">

@@ -1233,3 +1233,7 @@ code {
 .island .notice {
   background: transparent;
 }
+
+.by a {
+  color: inherit;
+}

@@ -41,7 +41,7 @@ Every pair is measured in `front/src/contrast.test.ts` (text 4.5:1, UI parts 3:1
 ## Layout
 
 - `.wrap` 1120 px, 16 px gutter on a phone, 24 px from 768 px. Header: mark + "Stay Sharp" and
-  "by Lumineth". Footer: one aligned bar, "© 2026 Lumineth" and Privacy.
+  "by lumineth.com" (a link to www.lumineth.com). Footer: one aligned bar, "© 2026 Lumineth" and Privacy.
 - **Home**: H1 "Stay Sharp" on one line, the one-line pitch, then two columns from 1024 px: the
   today card (deck chips, level, relaxed, Play) and an island ("How it plays" for a new visitor,
   the streak and skills once they have played). Practice is a strip below. Senior is chosen until
