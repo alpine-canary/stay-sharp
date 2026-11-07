@@ -10,7 +10,7 @@ import { DECK_ORDER, deckName } from "../decks";
 import type { Level, Progress } from "../storage";
 
 // From the easiest; Senior is chosen until the player picks another.
-const LEVEL_LABELS: Record<Level, string> = { starter: "Starter (12+)", junior: "Junior", senior: "Senior" };
+const LEVEL_LABELS: Record<Level, string> = { starter: "Starter", junior: "Junior", senior: "Senior" };
 
 type TodayState = { status: "loading" } | { status: "ready"; today: Today } | { status: "down"; message: string };
 

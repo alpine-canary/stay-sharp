@@ -40,9 +40,9 @@ describe("shell", () => {
   it("remembers the level choice in storage", async () => {
     const user = userEvent.setup();
     render(<App store={createStore(window.localStorage)} client={fakeClient(() => Promise.resolve(TODAY))} />);
-    await user.click(screen.getByRole("radio", { name: "Starter (12+)" }));
+    await user.click(screen.getByRole("radio", { name: "Starter" }));
     expect(JSON.parse(window.localStorage.getItem(STORAGE_KEY) ?? "{}").level).toBe("starter");
-    expect(screen.getByRole("radio", { name: "Starter (12+)" })).toBeChecked();
+    expect(screen.getByRole("radio", { name: "Starter" })).toBeChecked();
   });
 
   it("shows a plain message and a retry button when the service is down", async () => {
