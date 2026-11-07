@@ -14,7 +14,7 @@ export function SignedOut() {
       <h1 className="text-3xl" ref={heading} tabIndex={-1}>
         You are signed out
       </h1>
-      <p>This browser no longer shows your account's progress. Your account keeps all of it: sign in again, here or on another device, to pick it up.</p>
+      <p>This browser no longer shows your account's progress. Your account keeps all of it. Sign in again, here or on another device, to pick it up.</p>
       <div className="row">
         <Link href="/" className="btn">
           Go to today's set

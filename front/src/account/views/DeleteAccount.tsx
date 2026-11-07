@@ -30,7 +30,7 @@ export function DeleteAccount({ api, onDeleted }: DeleteAccountProps) {
       setError(
         failure instanceof AccountApiError && failure.status === 503
           ? "Deleting has started but is not finished. Please try again in a minute."
-          : "Your account could not be reached. Nothing was deleted yet; please try again later.",
+          : "Your account could not be reached. Nothing was deleted. Please try again later.",
       );
       setStep("confirm");
     }

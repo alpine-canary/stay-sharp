@@ -102,7 +102,7 @@ describe("SignIn", () => {
     render(<SignIn cognito={fakeCognito()} onSignedIn={vi.fn()} passkeys={device} />);
     await user.type(screen.getByLabelText("E-mail address"), "player@example.test");
     await user.click(screen.getByRole("button", { name: "Sign in with a passkey instead" }));
-    expect(await screen.findByRole("alert")).toHaveTextContent("That passkey did not work here. Send yourself a code instead.");
+    expect(await screen.findByRole("alert")).toHaveTextContent("That passkey did not work on this device. Ask for a code instead.");
   });
 
   it("no passkey button where the browser has none", () => {

@@ -61,7 +61,7 @@ export function Privacy() {
         <li>your e-mail address, used only to send you sign-in codes (no newsletter);</li>
         <li>that you said you are 16 or older;</li>
         <li>
-          your passkeys, if you add some: only the public part. Your face, your fingerprint and your screen lock
+          your passkeys, if you add any: only the public part. Your face, your fingerprint and your screen lock
           never leave your device;
         </li>
         <li>a copy of your progress, and the games from all your devices, under one random code.</li>
@@ -70,7 +70,7 @@ export function Privacy() {
         All of it stays in Zurich, Switzerland. Our logs never keep your e-mail address or your sign-in codes.
       </p>
       <p>
-        If you do not use your account for two years, we send you one e-mail. A month later, unless you have
+        If you do not use your account for 23 months, we send you one e-mail. A month later, unless you have
         signed in, we delete the account and everything kept with it. If you ask for a code to create an
         account but never type it, we delete your e-mail address after 7 days.
       </p>

@@ -25,7 +25,7 @@ describe("Privacy", () => {
 
   it("says when an unused account or address is deleted (FR-120, T243)", () => {
     render(<Privacy />);
-    expect(screen.getByText(/do not use your account for two years/)).toBeInTheDocument();
+    expect(screen.getByText(/do not use your account for 23 months/)).toBeInTheDocument();
     expect(screen.getByText(/delete your e-mail address after 7 days/)).toBeInTheDocument();
   });
 });

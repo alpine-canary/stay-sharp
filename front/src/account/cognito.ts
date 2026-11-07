@@ -50,7 +50,7 @@ const MESSAGES: Record<SignInErrorKind, string> = {
   email: "Please enter a valid e-mail address.",
   code: "That code did not work. Check it, or ask for a new one.",
   expired: "That code has expired. Ask for a new one.",
-  passkey: "That passkey did not work here. Send yourself a code instead.",
+  passkey: "That passkey did not work on this device. Ask for a code instead.",
   throttled: "Too many tries. Wait a few minutes, then ask for a new code.",
   unavailable: "Sign-in is not available right now. You can keep playing. Try again later.",
   unknown: "Something went wrong. Please try again.",
