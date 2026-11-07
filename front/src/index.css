@@ -208,6 +208,13 @@ code {
   gap: 20px;
 }
 
+/* On a page that is only the reading column (account, not found), the header and the footer
+   end where the column ends, so "Account" and "by lumineth.com" sit above its right edge. */
+.wrap:has(> main > .narrow):not(:has(> main > :not(.narrow))) > :is(.top, .site-foot) {
+  max-width: 720px;
+  width: 100%;
+}
+
 .split {
   display: grid;
   gap: 20px;

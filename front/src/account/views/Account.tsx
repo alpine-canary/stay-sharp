@@ -104,9 +104,11 @@ export function Account({ runtime, current, replace, onGone = () => undefined, p
             {joining.message}
           </p>
         )}
-        <p>
-          <Link href="/">Go to today's set</Link>
-        </p>
+        <div className="row">
+          <Link href="/" className="btn">
+            Go to today's set
+          </Link>
+        </div>
       </section>
       {passkeys.supported() && <Passkeys cognito={cognito} session={session} maker={passkeys} />}
       <DeleteAccount api={runtime.api} onDeleted={onGone} />
