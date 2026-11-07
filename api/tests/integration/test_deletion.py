@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import datetime as dt
 from typing import Any
 
 import pytest
@@ -88,6 +89,11 @@ def test_delete_removes_every_item_of_the_account_and_its_players() -> None:
     hashes = {player_hash(A), player_hash(B)}
     for item in everything():
         text = repr(item)
+        if item.get("SK") == "GONE":
+            # Only the marker that stops an old token recreating the account, for two hours.
+            assert set(item) == {"PK", "SK", "expiresAt"}
+            assert int(item["expiresAt"]) <= table.epoch_seconds(NOW + dt.timedelta(hours=2))
+            continue
         assert SUB not in text, item
         assert not any(h in text for h in hashes), item
         assert A not in text and B not in text, item

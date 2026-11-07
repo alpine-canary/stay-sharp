@@ -8,7 +8,8 @@ Steps, each safe to run again:
    its hash are kept as a "deleted player" (re-keyed to a random id, so the colleague's view
    still adds up), challenges it created lose their owner, then every ``P#<id>`` item (plays,
    answers, practice) and the player link are deleted.
-3. The progress copy, merge records and the account item's other rows go.
+3. The progress copy, merge records and the account item's other rows go; a ``GONE`` row is
+   written for two hours, so a token still held by another device cannot recreate it.
 4. The Cognito user is deleted (``AdminDeleteUser``; already gone is fine).
 5. The account item itself, last: while it exists, the job can finish the work.
 
@@ -19,7 +20,9 @@ answers 503 and a retry (or the job) continues.
 from __future__ import annotations
 
 import datetime as dt
+import random
 import secrets
+import time
 from collections.abc import Callable
 from typing import Any
 
@@ -32,6 +35,7 @@ from staysharp.store import accounts, table
 DELETING_MONTH = "DELETING"
 DELETED_OWNER = "deleted"
 BATCH = 25
+GONE_FOR = dt.timedelta(hours=2)
 
 DeleteUser = Callable[[str], None]
 
@@ -76,11 +80,12 @@ def _delete_keys(keys: list[table.Key]) -> None:
     for start in range(0, len(keys), BATCH):
         requests: list[Any] = [{"DeleteRequest": {"Key": k}} for k in keys[start : start + BATCH]]
         pending: dict[str, Any] = {table.table_name(): requests}
-        for _ in range(5):
+        for attempt in range(5):
             response = aws.dynamodb().batch_write_item(RequestItems=pending)
             pending = response.get("UnprocessedItems") or {}
             if not pending:
                 break
+            time.sleep(min(0.05 * 2**attempt, 1.0) * random.random())  # noqa: S311 - jitter
         if pending:
             raise table.StoreError("batch delete left items behind")
 
@@ -92,6 +97,14 @@ def _as_deleted_player(challenge_id: str, hashed: str) -> None:
         return
     attributes = {k: v for k, v in found.items() if k not in ("PK", "SK")}
     new = table.key(f"CH#{challenge_id}", f"R#deleted-{secrets.token_hex(8)}")
+    try:
+        _move_result(new, attributes, old)
+    except ClientError as error:
+        if error.response.get("Error", {}).get("Code") != "TransactionCanceledException":
+            raise  # cancelled: another deletion already moved it
+
+
+def _move_result(new: table.Key, attributes: dict[str, Any], old: table.Key) -> None:
     aws.dynamodb().transact_write_items(
         TransactItems=[
             {
@@ -100,7 +113,14 @@ def _as_deleted_player(challenge_id: str, hashed: str) -> None:
                     "Item": {**new, **table.serialize(attributes)},
                 }
             },
-            {"Delete": {"TableName": table.table_name(), "Key": old}},
+            # Only if still there: two deletions at once must not count it twice.
+            {
+                "Delete": {
+                    "TableName": table.table_name(),
+                    "Key": old,
+                    "ConditionExpression": "attribute_exists(PK)",
+                }
+            },
         ]
     )
 
@@ -119,7 +139,7 @@ def _disown(challenge_id: str, hashed: str) -> None:
             raise
 
 
-def _clear_player(player_id: str) -> None:
+def clear_player(player_id: str) -> None:
     hashed = player_hash(player_id)
     items = _partition(f"P#{player_id}")
     for item in items:
@@ -137,9 +157,18 @@ def delete_account(sub: str, now: dt.datetime, delete_user: DeleteUser) -> bool:
     account = _mark(sub, now)
     if account is not None:
         for player_id in sorted(account.players | {account.primary_player}):
-            _clear_player(player_id)
-        rows = [i for i in _partition(f"ACC#{sub}") if i["SK"] != "META"]
+            clear_player(player_id)
+        rows = [i for i in _partition(f"ACC#{sub}") if i["SK"] not in ("META", "GONE")]
         _delete_keys([table.key(str(i["PK"]), str(i["SK"])) for i in rows])
+    # Kept while another device's access token may still be used (an hour), so that token
+    # cannot create the account again; it expires by itself.
+    aws.dynamodb().put_item(
+        TableName=table.table_name(),
+        Item={
+            **accounts.gone_key(sub),
+            **table.serialize({"expiresAt": table.epoch_seconds(now + GONE_FOR)}),
+        },
+    )
     delete_user(sub)
     if account is not None:
         _delete_keys([accounts.account_key(sub)])

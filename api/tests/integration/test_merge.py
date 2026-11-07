@@ -61,6 +61,50 @@ def test_a_finished_daily_beats_an_unfinished_one() -> None:
     assert len(mine["PLAY#2026-11-19.senior.replay"]["answered"]) == 2
 
 
+def test_two_unfinished_dailies_never_leave_a_replay_beside_an_open_daily() -> None:
+    """A replay shows the answers: next to an unfinished scored daily it would be an answer key
+    (C3). The play with more answers stays the daily; the other one is dropped."""
+    put_play(A, "2026-11-19.senior.daily", started="2026-11-19T09:00:00.000Z", answered=1)
+    put_play(B, "2026-11-19.senior.daily", started="2026-11-19T06:00:00.000Z", answered=2)
+    merge.merge(A, B, NOW)
+    mine = items_of(A)
+    assert len(mine["PLAY#2026-11-19.senior.daily"]["answered"]) == 2
+    assert "PLAY#2026-11-19.senior.replay" not in mine
+    assert not [k for k in mine if k.startswith("ANS#2026-11-19.senior.replay")]
+    assert items_of(B) == {}
+
+
+def test_the_same_both_ways_round() -> None:
+    put_play(A, "2026-11-19.senior.daily", started="2026-11-19T06:00:00.000Z", answered=3)
+    put_play(B, "2026-11-19.senior.daily", started="2026-11-19T05:00:00.000Z", answered=1)
+    merge.merge(A, B, NOW)
+    mine = items_of(A)
+    assert len(mine["PLAY#2026-11-19.senior.daily"]["answered"]) == 3
+    assert "PLAY#2026-11-19.senior.replay" not in mine
+
+
+def test_first_finished_means_finished_first_not_started_first() -> None:
+    # B started earlier but took 3 hours; A started later and finished first.
+    put_play(
+        A,
+        "2026-11-19.senior.daily",
+        started="2026-11-19T07:00:00.000Z",
+        score=2,
+        extra={"elapsedMs": 60_000},
+    )
+    put_play(
+        B,
+        "2026-11-19.senior.daily",
+        started="2026-11-19T06:00:00.000Z",
+        score=5,
+        extra={"elapsedMs": 3 * 3_600_000},
+    )
+    merge.merge(A, B, NOW)
+    mine = items_of(A)
+    assert mine["PLAY#2026-11-19.senior.daily"]["score"] == 2
+    assert mine["PLAY#2026-11-19.senior.replay"]["score"] == 5
+
+
 def test_the_loser_is_dropped_when_that_day_already_has_a_replay() -> None:
     put_play(A, "2026-11-19.senior.daily", started="2026-11-19T06:00:00.000Z")
     put_play(A, "2026-11-19.senior.replay", started="2026-11-19T06:30:00.000Z", score=1)

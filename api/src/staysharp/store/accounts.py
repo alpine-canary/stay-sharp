@@ -127,6 +127,31 @@ def _cancelled(error: ClientError) -> bool:
     )
 
 
+def _reason(error: ClientError, index: int) -> str | None:
+    """The cancellation reason code of the ``index``-th item of a cancelled transaction."""
+    reasons = error.response.get("CancellationReasons") or []
+    if index < len(reasons):
+        return reasons[index].get("Code")
+    return None
+
+
+def _still_active(sub: str) -> dict[str, Any]:
+    return {
+        "ConditionCheck": {
+            "TableName": table.table_name(),
+            "Key": account_key(sub),
+            "ConditionExpression": "#st = :active",
+            "ExpressionAttributeNames": {"#st": "state"},
+            "ExpressionAttributeValues": {":active": {"S": "active"}},
+        }
+    }
+
+
+def gone_key(sub: str) -> table.Key:
+    """Written when an account is deleted, for as long as its tokens may still be used."""
+    return table.key(f"ACC#{sub}", "GONE")
+
+
 def _create(sub: str, player_id: str, now: dt.datetime) -> bool:
     """One transaction: the account and the link of its primary id. ``False`` if it existed."""
     hashed = player_hash(player_id)
@@ -157,11 +182,21 @@ def _create(sub: str, player_id: str, now: dt.datetime) -> bool:
                         "ConditionExpression": "attribute_not_exists(PK)",
                     }
                 },
+                {
+                    # A just-deleted account: another device's token is still valid for a while.
+                    "ConditionCheck": {
+                        "TableName": table.table_name(),
+                        "Key": gone_key(sub),
+                        "ConditionExpression": "attribute_not_exists(PK)",
+                    }
+                },
             ]
         )
     except ClientError as error:
         if not _cancelled(error):
             raise
+        if _reason(error, 2) == "ConditionalCheckFailed":
+            raise Deleting from error
         return False
     return True
 
@@ -238,9 +273,15 @@ def adopt(sub: str, player_id: str, now: dt.datetime) -> Adopted:
             ]
         )
     except ClientError as error:
-        if _cancelled(error):
-            raise OtherAccount from error
-        raise
+        if not _cancelled(error):
+            raise
+        if _reason(error, 2) == "ConditionalCheckFailed":
+            # Deletion started while the plays were merged: clear what the merge brought in.
+            from staysharp.store import deletion  # noqa: PLC0415 - deletion imports this module
+
+            deletion.clear_player(account.primary_player)
+            raise Deleting from error
+        raise OtherAccount from error
     return Adopted(
         primary_player=account.primary_player,
         created=False,
@@ -263,8 +304,10 @@ def touch(sub: str, now: dt.datetime, *, known: str | None = None) -> None:
             TableName=table.table_name(),
             Key=account_key(sub),
             UpdateExpression="SET lastActiveMonth = :m REMOVE warnedAt",
-            ConditionExpression="attribute_exists(PK) AND lastActiveMonth <> :m",
-            ExpressionAttributeValues={":m": {"S": current}},
+            # Never on an account being deleted: it must stay in the job's DELETING queue.
+            ConditionExpression="attribute_exists(PK) AND lastActiveMonth <> :m AND #st = :active",
+            ExpressionAttributeNames={"#st": "state"},
+            ExpressionAttributeValues={":m": {"S": current}, ":active": {"S": "active"}},
         )
     except ClientError as error:
         if error.response.get("Error", {}).get("Code") != "ConditionalCheckFailedException":
@@ -332,23 +375,22 @@ def put_progress(sub: str, version: int, body: dict[str, Any], now: dt.datetime)
     text = encode(check_outline(body))
     stored = {"version": version + 1, "body": text, "updatedAt": table.iso_ms(now)}
     item = {**progress_key(sub), **table.serialize(stored)}
+    put: dict[str, Any] = {"TableName": table.table_name(), "Item": item}
+    if version == 0:
+        put["ConditionExpression"] = "attribute_not_exists(PK)"
+    else:
+        put["ConditionExpression"] = "version = :v"
+        put["ExpressionAttributeValues"] = {":v": {"N": str(version)}}
     try:
-        if version == 0:
-            aws.dynamodb().put_item(
-                TableName=table.table_name(),
-                Item=item,
-                ConditionExpression="attribute_not_exists(PK)",
-            )
-        else:
-            aws.dynamodb().put_item(
-                TableName=table.table_name(),
-                Item=item,
-                ConditionExpression="version = :v",
-                ExpressionAttributeValues={":v": {"N": str(version)}},
-            )
+        # With the account still active: a copy written after deletion started would outlive it.
+        aws.dynamodb().transact_write_items(
+            TransactItems=[{"Put": put}, _still_active(sub)]  # type: ignore[list-item,typeddict-item]
+        )
     except ClientError as error:
-        if error.response.get("Error", {}).get("Code") != "ConditionalCheckFailedException":
+        if not _cancelled(error):
             raise
+        if _reason(error, 1) == "ConditionalCheckFailed":
+            raise Deleting from error
         raise VersionConflict(get_progress(sub)) from error
     return ProgressCopy(version=version + 1, body=body)
 

@@ -137,10 +137,25 @@ def _finished(play: dict[str, Any]) -> bool:
     return len(answered) == plays_store.QUESTIONS
 
 
-def _first_finished(a: dict[str, Any], b: dict[str, Any]) -> bool:
-    """True when ``a`` is the daily that keeps the scored slot against ``b``."""
+def _finished_at(play: dict[str, Any]) -> dt.datetime:
+    """When a finished play ended: its start plus its playing time."""
+    started = dt.datetime.fromisoformat(str(play["startedAt"]).replace("Z", "+00:00"))
+    return started + dt.timedelta(milliseconds=int(play.get("elapsedMs") or 0))
+
+
+def _keeps_the_slot(a: dict[str, Any], b: dict[str, Any]) -> bool:
+    """True when ``a`` is the daily that keeps the scored slot against ``b``.
+
+    A finished daily beats an unfinished one; of two finished, the first to finish wins (FR-110);
+    of two unfinished, the one with more answers (then the earlier start) goes on.
+    """
     if _finished(a) != _finished(b):
         return _finished(a)
+    if _finished(a):
+        return _finished_at(a) < _finished_at(b)
+    answered_a, answered_b = len(a.get("answered") or ()), len(b.get("answered") or ())
+    if answered_a != answered_b:
+        return answered_a > answered_b
     return str(a["startedAt"]) < str(b["startedAt"])
 
 
@@ -198,13 +213,15 @@ def merge(primary_id: str, anonymous_id: str, now: dt.datetime) -> Merged:
                 source.move(play_id, target, play_id)
                 continue
             replays += 1
-            if _first_finished(play, existing):
-                # The anonymous daily wins: the primary's own daily steps down to replay.
-                if not target.move(play_id, target, _replay_id(play_id)):
+            # The loser steps down to a replay only next to a finished daily: a replay shows the
+            # answers, so beside a daily still open it would be an answer key (C3). Otherwise it
+            # is dropped.
+            if _keeps_the_slot(play, existing):
+                if not (_finished(play) and target.move(play_id, target, _replay_id(play_id))):
                     target.drop(play_id)
                 source.move(play_id, target, play_id)
                 continue
-            if not source.move(play_id, target, _replay_id(play_id)):
+            if not (_finished(existing) and source.move(play_id, target, _replay_id(play_id))):
                 source.drop(play_id)
             continue
         if not source.move(play_id, target, play_id):

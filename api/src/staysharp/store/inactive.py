@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import datetime as dt
 import os
+import time
 from collections.abc import Callable, Iterable
 
 from botocore.exceptions import ClientError
@@ -31,6 +32,7 @@ WARN_AFTER_MONTHS = 23
 DELETE_AFTER_MONTHS = 24
 NOTICE = dt.timedelta(days=30)
 UNCONFIRMED_AFTER = dt.timedelta(days=7)
+RUN_BUDGET = dt.timedelta(minutes=3)
 # No account is older than this month (accounts started in M2, November 2026).
 FIRST_MONTH = "2026-01"
 
@@ -88,12 +90,14 @@ def _due_months(now: dt.datetime) -> list[str]:
 
 
 def _subs_of(month: str) -> list[str]:
+    # No cap: a month may hold many accounts. Keys only (the index projects nothing else).
     found = table.query_all(
         {
             "IndexName": "GSI_INACTIVE",
             "KeyConditionExpression": "lastActiveMonth = :m",
             "ExpressionAttributeValues": {":m": {"S": month}},
-        }
+        },
+        limit=10_000_000,
     )
     return sorted(str(key["PK"]).removeprefix("ACC#") for key in found)
 
@@ -122,13 +126,31 @@ def site_url() -> str:
 
 
 def run(
-    now: dt.datetime, *, send: Send, email_of: EmailOf, delete_user: DeleteUser
+    now: dt.datetime,
+    *,
+    send: Send,
+    email_of: EmailOf,
+    delete_user: DeleteUser,
+    budget: dt.timedelta = RUN_BUDGET,
 ) -> dict[str, int]:
-    """Warn and delete what is due. Counts only; failures are counted, the rest goes on."""
+    """Warn and delete what is due. Counts only; failures are counted, the rest goes on.
+
+    Stops after ``budget`` (the function has 5 minutes); the next hourly run goes on from there.
+    """
+    deadline = time.monotonic() + budget.total_seconds()
     warned = deleted = failed = 0
     for month in _due_months(now):
         since = inactive_since(month)
-        for sub in _subs_of(month):
+        try:
+            subs = _subs_of(month)
+        except Exception as error:  # noqa: BLE001 - the other months go on, then report
+            failed += 1
+            logger.warning("inactive month not read", extra={"error_type": type(error).__name__})
+            continue
+        for sub in subs:
+            if time.monotonic() >= deadline:
+                logger.info("inactive accounts: time is up, the next run goes on")
+                return {"warned": warned, "deleted": deleted, "failed": failed, "unconfirmed": 0}
             item = table.get(accounts.account_key(sub), consistent=True)
             if item is None or item.get("lastActiveMonth") != month:
                 continue  # active again, or being deleted: not ours

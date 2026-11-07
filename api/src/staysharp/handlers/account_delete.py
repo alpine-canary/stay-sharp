@@ -51,9 +51,8 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:  # noqa: ARG
     try:
         deletion.delete_account(sub, clock.now(), delete_user())
     except Exception as error:  # noqa: BLE001 - any failure: 503, the work goes on later
-        logger.exception(
-            "account deletion not finished", extra={"error_type": type(error).__name__}
-        )
+        # The type only: AWS error texts and tracebacks can quote parameter values (FR-117).
+        logger.error("account deletion not finished", extra={"error_type": type(error).__name__})
         return _answer(
             HTTPStatus.SERVICE_UNAVAILABLE,
             {"code": "unavailable", "message": "Not finished yet. Please try again in a minute."},

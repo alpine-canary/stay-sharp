@@ -188,3 +188,30 @@ def test_unconfirmed_sign_ups_are_removed_after_7_days() -> None:
     count = inactive.remove_unconfirmed(NOW, lambda: pending, removed.append)
     assert count == 1
     assert removed == ["old"]
+
+
+def test_a_run_stops_when_its_time_is_up_and_the_next_one_goes_on() -> None:
+    accounts.adopt(SUB, A, NOW)
+    mail, users = Mail(), Users()
+    out_of_time = inactive.run(
+        WARN_AT, send=mail, email_of=users.email, delete_user=users.delete, budget=dt.timedelta(0)
+    )
+    assert out_of_time["warned"] == 0
+    assert run(WARN_AT + dt.timedelta(hours=1), mail, users)["warned"] == 1
+
+
+def test_a_month_that_cannot_be_read_is_counted_and_the_others_go_on(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    accounts.adopt(SUB, A, NOW)
+    real = inactive._subs_of  # noqa: SLF001
+
+    def flaky(month: str) -> list[str]:
+        if month == "2026-10":
+            raise table.StoreError("boom")
+        return real(month)
+
+    monkeypatch.setattr(inactive, "_subs_of", flaky)
+    result = run(WARN_AT + dt.timedelta(days=31), Mail(), Users())
+    assert result["failed"] == 1
+    assert result["warned"] == 1

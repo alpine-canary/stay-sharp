@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 
 from staysharp.store import accounts
-from tests.integration.accounts_world import NOW, SUB
+from tests.integration.accounts_world import NOW, SUB, A
 
 pytestmark = pytest.mark.integration
 
@@ -13,6 +13,7 @@ pytestmark = pytest.mark.integration
 @pytest.fixture(autouse=True)
 def local(monkeypatch: pytest.MonkeyPatch, table: str) -> None:
     monkeypatch.setenv("STAGE", "local")
+    accounts.adopt(SUB, A, NOW)  # a copy is only written for an active account
 
 
 def body(level: str | None = "senior") -> dict[str, object]:

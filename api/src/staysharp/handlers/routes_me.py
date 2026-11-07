@@ -115,6 +115,8 @@ def put_progress() -> Response[str]:
         ) from error
     except accounts.BadProgress as error:
         raise ApiError(HTTPStatus.BAD_REQUEST, "invalid_request", "Invalid progress.") from error
+    except accounts.Deleting as error:  # deletion started after the check above
+        raise ApiError(HTTPStatus.CONFLICT, "deleting", DELETING) from error
     except accounts.VersionConflict as conflict:
         return json_response(
             Progress(version=conflict.stored.version, body=conflict.stored.body),
