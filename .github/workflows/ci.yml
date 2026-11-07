@@ -102,6 +102,8 @@ jobs:
         run: |
           pnpm --dir front build  # vite build, then one prerendered page per path
           if find front/dist -name '*.map' | grep -q .; then echo "source maps found"; exit 1; fi
+      - name: first-screen size (T246)
+        run: node front/scripts/bundle-size.mjs
 
   leak-guard:
     name: leak guard (future questions in files and full history)

@@ -5,6 +5,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { signedInHint } from "./accountHint";
 import type { Live } from "./account/live";
 import { createClient, type ApiClient, type PlayState } from "./api/client";
+import { AgeAsk, clearEarlyAnswer } from "./components/AgeAsk";
 import { Link } from "./components/Link";
 import { ShareSite } from "./components/ShareSite";
 import { navigate, useRoute } from "./router";
@@ -26,16 +27,21 @@ import { Privacy } from "./views/Privacy";
 import { Result } from "./views/Result";
 
 // The account code is its own chunk, loaded only on /account (research A9). The fallback is
-// also the prerendered first screen of the page; it lives here so it stays out of that chunk.
+// also the prerendered first screen of the page (the age question); it stays out of that chunk.
 const AccountPage = lazy(() => import("./account/AccountPage"));
 
 function AccountLoading() {
-  return (
-    <section className="card narrow" aria-busy="true">
-      <h1 className="text-3xl">Account</h1>
-      <p>Loading…</p>
-    </section>
-  );
+  // A new visitor (and the prerendered page) sees the age question at once; a signed-in browser
+  // waits for its account.
+  if (signedInHint()) {
+    return (
+      <section className="card narrow" aria-busy="true">
+        <h1 className="text-3xl">Account</h1>
+        <p>Loading…</p>
+      </section>
+    );
+  }
+  return <AgeAsk />;
 }
 
 export interface AppProps {
@@ -61,6 +67,10 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
     [givenClient, store],
   );
   const route = useRoute();
+  // An age answer given on the first screen of /account is for that visit only.
+  useEffect(() => {
+    if (route.view !== "account") clearEarlyAnswer();
+  }, [route.view]);
 
   // Signed-in browsers keep their progress in step with the account (M2). The sync code is
   // loaded only for them, after the first screen.

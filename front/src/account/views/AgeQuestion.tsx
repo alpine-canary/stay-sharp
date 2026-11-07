@@ -2,26 +2,12 @@
 // "No" stores nothing and sends nothing; the game stays fully playable without an account.
 
 import { useEffect, useRef, useState } from "react";
+import { AgeAsk } from "../../components/AgeAsk";
 import { Link } from "../../components/Link";
 
-export function AgeQuestion({ onAdult }: { onAdult: () => void }) {
-  const [under16, setUnder16] = useState(false);
-  return under16 ? (
-    <Under16 />
-  ) : (
-    <section className="card narrow">
-      <h1 className="text-3xl">Are you 16 or older?</h1>
-      <p>An account keeps your streak on all your devices. Accounts are for players aged 16 and over.</p>
-      <div className="actions">
-        <button type="button" className="btn" onClick={onAdult}>
-          Yes, I am 16 or older
-        </button>
-        <button type="button" className="btn ghost" onClick={() => setUnder16(true)}>
-          No, I am under 16
-        </button>
-      </div>
-    </section>
-  );
+export function AgeQuestion({ onAdult, under16: startUnder16 = false }: { onAdult: () => void; under16?: boolean }) {
+  const [under16, setUnder16] = useState(startUnder16);
+  return under16 ? <Under16 /> : <AgeAsk onAnswer={(answer) => (answer === "adult" ? onAdult() : setUnder16(true))} />;
 }
 
 function Under16() {

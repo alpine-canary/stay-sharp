@@ -2,7 +2,8 @@ import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it } from "vitest";
 import { SESSION_KEY } from "../accountHint";
-import { AccountOffer, OFFER_KEY, shouldOffer, type OfferRule } from "./AccountOffer";
+import { AccountOffer } from "./AccountOffer";
+import { OFFER_KEY, offerNow, shouldOffer, type OfferRule } from "./offerRule";
 
 const BASE: OfferRule = { streak: 3, finishedDailies: 3, signedIn: false, dismissedOn: null, today: "2026-11-20" };
 
@@ -27,7 +28,7 @@ describe("shouldOffer (T236)", () => {
 describe("AccountOffer", () => {
   it("offers with the streak, links to the account page, and Not now hides it", async () => {
     const user = userEvent.setup();
-    render(<AccountOffer streak={12} finishedDailies={12} today="2026-11-20" />);
+    render(<AccountOffer streak={12} today="2026-11-20" />);
     expect(screen.getByRole("heading", { name: "Keep your 12-day streak on your phone too?" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Create an account" })).toHaveAttribute("href", "/account");
     await user.click(screen.getByRole("button", { name: "Not now" }));
@@ -35,9 +36,12 @@ describe("AccountOffer", () => {
     expect(window.localStorage.getItem(OFFER_KEY)).toBe("2026-11-20");
   });
 
-  it("is not shown to a signed-in browser", () => {
+  it("is not due for a signed-in browser, nor for 7 days after Not now", () => {
     window.sessionStorage.setItem(SESSION_KEY, "{}");
-    render(<AccountOffer streak={12} finishedDailies={12} today="2026-11-20" />);
-    expect(screen.queryByRole("heading", { name: /streak on your phone/ })).toBeNull();
+    expect(offerNow({ streak: 12, finishedDailies: 12, today: "2026-11-20", signedIn: true })).toBe(false);
+    window.localStorage.setItem(OFFER_KEY, "2026-11-18");
+    expect(offerNow({ streak: 12, finishedDailies: 12, today: "2026-11-20", signedIn: false })).toBe(false);
+    window.localStorage.setItem(OFFER_KEY, "2026-11-13");
+    expect(offerNow({ streak: 12, finishedDailies: 12, today: "2026-11-20", signedIn: false })).toBe(true);
   });
 });

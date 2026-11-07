@@ -1,9 +1,12 @@
 // The /account page: the only entry into the account code, loaded on demand (task T218,
 // research A9). Nothing here is in the first-screen bundle.
 //
-// Order (FR-116): the age question, then the e-mail and code, then the account.
+// Order (FR-116): the age question (shown at once, before the sign-in settings load), then the
+// e-mail and code, then the account.
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { signedInHint } from "../accountHint";
+import { earlyAnswer, subscribeEarlyAnswer } from "../components/AgeAsk";
 import { Link } from "../components/Link";
 import { freshProgress, type Progress } from "../storage";
 import { loadAuthConfig, type AuthConfig } from "./cognito";
@@ -39,6 +42,14 @@ export default function AccountPage({
   makeRuntimeFor = defaultRuntime,
 }: AccountPageProps) {
   const [config, setConfig] = useState<AuthConfig | null | undefined>(undefined);
+  // The age question needs no sign-in settings: it shows at once (FR-116). A browser that is
+  // already signed in answered it when it signed in.
+  // An answer given on the first screen counts, even one that lands while this page replaces it.
+  const early = useSyncExternalStore(subscribeEarlyAnswer, earlyAnswer, () => null);
+  const [wasSignedIn] = useState(signedInHint);
+  const [answeredHere, setAdult] = useState(false);
+  const adult = answeredHere || wasSignedIn || early === "adult";
+  const earlyUnder16 = early === "under16";
   useEffect(() => {
     let live = true;
     void loadConfig().then((found) => {
@@ -49,6 +60,7 @@ export default function AccountPage({
     };
   }, [loadConfig]);
 
+  if (!adult) return <AgeQuestion key={earlyUnder16 ? "under16" : "ask"} under16={earlyUnder16} onAdult={() => setAdult(true)} />;
   if (config === undefined) return <Loading />;
   if (config === null) return <SignInUnavailable />;
   return <Account config={config} makeRuntimeFor={makeRuntimeFor} current={current} replace={replace} onSignedIn={onSignedIn} onSignedOut={onSignedOut} />;
@@ -71,9 +83,8 @@ function Account({
 }) {
   const runtime = useMemo(() => makeRuntimeFor(config), [config, makeRuntimeFor]);
   const { cognito, session } = runtime;
-  const [step, setStep] = useState<"age" | "sign-in" | "signed-in" | "deleted" | "signed-out">(() => (session.signedIn() ? "signed-in" : "age"));
+  const [step, setStep] = useState<"sign-in" | "signed-in" | "deleted" | "signed-out">(() => (session.signedIn() ? "signed-in" : "sign-in"));
 
-  if (step === "age") return <AgeQuestion onAdult={() => setStep("sign-in")} />;
   if (step === "sign-in") {
     return (
       <SignIn

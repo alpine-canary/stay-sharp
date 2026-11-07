@@ -1,56 +1,20 @@
-// The account offer on the result screen (tasks T236, T237, FR-102, US4). Main bundle: no
-// sign-in code here, only a link to /account (which loads it).
-//
-// Shown only when it is worth something: after a finished daily, with a streak of 3 days or
-// more in that level, never to a signed-in browser, and not for 7 days after "Not now".
+// The account offer on the result screen (tasks T236, T237, FR-102, US4). Its own small chunk,
+// loaded only when offerRule.ts says it is due; no sign-in code here, only a link to /account.
 
 import { useState } from "react";
-import { signedInHint } from "../accountHint";
 import { Link } from "./Link";
+import { OFFER_KEY } from "./offerRule";
 
-export const OFFER_KEY = "staysharp.offerDismissed";
-const MIN_STREAK = 3;
-const QUIET_DAYS = 7;
+export { OFFER_KEY, shouldOffer, type OfferRule } from "./offerRule";
 
-export interface OfferRule {
-  streak: number;
-  /** Finished, scored dailies in this browser (all levels). */
-  finishedDailies: number;
-  signedIn: boolean;
-  /** Server date of the last "Not now", or null. */
-  dismissedOn: string | null;
-  /** Server date of this result. */
-  today: string;
-}
-
-function daysBetween(from: string, to: string): number {
-  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86_400_000);
-}
-
-export function shouldOffer({ streak, finishedDailies, signedIn, dismissedOn, today }: OfferRule): boolean {
-  if (signedIn || finishedDailies < 1 || streak < MIN_STREAK) return false;
-  return dismissedOn === null || daysBetween(dismissedOn, today) >= QUIET_DAYS;
-}
-
-function readDismissed(): string | null {
-  try {
-    const value = window.localStorage.getItem(OFFER_KEY);
-    return value && /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : null;
-  } catch {
-    return null;
-  }
-}
-
+/** Shown only when offerRule says it is due (the result screen checks before loading it). */
 export interface AccountOfferProps {
   streak: number;
-  finishedDailies: number;
   today: string;
 }
 
-export function AccountOffer({ streak, finishedDailies, today }: AccountOfferProps) {
-  const [shown, setShown] = useState(() =>
-    shouldOffer({ streak, finishedDailies, today, signedIn: signedInHint(), dismissedOn: readDismissed() }),
-  );
+export function AccountOffer({ streak, today }: AccountOfferProps) {
+  const [shown, setShown] = useState(true);
   if (!shown) return null;
 
   const dismiss = () => {
@@ -79,3 +43,5 @@ export function AccountOffer({ streak, finishedDailies, today }: AccountOfferPro
     </section>
   );
 }
+
+export default AccountOffer;

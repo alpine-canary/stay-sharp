@@ -5,7 +5,8 @@
         "http://localhost:4173/",
         "http://localhost:4173/play",
         "http://localhost:4173/practice",
-        "http://localhost:4173/privacy"
+        "http://localhost:4173/privacy",
+        "http://localhost:4173/account"
       ],
       "startServerCommand": "corepack pnpm preview --strictPort --port 4173",
       "startServerReadyPattern": "Local",

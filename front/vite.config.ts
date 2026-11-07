@@ -8,6 +8,18 @@ export default defineConfig({
   build: {
     // Source maps are never published (research R1).
     sourcemap: false,
+    rollupOptions: {
+      output: {
+        // Code shared by the app and a later chunk (the account pages) stays in the app chunk,
+        // which is always loaded first: no extra request on the first screen (T246).
+        manualChunks(id) {
+          if (id.includes("/src/") && !id.endsWith(".css") && !id.includes("/src/account/") && !id.endsWith("AccountOffer.tsx") && !id.includes("/src/main.tsx")) {
+            return "start";
+          }
+          return undefined;
+        },
+      },
+    },
   },
   server: {
     port: 5173,

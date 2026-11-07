@@ -1,0 +1,5 @@
+{
+  "note": "First screen, gzipped (scripts/bundle-size.mjs). M1 was about 82 950 B; M2 adds the Account link, the share buttons, the account part of Privacy and the age question as the first screen of /account. Raise only on purpose.",
+  "firstScreenGzipBytes": 85097,
+  "toleranceBytes": 1024
+}

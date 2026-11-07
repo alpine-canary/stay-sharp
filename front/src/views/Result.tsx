@@ -1,17 +1,21 @@
 // The result of a play (task T069): squares, score out of 5, speed bonus or "relaxed", time
 // taken. A replay is marked "not scored". A finished daily offers the share card (task T100).
 
-import { useEffect, useState } from "react";
+import { lazy, Suspense, useEffect, useState } from "react";
 import { ApiError, type ApiClient, type PlayState } from "../api/client";
-import { AccountOffer } from "../components/AccountOffer";
 import { ChallengeLink } from "../components/ChallengeLink";
 import { Link } from "../components/Link";
+import { signedInHint } from "../accountHint";
+import { offerNow } from "../components/offerRule";
 import { ShareCard } from "../components/ShareCard";
 import { Squares } from "../components/Squares";
 import { formatSeconds } from "../components/Timer";
 import { DECK_ORDER, deckName, LEVEL_NAMES } from "../decks";
 import { streak } from "../progress/streak";
 import type { Progress } from "../storage";
+
+// The account offer is shown to few players: its own chunk, loaded only when it is due.
+const AccountOffer = lazy(() => import("../components/AccountOffer"));
 
 export interface ResultProps {
   client: ApiClient;
@@ -83,6 +87,12 @@ export function Result({ client, playId, progress }: ResultProps) {
   const levelName = LEVEL_NAMES[play.level];
 
   const time = formatSeconds((play.elapsedMs ?? 0) / 1000);
+  const offerInput = {
+    streak: streak(Object.keys(progress.days[play.level]), play.date).current,
+    finishedDailies: Object.values(progress.days).reduce((n, days) => n + Object.keys(days).length, 0),
+    today: play.date,
+  };
+  const offer = play.finished && !replay && offerNow({ ...offerInput, signedIn: signedInHint() }) ? offerInput : null;
   return (
     <div className="split">
       <section className="island" aria-labelledby="result-title">
@@ -131,12 +141,10 @@ export function Result({ client, playId, progress }: ResultProps) {
             <ChallengeLink client={client} playId={play.playId} />
           </div>
         )}
-        {play.finished && !replay && (
-          <AccountOffer
-            streak={streak(Object.keys(progress.days[play.level]), play.date).current}
-            finishedDailies={Object.values(progress.days).reduce((n, days) => n + Object.keys(days).length, 0)}
-            today={play.date}
-          />
+        {offer && (
+          <Suspense fallback={null}>
+            <AccountOffer streak={offer.streak} today={offer.today} />
+          </Suspense>
         )}
         <nav className="row" aria-label="What next">
           {play.finished && !replay && <Link href="/play?mode=replay">Replay (not scored)</Link>}
