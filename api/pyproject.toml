@@ -11,6 +11,11 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# The sign-in e-mail sender only (infra/stacks/auth_stack.py): Cognito encrypts each code with
+# the Encryption SDK. Not in the API package.
+mailer = [
+    "aws-encryption-sdk>=4",
+]
 # Tools only (publish, leak scan); never in the Lambda package.
 publish = [
     "jsonschema>=4.26.0",
@@ -63,7 +68,7 @@ disallow_untyped_decorators = false
 
 [dependency-groups]
 dev = [
-    "boto3-stubs[cloudwatch,codedeploy,cognito-idp,dynamodb,lambda,secretsmanager,ssm]>=1.43.123",
+    "boto3-stubs[cloudwatch,codedeploy,cognito-idp,dynamodb,lambda,secretsmanager,sesv2,ssm]>=1.43.123",
     "jsonschema>=4.26.0",
     "mypy>=2.4.1",
     "openapi-core>=0.23.1",

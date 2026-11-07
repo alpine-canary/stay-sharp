@@ -40,8 +40,9 @@ def copy_package(output_dir: str | Path, *, with_testing: bool) -> None:
 
 @jsii.implements(ILocalBundling)
 class UvBundling:
-    def __init__(self, *, with_testing: bool) -> None:
+    def __init__(self, *, with_testing: bool, extras: tuple[str, ...] = ()) -> None:
         self.with_testing = with_testing
+        self.extras = extras
 
     def try_bundle(self, output_dir: str, *, image: DockerImage, **_: object) -> bool:
         del image
@@ -57,6 +58,7 @@ class UvBundling:
                     "--no-hashes",
                     "--frozen",
                     "--no-emit-project",
+                    *(arg for extra in self.extras for arg in ("--extra", extra)),
                     "--output-file",
                     str(requirements),
                 ],
@@ -91,16 +93,25 @@ SOURCE_EXCLUDE = [".venv", "tests", "**/__pycache__", "dist", ".mypy_cache", ".r
 
 def api_code(stage: str) -> lambda_.Code:
     """One asset per stage: the hash includes the stage, so prod never reuses the dev bundle."""
-    with_testing = stage == "dev"
+    return _code(stage, with_testing=stage == "dev")
+
+
+def mailer_code(stage: str) -> lambda_.Code:
+    """The sign-in e-mail sender: the API package plus the Encryption SDK, no drill code."""
+    return _code(stage, with_testing=False, extras=("mailer",))
+
+
+def _code(stage: str, *, with_testing: bool, extras: tuple[str, ...] = ()) -> lambda_.Code:
     source = FileSystem.fingerprint(str(API_DIR), exclude=SOURCE_EXCLUDE)
+    label = "-".join((stage, *extras))
     return lambda_.Code.from_asset(
         str(API_DIR),
         exclude=SOURCE_EXCLUDE,
         asset_hash_type=AssetHashType.CUSTOM,
-        asset_hash=f"{stage}-{source}",
+        asset_hash=f"{label}-{source}",
         bundling=BundlingOptions(
             image=lambda_.Runtime.PYTHON_3_13.bundling_image,
-            local=UvBundling(with_testing=with_testing),
+            local=UvBundling(with_testing=with_testing, extras=extras),
             command=["bash", "-c", "echo 'local bundling with uv is required' && exit 1"],
         ),
     )

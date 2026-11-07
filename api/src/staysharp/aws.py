@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from mypy_boto3_cognito_idp import CognitoIdentityProviderClient
     from mypy_boto3_dynamodb import DynamoDBClient
     from mypy_boto3_secretsmanager import SecretsManagerClient
+    from mypy_boto3_sesv2 import SESV2Client
 
 CONFIG = Config(
     connect_timeout=2,
@@ -47,8 +48,15 @@ def cognito() -> CognitoIdentityProviderClient:
     return boto3.client("cognito-idp", region_name=_region(), config=CONFIG)
 
 
+@cache
+def sesv2() -> SESV2Client:
+    """Used only by the sign-in e-mail sender, in the stage's own Region (eu-central-2)."""
+    return boto3.client("sesv2", region_name=_region(), config=CONFIG)
+
+
 def reset() -> None:
     """Forget cached clients (tests that change the environment)."""
     dynamodb.cache_clear()
     secretsmanager.cache_clear()
     cognito.cache_clear()
+    sesv2.cache_clear()

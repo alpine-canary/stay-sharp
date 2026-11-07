@@ -46,11 +46,32 @@ def test_passwordless_sign_in(template: TemplateOf, stage: str) -> None:
 
 
 @pytest.mark.parametrize("stage", ["dev", "prod"])
-def test_mail_goes_through_ses_from_lumineth(template: TemplateOf, stage: str) -> None:
-    email = pool(template(f"staysharp-{stage}-auth"))["Properties"]["EmailConfiguration"]
-    assert email["EmailSendingAccount"] == "DEVELOPER"
-    assert email["From"] == "Stay Sharp <stay-sharp@lumineth.com>"
-    assert ":identity/lumineth.com" in json.dumps(email["SourceArn"])
+def test_codes_leave_from_zurich_through_our_sender(template: TemplateOf, stage: str) -> None:
+    t = template(f"staysharp-{stage}-auth")
+    props = pool(t)["Properties"]
+    # Cognito never mails by itself (in eu-central-2 it could only use SES in Frankfurt or
+    # London): every code goes, KMS-encrypted, to the sender function in this Region.
+    assert props.get("EmailConfiguration", {}).get("EmailSendingAccount", "COGNITO_DEFAULT") == (
+        "COGNITO_DEFAULT"
+    )
+    assert "SourceArn" not in props.get("EmailConfiguration", {})
+    triggers = props["LambdaConfig"]
+    assert "CustomEmailSender" in triggers
+    assert "KMSKeyID" in triggers
+    (fn,) = [
+        f["Properties"]
+        for f in resources(t, "AWS::Lambda::Function").values()
+        if f["Properties"].get("FunctionName") == f"staysharp-{stage}-mail-sender"
+    ]
+    assert fn["Handler"] == "staysharp.handlers.mail_sender.handler"
+    assert fn["Environment"]["Variables"]["SENDER"] == "stay-sharp@lumineth.com"
+    policies = json.dumps(resources(t, "AWS::IAM::Policy"))
+    assert '"ses:SendEmail"' in policies
+    assert ":identity/lumineth.com" in policies
+    assert '"ses:FromAddress": "stay-sharp@lumineth.com"' in policies
+    (key,) = resources(t, "AWS::KMS::Key").values()
+    assert key["Properties"]["EnableKeyRotation"] is True
+    assert key["DeletionPolicy"] == ("Retain" if stage == "prod" else "Delete")
 
 
 def test_app_client_is_public_and_user_auth_only(template: TemplateOf) -> None:

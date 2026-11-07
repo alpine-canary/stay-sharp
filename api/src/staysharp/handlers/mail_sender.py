@@ -1,0 +1,98 @@
+"""Cognito's custom e-mail sender: sign-in codes leave from Zurich (research A2).
+
+A user pool in eu-central-2 may only send through SES in Frankfurt or London. To keep every
+e-mail address and code in Switzerland, Cognito hands each code, encrypted with the stage's KMS
+key, to this function in eu-central-2, which decrypts it and sends it with SES in eu-central-2
+from ``stay-sharp@lumineth.com`` (infra/stacks/auth_stack.py).
+
+Only the trigger source is logged: never the address, the code or the encrypted code.
+"""
+
+from __future__ import annotations
+
+import base64
+import os
+from collections.abc import Callable
+from functools import cache
+from typing import Any
+
+from staysharp import aws
+from staysharp.obs import logger
+
+SUBJECT = "Your Stay Sharp code"
+# Sources that carry a code we send. Cognito also calls for password resets, invitations and
+# take-over notices, which this pool never uses (no password, no admin-created users).
+CODE_SOURCES = frozenset(
+    {
+        "CustomEmailSender_SignUp",
+        "CustomEmailSender_ResendCode",
+        "CustomEmailSender_Authentication",
+        "CustomEmailSender_UpdateUserAttribute",
+        "CustomEmailSender_VerifyUserAttribute",
+    }
+)
+
+Decrypt = Callable[[str], str]
+Send = Callable[[str, str, str], None]
+
+
+def body(code: str) -> str:
+    return (
+        f"Your Stay Sharp code is {code}.\n\n"
+        "Type it on the page where you asked for it.\n\n"
+        "If you did not ask for a code, you can ignore this e-mail.\n"
+    )
+
+
+@cache
+def kms_decrypt() -> Decrypt:
+    """The Encryption SDK, bound to the stage's key (only this function ships it)."""
+    import aws_encryption_sdk  # type: ignore[import-untyped]  # noqa: PLC0415 - mailer only
+    from aws_encryption_sdk.identifiers import (  # type: ignore[import-untyped]  # noqa: PLC0415
+        CommitmentPolicy,
+    )
+
+    client = aws_encryption_sdk.EncryptionSDKClient(
+        commitment_policy=CommitmentPolicy.REQUIRE_ENCRYPT_ALLOW_DECRYPT
+    )
+    provider = aws_encryption_sdk.StrictAwsKmsMasterKeyProvider(key_ids=[os.environ["KEY_ARN"]])
+
+    def decrypt(encrypted: str) -> str:
+        plaintext, _ = client.decrypt(source=base64.b64decode(encrypted), key_provider=provider)
+        return bytes(plaintext).decode()
+
+    return decrypt
+
+
+def ses_send(to: str, subject: str, text: str) -> None:
+    aws.sesv2().send_email(
+        FromEmailAddress=f"Stay Sharp <{os.environ['SENDER']}>",
+        Destination={"ToAddresses": [to]},
+        Content={
+            "Simple": {
+                "Subject": {"Data": subject, "Charset": "UTF-8"},
+                "Body": {"Text": {"Data": text, "Charset": "UTF-8"}},
+            }
+        },
+    )
+
+
+def send_code(event: dict[str, Any], decrypt: Decrypt, send: Send) -> bool:
+    """Send the code of one Cognito event. ``False`` when the event carries nothing to send."""
+    source = str(event.get("triggerSource", ""))
+    request = event.get("request") or {}
+    encrypted = request.get("code")
+    email = (request.get("userAttributes") or {}).get("email")
+    if source not in CODE_SOURCES or not encrypted or not email:
+        logger.info("sign-in e-mail skipped", extra={"trigger_source": source})
+        return False
+    send(email, SUBJECT, body(decrypt(encrypted)))
+    logger.info("sign-in e-mail sent", extra={"trigger_source": source})
+    return True
+
+
+@logger.inject_lambda_context(log_event=False, clear_state=True)
+def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:  # noqa: ARG001
+    logger.remove_keys(["function_arn"])
+    send_code(event, kms_decrypt(), ses_send)
+    return event

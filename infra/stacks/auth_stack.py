@@ -6,7 +6,10 @@
   only ``USER_AUTH`` (and refresh), so a password challenge is never offered.
 - E-mail as the user name, case-insensitive; no password recovery (there is no password);
   MFA off (Cognito does not combine MFA with passwordless sign-in).
-- Codes are sent by SES from ``stay-sharp@lumineth.com`` (identity in the mail stack).
+- Codes leave from Zurich: a pool in eu-central-2 may only use SES in Frankfurt or London, so
+  Cognito encrypts each code with the stage's KMS key and hands it to a custom e-mail sender
+  function here, which sends it with SES in eu-central-2 from ``stay-sharp@lumineth.com``
+  (identity in the mail stack; handler ``staysharp.handlers.mail_sender``).
 - Passkeys belong to the site's host (relying party id): the public name in prod, the dev
   CloudFront host in dev, given as context ``devSiteHost`` after the first web deploy.
 - Prod: deletion protection and retained on stack removal. Dev: removable.
@@ -21,9 +24,16 @@ from typing import Any
 
 from aws_cdk import CfnOutput, Duration, RemovalPolicy, Stack
 from aws_cdk import aws_cognito as cognito
+from aws_cdk import aws_iam as iam
+from aws_cdk import aws_kms as kms
+from aws_cdk import aws_lambda as lambda_
+from aws_cdk import aws_logs as logs
 from constructs import Construct
 
+from stacks.bundling import mailer_code
 from stacks.mail_stack import MAIL_DOMAIN, SENDER
+
+MAILER_HANDLER = "staysharp.handlers.mail_sender.handler"
 
 
 class AuthStack(Stack):
@@ -39,6 +49,61 @@ class AuthStack(Stack):
         super().__init__(scope, construct_id, **kwargs)
         prod = stage == "prod"
         passkeys = site_host is not None
+        removal = RemovalPolicy.RETAIN if prod else RemovalPolicy.DESTROY
+
+        self.code_key = kms.Key(
+            self,
+            "CodeKey",
+            alias=f"staysharp-{stage}-signin-codes",
+            description="Encrypts sign-in codes between Cognito and the e-mail sender",
+            enable_key_rotation=True,
+            removal_policy=removal,
+        )
+        self.code_key.add_to_resource_policy(
+            iam.PolicyStatement(
+                principals=[iam.ServicePrincipal("cognito-idp.amazonaws.com")],
+                actions=["kms:Encrypt"],
+                resources=["*"],
+                conditions={"StringEquals": {"aws:SourceAccount": self.account}},
+            )
+        )
+        name = f"staysharp-{stage}-mail-sender"
+        self.mailer = lambda_.Function(
+            self,
+            "MailSender",
+            function_name=name,
+            runtime=lambda_.Runtime.PYTHON_3_13,
+            architecture=lambda_.Architecture.ARM_64,
+            handler=MAILER_HANDLER,
+            code=mailer_code(stage),
+            memory_size=256,
+            timeout=Duration.seconds(10),
+            environment={
+                "STAGE": stage,
+                "SENDER": SENDER,
+                "KEY_ARN": self.code_key.key_arn,
+                "POWERTOOLS_SERVICE_NAME": "mail-sender",
+                "POWERTOOLS_LOGGER_LOG_EVENT": "false",
+            },
+            log_group=logs.LogGroup(
+                self,
+                "MailSenderLogs",
+                log_group_name=f"/aws/lambda/{name}",
+                retention=logs.RetentionDays.ONE_MONTH,
+                removal_policy=removal,
+            ),
+            logging_format=lambda_.LoggingFormat.JSON,
+        )
+        self.code_key.grant_decrypt(self.mailer)
+        self.mailer.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["ses:SendEmail"],
+                resources=[
+                    self.format_arn(service="ses", resource="identity", resource_name=MAIL_DOMAIN)
+                ],
+                conditions={"StringEquals": {"ses:FromAddress": SENDER}},
+            )
+        )
 
         self.user_pool = cognito.UserPool(
             self,
@@ -60,19 +125,15 @@ class AuthStack(Stack):
             passkey_relying_party_id=site_host,
             mfa=cognito.Mfa.OFF,
             account_recovery=cognito.AccountRecovery.NONE,
-            email=cognito.UserPoolEmail.with_ses(
-                from_email=SENDER,
-                from_name="Stay Sharp",
-                ses_verified_domain=MAIL_DOMAIN,
-                ses_region=self.region,
-            ),
+            # Cognito never sends mail itself: every code goes through the sender above.
+            email=cognito.UserPoolEmail.with_cognito(),
+            custom_sender_kms_key=self.code_key,
+            lambda_triggers=cognito.UserPoolTriggers(custom_email_sender=self.mailer),
             user_verification=cognito.UserVerificationConfig(
-                email_subject="Your Stay Sharp code",
-                email_body="Your Stay Sharp code is {####}. It works for 10 minutes.",
                 email_style=cognito.VerificationEmailStyle.CODE,
             ),
             deletion_protection=prod,
-            removal_policy=RemovalPolicy.RETAIN if prod else RemovalPolicy.DESTROY,
+            removal_policy=removal,
         )
 
         self.client = self.user_pool.add_client(
