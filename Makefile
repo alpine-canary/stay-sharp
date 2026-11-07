@@ -87,5 +87,5 @@ ddb-stop:
 dkim-records:
 	@aws sesv2 get-email-identity --profile stay-sharp --region eu-central-2 \
 		--email-identity lumineth.com \
-		--query '[DkimAttributes.Status, DkimAttributes.Tokens]' --output json \
-		| python3 -c 'import json,sys; status, tokens = json.load(sys.stdin); print("status:", status); [print(f"{t}._domainkey.lumineth.com CNAME {t}.dkim.amazonses.com") for t in tokens]'
+		--query '[DkimAttributes.Status, DkimAttributes.Tokens, DkimAttributes.SigningHostedZone]' --output json \
+		| python3 -c 'import json,sys; status, tokens, zone = json.load(sys.stdin); print("status:", status); [print(f"{t}._domainkey.lumineth.com CNAME {t}.{zone}") for t in tokens]'

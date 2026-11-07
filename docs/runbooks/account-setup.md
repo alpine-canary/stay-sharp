@@ -109,7 +109,10 @@ only).
    make dkim-records
    ```
 
-   Each line is a CNAME: `<token>._domainkey.lumineth.com` to `<token>.dkim.amazonses.com`. Add
+   Each line is a CNAME: `<token>._domainkey.lumineth.com` to
+   `<token>.dkim.eu-central-2.amazonses.com`. The target names the region: in eu-central-2 the
+   older `<token>.dkim.amazonses.com` has no key and SES stays `PENDING`. Copy the lines as
+   printed (they use the identity's `SigningHostedZone`). Add
    the three in the `lumineth.com` zone (same place as section 4) and keep them. SES checks them
    by itself; `make dkim-records` shows `SUCCESS` once they are seen (up to 72 hours, usually
    minutes).
