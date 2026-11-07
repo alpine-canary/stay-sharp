@@ -84,9 +84,18 @@ def test_logs_never_hold_the_address_or_the_code(caplog: pytest.LogCaptureFixtur
         assert secret not in logged
 
 
-def test_a_send_failure_reaches_cognito() -> None:
+def test_a_send_failure_reaches_cognito_without_the_address(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     def broken(to: str, subject: str, text: str) -> None:
-        raise RuntimeError("SES is down")
+        raise RuntimeError(f"not authorized on identity/{to}")
 
-    with pytest.raises(RuntimeError):
+    caplog.set_level(logging.DEBUG)
+    with pytest.raises(mail_sender.SendFailed) as raised:
         mail_sender.send_code(event(), fake_decrypt, broken)
+    assert "player@example.com" not in str(raised.value)
+    assert raised.value.__cause__ is None
+    assert raised.value.__suppress_context__ is True
+    logged = caplog.text + " ".join(str(r.__dict__) for r in caplog.records)
+    assert "player@example.com" not in logged
+    assert "RuntimeError" in logged

@@ -67,7 +67,7 @@ def test_codes_leave_from_zurich_through_our_sender(template: TemplateOf, stage:
     assert fn["Environment"]["Variables"]["SENDER"] == "stay-sharp@lumineth.com"
     policies = json.dumps(resources(t, "AWS::IAM::Policy"))
     assert '"ses:SendEmail"' in policies
-    assert ":identity/lumineth.com" in policies
+    assert ":identity/*" in policies
     assert '"ses:FromAddress": "stay-sharp@lumineth.com"' in policies
     (key,) = resources(t, "AWS::KMS::Key").values()
     assert key["Properties"]["EnableKeyRotation"] is True

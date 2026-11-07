@@ -11,6 +11,7 @@ Only the trigger source is logged: never the address, the code or the encrypted 
 from __future__ import annotations
 
 import base64
+import logging
 import os
 from collections.abc import Callable
 from functools import cache
@@ -31,6 +32,14 @@ CODE_SOURCES = frozenset(
         "CustomEmailSender_VerifyUserAttribute",
     }
 )
+
+# The Encryption SDK logs each decryption at INFO; keep only its warnings.
+logging.getLogger("aws_encryption_sdk").setLevel(logging.WARNING)
+
+
+class SendFailed(Exception):
+    """Sending failed. Carries no message: AWS errors can quote the address."""
+
 
 Decrypt = Callable[[str], str]
 Send = Callable[[str, str, str], None]
@@ -86,7 +95,16 @@ def send_code(event: dict[str, Any], decrypt: Decrypt, send: Send) -> bool:
     if source not in CODE_SOURCES or not encrypted or not email:
         logger.info("sign-in e-mail skipped", extra={"trigger_source": source})
         return False
-    send(email, SUBJECT, body(decrypt(encrypted)))
+    try:
+        send(email, SUBJECT, body(decrypt(encrypted)))
+    except Exception as error:
+        # Logged and raised without the AWS message, which can quote the address. Cognito then
+        # answers the player with an error and they can ask for a new code.
+        logger.error(
+            "sign-in e-mail failed",
+            extra={"trigger_source": source, "error_type": type(error).__name__},
+        )
+        raise SendFailed from None
     logger.info("sign-in e-mail sent", extra={"trigger_source": source})
     return True
 

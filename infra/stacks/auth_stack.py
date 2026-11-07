@@ -31,7 +31,7 @@ from aws_cdk import aws_logs as logs
 from constructs import Construct
 
 from stacks.bundling import mailer_code
-from stacks.mail_stack import MAIL_DOMAIN, SENDER
+from stacks.mail_stack import SENDER
 
 MAILER_HANDLER = "staysharp.handlers.mail_sender.handler"
 
@@ -67,6 +67,24 @@ class AuthStack(Stack):
                 conditions={"StringEquals": {"aws:SourceAccount": self.account}},
             )
         )
+        # Cognito creates a grant on the key with the deploying role's rights. The key policy
+        # lets the CDK deploy role do exactly that, only through Cognito, so the execution
+        # policy itself needs no KMS grant rights.
+        self.code_key.add_to_resource_policy(
+            iam.PolicyStatement(
+                principals=[
+                    iam.ArnPrincipal(
+                        f"arn:{self.partition}:iam::{self.account}:role/"
+                        f"cdk-hnb659fds-cfn-exec-role-{self.account}-{self.region}"
+                    )
+                ],
+                actions=["kms:CreateGrant", "kms:DescribeKey"],
+                resources=["*"],
+                conditions={
+                    "StringEquals": {"kms:ViaService": f"cognito-idp.{self.region}.amazonaws.com"}
+                },
+            )
+        )
         name = f"staysharp-{stage}-mail-sender"
         self.mailer = lambda_.Function(
             self,
@@ -98,9 +116,10 @@ class AuthStack(Stack):
         self.mailer.add_to_role_policy(
             iam.PolicyStatement(
                 actions=["ses:SendEmail"],
-                resources=[
-                    self.format_arn(service="ses", resource="identity", resource_name=MAIL_DOMAIN)
-                ],
+                # SES checks the sender's identity and, while the account is in the SES
+                # sandbox, the recipient's too: any identity of this account, but only ever
+                # from our address.
+                resources=[self.format_arn(service="ses", resource="identity", resource_name="*")],
                 conditions={"StringEquals": {"ses:FromAddress": SENDER}},
             )
         )
