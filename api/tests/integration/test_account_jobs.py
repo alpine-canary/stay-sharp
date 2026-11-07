@@ -47,3 +47,23 @@ def test_still_failing_after_an_hour_is_counted(monkeypatch: pytest.MonkeyPatch)
     result = account_jobs.finish_deletions(NOW + dt.timedelta(hours=2), broken)
     assert result == {"finished": 0, "failed": 1, "stuck": 1}
     assert emitted == [("StuckAccountDeletions", 1)]
+
+
+def test_the_whole_job_runs_locally_and_reports_counts_only(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Every step together, with the real metric names (a name outside R11 fails here)."""
+    monkeypatch.setenv("FAKE_COGNITO", "1")
+    monkeypatch.setattr(account_jobs.clock, "now", lambda: NOW)
+    accounts.adopt(SUB, A, NOW)
+    result = account_jobs.run()
+    assert result == {
+        "finished": 0,
+        "failed": 0,
+        "stuck": 0,
+        "inactive_warned": 0,
+        "inactive_deleted": 0,
+        "inactive_failed": 0,
+        "unconfirmed_removed": 0,
+    }
+

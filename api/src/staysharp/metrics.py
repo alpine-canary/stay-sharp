@@ -30,6 +30,9 @@ ALLOWED: dict[str, tuple[MetricUnit, str | None]] = {
     "StockDaysAhead": (COUNT, "Level"),
     # Accounts (M2): deletions still not finished an hour after they were asked (FR-114).
     "StuckAccountDeletions": (COUNT, None),
+    # Inactive accounts (FR-120): warnings sent and accounts deleted by the hourly job.
+    "InactiveAccountsWarned": (COUNT, None),
+    "InactiveAccountsDeleted": (COUNT, None),
     "SelfCheckFailures": (COUNT, None),
     # Dev only: emitted by api/testing/fault_injection.py while injection is on (W11).
     "FaultInjectionActive": (COUNT, None),
