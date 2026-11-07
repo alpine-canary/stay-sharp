@@ -95,14 +95,18 @@ Confirm the SNS subscription e-mail after the first deploy of each stage.
 
 ## 7. Sign-in e-mails (accounts, M2)
 
-Cognito sends the sign-in codes from `stay-sharp@lumineth.com` through SES in `eu-central-2`
-(stack `staysharp-mail`, one per account). Checked on 2026-11-06: SES is offered in
-`eu-central-2`; the account starts in the SES sandbox (200 e-mails a day, verified recipients
+The sign-in codes leave from Zurich: Cognito encrypts each code with the stage's KMS key and
+hands it to our function `staysharp-<stage>-mail-sender`, which sends it with SES in
+`eu-central-2` from `stay-sharp@lumineth.com` (identity in the stack `staysharp-mail`, one per
+account; research A2). A pool in `eu-central-2` could only use SES in Frankfurt or London
+directly. The hourly account job sends the inactivity warning the same way. Checked on
+2026-11-07; the account starts in the SES sandbox (200 e-mails a day, verified recipients
 only).
 
-1. **Bootstrap policy.** The execution policy now allows `cognito-idp:*`, `ses:*` and the
-   Cognito e-mail service-linked role. Publish the new policy version and run the bootstrap
-   again (section 3) before the first deploy of an `-auth` stack.
+1. **Bootstrap policy.** The execution policy allows `cognito-idp:*`, `ses:*`, the Cognito
+   e-mail service-linked role and the KMS key administration of the code key (statement
+   `KmsKeyAdminNoCryptography`: no encrypt or decrypt). Publish the new policy version and run
+   the bootstrap again (section 3) before the first deploy of an `-auth` stack.
 2. **Deploy the mail stack**, then print the three DKIM records:
 
    ```sh
@@ -128,7 +132,9 @@ only).
    ```
 
    and click the link SES sends.
-5. **Before prod:** ask for SES production access (transactional mail, sign-in codes only, a
+5. **Before prod** (requested on 2026-11-07, check with
+   `aws sesv2 get-account --profile stay-sharp --region eu-central-2`: `ProductionAccessEnabled`
+   must be `true`): ask for SES production access (transactional mail, sign-in codes only, a
    few per player per month):
 
    ```sh
@@ -140,4 +146,8 @@ only).
 
 6. **Dev passkeys.** After the first `staysharp-dev-web` deploy, set the context `devSiteHost`
    to the dev CloudFront host (`dxxxxxxxx.cloudfront.net`) in `infra/cdk.json` and redeploy
-   `staysharp-dev-auth`. Without it, dev signs in with e-mail codes only.
+   `staysharp-dev-auth` and `staysharp-dev-api` (the inactivity e-mail links to it). Without
+   it, dev signs in with e-mail codes only. Done on 2026-11-07.
+7. **Replies.** Players may answer a code e-mail. `lumineth.com` receives mail at IONOS: an
+   alias `stay-sharp@lumineth.com` that forwards to the maintainer keeps those replies (and
+   bounce notices) from being lost.

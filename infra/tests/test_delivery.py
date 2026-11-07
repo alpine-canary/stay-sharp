@@ -108,6 +108,8 @@ def test_stage_alarms(template: TemplateOf, stage: str) -> None:
     expected.add("Invocations")
     if stage == "dev":
         expected.add("FaultInjectionActive")
+    else:
+        expected |= {"Reputation.BounceRate", "Reputation.ComplaintRate"}  # SES, one account
     assert names == expected
     cdn = alarms(template(f"staysharp-{stage}-cdn-alarms"))
     assert [a["MetricName"] for a in cdn.values()] == ["5xxErrorRate"]

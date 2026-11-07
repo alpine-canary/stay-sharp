@@ -169,6 +169,31 @@ class OpsStack(Stack):
             treat_missing_data=quiet,
             description="The API function hit its reserved concurrency (players got 5xx).",
         )
+        if stage == "prod":
+            # SES watches the account's reputation in eu-central-2 (the code e-mails and the
+            # inactivity warning) and pauses sending past 10 % bounces or 0.5 % complaints.
+            # Warn well before: at 4 % and 0.08 %. One account, so prod watches it.
+            for name, threshold, what in (
+                ("BounceRate", 0.04, "bounces"),
+                ("ComplaintRate", 0.0008, "complaints"),
+            ):
+                make_alarm(
+                    self,
+                    f"Ses{name}",
+                    topic=self.topic,
+                    metric=cloudwatch.Metric(
+                        namespace="AWS/SES",
+                        metric_name=f"Reputation.{name}",
+                        statistic="Maximum",
+                        period=Duration.hours(1),
+                    ),
+                    threshold=threshold,
+                    treat_missing_data=quiet,
+                    description=(
+                        f"Sign-in e-mails: too many {what}. SES pauses sending past its limit "
+                        "(docs/runbooks/accounts.md)."
+                    ),
+                )
         if stage == "dev":
             make_alarm(
                 self,

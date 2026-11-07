@@ -5,7 +5,8 @@ e-mail address and code in Switzerland, Cognito hands each code, encrypted with 
 key, to this function in eu-central-2, which decrypts it and sends it with SES in eu-central-2
 from ``stay-sharp@lumineth.com`` (infra/stacks/auth_stack.py).
 
-Only the trigger source is logged: never the address, the code or the encrypted code.
+Only the trigger source is logged: never the address, the code or the encrypted code. At most
+5 codes an hour and 10 a day go to one address, 300 an hour in all (store/mail_limits.py).
 """
 
 from __future__ import annotations
@@ -17,8 +18,10 @@ from collections.abc import Callable
 from functools import cache
 from typing import Any
 
+from staysharp import clock
 from staysharp.mail import ses_send
 from staysharp.obs import logger
+from staysharp.store import mail_limits
 
 SUBJECT = "Your Stay Sharp code"
 # Sources that carry a code we send. Cognito also calls for password resets, invitations and
@@ -73,14 +76,25 @@ def kms_decrypt() -> Decrypt:
     return decrypt
 
 
-def send_code(event: dict[str, Any], decrypt: Decrypt, send: Send) -> bool:
-    """Send the code of one Cognito event. ``False`` when the event carries nothing to send."""
+def _no_limit(_address: str) -> bool:
+    return True
+
+
+def send_code(
+    event: dict[str, Any], decrypt: Decrypt, send: Send, allow: Callable[[str], bool] = _no_limit
+) -> bool:
+    """Send the code of one Cognito event. ``False`` when there is nothing to send, or when the
+    address or the whole service is over its limit (store/mail_limits.py)."""
     source = str(event.get("triggerSource", ""))
     request = event.get("request") or {}
     encrypted = request.get("code")
     email = (request.get("userAttributes") or {}).get("email")
     if source not in CODE_SOURCES or not encrypted or not email:
         logger.info("sign-in e-mail skipped", extra={"trigger_source": source})
+        return False
+    if not allow(email):
+        # Not raised: Cognito would retry. The player can ask for a new code later.
+        logger.warning("sign-in e-mail limited", extra={"trigger_source": source})
         return False
     try:
         send(email, SUBJECT, body(decrypt(encrypted)))
@@ -99,5 +113,7 @@ def send_code(event: dict[str, Any], decrypt: Decrypt, send: Send) -> bool:
 @logger.inject_lambda_context(log_event=False, clear_state=True)
 def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:  # noqa: ARG001
     logger.remove_keys(["function_arn"])
-    send_code(event, kms_decrypt(), ses_send)
+    send_code(
+        event, kms_decrypt(), ses_send, lambda address: mail_limits.allow(address, clock.now())
+    )
     return event

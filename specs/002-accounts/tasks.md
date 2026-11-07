@@ -99,7 +99,7 @@ follows the player.
 - [X] T245 [P] axe on every account screen in light and dark, and accessible authentication checks (paste in the code field, no CAPTCHA): `front/tests/e2e/a11y.spec.ts`
 - [X] T246 [P] Lighthouse 100 on `/account` mobile and desktop; first-screen bundle size unchanged (a test fails if the main chunk grows by more than 1 KB): `front/lighthouserc.json`, `front/tests/bundle.test.ts`
 - [X] T247 [P] Log check during the account e2e run: no e-mail, name, code, token or IP in captured logs (FR-117): `api/tests/integration/test_logs_no_pii.py`
-- [ ] T248 Runbooks: delete on request by e-mail, SES bounces and complaints, stuck deletion alarm: `docs/runbooks/accounts.md`
+- [X] T248 Runbooks: delete on request by e-mail, SES bounces and complaints, stuck deletion alarm: `docs/runbooks/accounts.md`
 - [ ] T249 Reviewer agent pass on the whole feature against the AGENTS.md checklist; fix findings with tests
 - [ ] T250 Dev validation of quickstart A1 to A15, recorded in `specs/002-accounts/checklists/release.md`
 - [ ] T251 [maintainer] Approve the prod deploy (user pool deletion protection, SES out of sandbox, DNS records)

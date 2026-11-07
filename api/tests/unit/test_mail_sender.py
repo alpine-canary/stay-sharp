@@ -8,6 +8,8 @@ from typing import Any
 import pytest
 
 from staysharp.handlers import mail_sender
+from staysharp.store import mail_limits
+from tests.events import FakeContext
 
 
 def event(source: str = "CustomEmailSender_Authentication", **request: object) -> dict[str, Any]:
@@ -99,3 +101,37 @@ def test_a_send_failure_reaches_cognito_without_the_address(
     logged = caplog.text + " ".join(str(r.__dict__) for r in caplog.records)
     assert "player@example.com" not in logged
     assert "RuntimeError" in logged
+
+
+def test_nothing_is_sent_over_the_limit_and_the_log_says_so_without_the_address(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    caplog.set_level(logging.INFO)
+    outbox = Outbox()
+    asked: list[str] = []
+
+    def over(address: str) -> bool:
+        asked.append(address)
+        return False
+
+    assert mail_sender.send_code(event(), fake_decrypt, outbox, over) is False
+    assert outbox.sent == []
+    assert asked == ["player@example.com"]
+    assert "sign-in e-mail limited" in caplog.text
+    assert "player@example.com" not in caplog.text
+
+
+def test_the_handler_counts_every_send(monkeypatch: pytest.MonkeyPatch) -> None:
+    outbox = Outbox()
+    counted: list[str] = []
+    monkeypatch.setattr(mail_sender, "kms_decrypt", lambda: fake_decrypt)
+    monkeypatch.setattr(mail_sender, "ses_send", outbox)
+
+    def over(address: str, _now: object) -> bool:
+        counted.append(address)
+        return False
+
+    monkeypatch.setattr(mail_limits, "allow", over)
+    mail_sender.handler(event(), FakeContext())
+    assert counted == ["player@example.com"]
+    assert outbox.sent == []

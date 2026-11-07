@@ -102,3 +102,18 @@ def test_errors_and_a_missed_day_alarm(template: TemplateOf, stage: str) -> None
     assert missed["Threshold"] == 1
     assert missed["Period"] == 86400
     assert missed["TreatMissingData"] == "breaching"
+
+
+def test_prod_warns_before_ses_pauses_the_sign_in_e_mails(template: TemplateOf) -> None:
+    def ses_alarms(stage: str) -> dict[str, dict[str, Any]]:
+        return {
+            a["Properties"]["MetricName"]: a["Properties"]
+            for a in resources(ops(template, stage), "AWS::CloudWatch::Alarm").values()
+            if a["Properties"].get("Namespace") == "AWS/SES"
+        }
+
+    prod = ses_alarms("prod")
+    assert prod["Reputation.BounceRate"]["Threshold"] == 0.04
+    assert prod["Reputation.ComplaintRate"]["Threshold"] == 0.0008
+    assert all(a["AlarmActions"] for a in prod.values())
+    assert ses_alarms("dev") == {}

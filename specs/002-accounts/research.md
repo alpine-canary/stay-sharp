@@ -22,13 +22,21 @@ re-checked at the first dev deploy (T2xx "verify service facts").
 
 ## A2. Sending e-mail
 
-- **Decision**: Amazon SES with the domain identity `lumineth.com` (DKIM), sender
-  `stay-sharp@lumineth.com`, in `eu-central-2` if SES is offered there, else `eu-central-1`.
-  The SES account leaves the sandbox before prod (maintainer request).
-- **Why**: required by Cognito for e-mail codes; cheap; DKIM records go into the `lumineth.com`
-  zone like the M1 certificate records (maintainer action, account-setup runbook).
-- **Alternatives**: Cognito's default e-mail (does not support e-mail codes and has a daily
-  cap).
+- **Decision**: our own sender in Zurich. Cognito encrypts each code with the stage's KMS key
+  and hands it to a custom e-mail sender function in `eu-central-2`
+  (`staysharp.handlers.mail_sender`), which decrypts it and sends a plain-text e-mail with SES
+  in `eu-central-2`, from `stay-sharp@lumineth.com` (domain identity `lumineth.com`, DKIM in
+  the regional signing zone `dkim.eu-central-2.amazonses.com`). The user pool itself keeps
+  Cognito's default e-mail setting, which is never used for codes. The inactivity warning
+  (A8) leaves the same way (`staysharp.mail`). Checked on dev on 2026-11-07.
+- **Why**: a user pool in `eu-central-2` may only use SES in Frankfurt or London. Sending from
+  Zurich keeps every address and code in Switzerland, as the privacy page says. Codes,
+  addresses and AWS error texts are never logged (FR-117).
+- **SES sandbox**: the account starts in the SES sandbox in `eu-central-2` (verified
+  recipients only). Production access was requested on 2026-11-07 and must be granted before
+  prod (task T251).
+- **Alternatives**: SES in Frankfurt through Cognito directly (addresses leave Switzerland);
+  Cognito's default e-mail (no custom sender address, a daily cap).
 
 ## A3. Passkey relying party
 

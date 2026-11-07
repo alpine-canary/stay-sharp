@@ -134,3 +134,31 @@ def test_one_ses_domain_identity_per_account(template: TemplateOf) -> None:
 def test_no_output_shows_an_account_id(template: TemplateOf, stack: str) -> None:
     outputs = json.dumps(template(stack).to_json().get("Outputs", {}))
     assert not re.search(r"\b\d{12}\b", outputs)
+
+
+@pytest.mark.parametrize("stage", ["dev", "prod"])
+def test_the_sender_counts_its_e_mails_under_its_own_keys_only(
+    template: TemplateOf, stage: str
+) -> None:
+    t = template(f"staysharp-{stage}-auth")
+    functions = resources(t, "AWS::Lambda::Function")
+    (mailer,) = [
+        f
+        for f in functions.values()
+        if f["Properties"].get("FunctionName") == f"staysharp-{stage}-mail-sender"
+    ]
+    env = mailer["Properties"]["Environment"]["Variables"]
+    assert "TABLE_NAME" in env
+    assert "PEPPER_SECRET_ARN" in env
+    statements = [
+        s
+        for p in resources(t, "AWS::IAM::Policy").values()
+        for s in p["Properties"]["PolicyDocument"]["Statement"]
+    ]
+    dynamo = [s for s in statements if "dynamodb:" in json.dumps(s["Action"])]
+    assert len(dynamo) == 1
+    (statement,) = dynamo
+    assert statement["Action"] == "dynamodb:UpdateItem"
+    assert statement["Condition"] == {
+        "ForAllValues:StringLike": {"dynamodb:LeadingKeys": ["MAIL#*"]}
+    }

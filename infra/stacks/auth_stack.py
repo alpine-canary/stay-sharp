@@ -24,10 +24,12 @@ from typing import Any
 
 from aws_cdk import CfnOutput, Duration, RemovalPolicy, Stack
 from aws_cdk import aws_cognito as cognito
+from aws_cdk import aws_dynamodb as dynamodb
 from aws_cdk import aws_iam as iam
 from aws_cdk import aws_kms as kms
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_logs as logs
+from aws_cdk import aws_secretsmanager as secretsmanager
 from constructs import Construct
 
 from stacks.bundling import mailer_code
@@ -44,6 +46,8 @@ class AuthStack(Stack):
         *,
         stage: str,
         site_host: str | None,
+        table: dynamodb.ITableV2,
+        pepper: secretsmanager.ISecret,
         **kwargs: Any,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -100,6 +104,8 @@ class AuthStack(Stack):
                 "STAGE": stage,
                 "SENDER": SENDER,
                 "KEY_ARN": self.code_key.key_arn,
+                "TABLE_NAME": table.table_name,
+                "PEPPER_SECRET_ARN": pepper.secret_arn,
                 "POWERTOOLS_SERVICE_NAME": "mail-sender",
                 "POWERTOOLS_LOGGER_LOG_EVENT": "false",
             },
@@ -113,6 +119,15 @@ class AuthStack(Stack):
             logging_format=lambda_.LoggingFormat.JSON,
         )
         self.code_key.grant_decrypt(self.mailer)
+        # The send counters (store/mail_limits.py): their own keys only, never player data.
+        pepper.grant_read(self.mailer)
+        self.mailer.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["dynamodb:UpdateItem"],
+                resources=[table.table_arn],
+                conditions={"ForAllValues:StringLike": {"dynamodb:LeadingKeys": ["MAIL#*"]}},
+            )
+        )
         self.mailer.add_to_role_policy(
             iam.PolicyStatement(
                 actions=["ses:SendEmail"],
