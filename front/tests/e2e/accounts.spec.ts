@@ -152,6 +152,41 @@ test("delete the account: gone on the server, this browser starts again", async 
   await expect(page.getByText(/Your streak and progress are saved to your account/)).toBeVisible();
 });
 
+// --- US6: sign out and play on (T241, FR-113) -----------------------------------------------
+
+test("sign out: this browser forgets the account, which keeps everything", async ({ browser, request }) => {
+  test.setTimeout(60_000);
+  const today = ((await (await request.get("/api/v1/today")).json()) as { date: string }).date;
+  const address = email();
+  const page = await browserWithDays(browser, [shift(today, -2), shift(today, -1)]);
+  await expect(streakOf(page)).toHaveText("2");
+  await signIn(page, address);
+  await expect(page.getByText(/Your streak and progress are saved to your account/)).toBeVisible();
+  const before = await page.evaluate(() => JSON.parse(localStorage.getItem("staysharp.v1") ?? "{}").playerId as string);
+
+  await page.getByRole("button", { name: "Sign out" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: "You are signed out" })).toBeFocused();
+  const after = await page.evaluate(() => ({
+    playerId: JSON.parse(localStorage.getItem("staysharp.v1") ?? "{}").playerId as string,
+    session: sessionStorage.getItem("staysharp.session"),
+    refresh: localStorage.getItem("staysharp.refresh"),
+    sync: localStorage.getItem("staysharp.sync"),
+  }));
+  expect(after.playerId).not.toBe(before);
+  expect([after.session, after.refresh, after.sync]).toEqual([null, null, null]);
+
+  // A new anonymous player: none of the account's progress shows here.
+  await page.goto("/");
+  await expect(page.getByRole("heading", { level: 2, name: /Today's set/ })).toBeVisible();
+  await expect(streakOf(page)).toHaveCount(0);
+
+  // Signing in again brings the account's progress back.
+  await signIn(page, address);
+  await page.goto("/");
+  await expect(streakOf(page)).toHaveText("2");
+  await page.context().close();
+});
+
 // --- US4: asked at the right moment (T238, A1, A2, SC-105) ----------------------------------------
 
 async function playToday(page: Page) {

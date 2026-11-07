@@ -25,6 +25,8 @@ export interface AccountProps {
   replace: (progress: Progress) => void;
   /** The account is gone (deleted): the page shows so and the app forgets the session. */
   onGone?: () => void;
+  /** Sign out on this browser (US6); resolves once this browser has forgotten the account. */
+  onSignOut?: () => Promise<void>;
   passkeys?: PasskeyMaker;
 }
 
@@ -83,9 +85,15 @@ function useJoin({ api }: Runtime, current: () => Progress, replace: (p: Progres
   return joining;
 }
 
-export function Account({ runtime, current, replace, onGone = () => undefined, passkeys = BROWSER }: AccountProps) {
+export function Account({ runtime, current, replace, onGone = () => undefined, onSignOut, passkeys = BROWSER }: AccountProps) {
   const { cognito, session } = runtime;
   const joining = useJoin(runtime, current, replace);
+  const [leaving, setLeaving] = useState(false);
+  const leave = () => {
+    if (!onSignOut || leaving) return;
+    setLeaving(true);
+    void onSignOut();
+  };
   return (
     <>
       <section className="card narrow" aria-busy={joining.state === "working"}>
@@ -108,6 +116,11 @@ export function Account({ runtime, current, replace, onGone = () => undefined, p
           <Link href="/" className="btn">
             Go to today's set
           </Link>
+          {onSignOut && (
+            <button type="button" className="btn ghost" onClick={leave} disabled={leaving} aria-disabled={leaving}>
+              {leaving ? "Signing out…" : "Sign out"}
+            </button>
+          )}
         </div>
       </section>
       {passkeys.supported() && <Passkeys cognito={cognito} session={session} maker={passkeys} />}

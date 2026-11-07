@@ -89,9 +89,11 @@ export function AccountDeleted() {
         Your account is deleted
       </h1>
       <p>Everything kept with it is gone. You can keep playing without an account.</p>
-      <p>
-        <Link href="/">Go to today's set</Link>
-      </p>
+      <div className="row">
+        <Link href="/" className="btn">
+          Go to today's set
+        </Link>
+      </div>
     </section>
   );
 }

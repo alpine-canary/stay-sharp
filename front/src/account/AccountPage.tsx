@@ -7,11 +7,13 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "../components/Link";
 import { freshProgress, type Progress } from "../storage";
 import { loadAuthConfig, type AuthConfig } from "./cognito";
-import { makeRuntime, type Runtime } from "./runtime";
+import { localStorageOrNull, makeRuntime, type Runtime } from "./runtime";
+import { signOut } from "./signOut";
 import { AgeQuestion } from "./views/AgeQuestion";
 import { Account as SignedIn } from "./views/Account";
 import { SignIn } from "./views/SignIn";
 import { AccountDeleted } from "./views/DeleteAccount";
+import { SignedOut } from "./views/SignedOut";
 import { SYNC_KEY } from "./sync";
 
 export interface AccountPageProps {
@@ -69,7 +71,7 @@ function Account({
 }) {
   const runtime = useMemo(() => makeRuntimeFor(config), [config, makeRuntimeFor]);
   const { cognito, session } = runtime;
-  const [step, setStep] = useState<"age" | "sign-in" | "signed-in" | "deleted">(() => (session.signedIn() ? "signed-in" : "age"));
+  const [step, setStep] = useState<"age" | "sign-in" | "signed-in" | "deleted" | "signed-out">(() => (session.signedIn() ? "signed-in" : "age"));
 
   if (step === "age") return <AgeQuestion onAdult={() => setStep("sign-in")} />;
   if (step === "sign-in") {
@@ -85,8 +87,9 @@ function Account({
     );
   }
   if (step === "deleted") return <AccountDeleted />;
-  const gone = () => {
-    // A new anonymous player on this browser: nothing of the deleted account stays here.
+  if (step === "signed-out") return <SignedOut />;
+  /** A new anonymous player on this browser: nothing of the account stays here (FR-113). */
+  const forget = () => {
     session.clear();
     try {
       window.localStorage.removeItem(SYNC_KEY);
@@ -94,10 +97,20 @@ function Account({
       // Nothing to forget.
     }
     replace(freshProgress());
+  };
+  const gone = () => {
+    forget();
     onSignedOut();
     setStep("deleted");
   };
-  return <SignedIn runtime={runtime} current={current} replace={replace} onGone={gone} />;
+  const leave = async () => {
+    // Stop keeping progress in step first, so nothing is sent after the session ends.
+    onSignedOut();
+    await signOut(runtime, current, undefined, replace, localStorageOrNull());
+    forget();
+    setStep("signed-out");
+  };
+  return <SignedIn runtime={runtime} current={current} replace={replace} onGone={gone} onSignOut={leave} />;
 }
 
 /** Same as the prerendered first screen (AccountLoading in App.tsx). */

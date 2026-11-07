@@ -86,7 +86,7 @@ follows the player.
 
 ## Phase 8: US6 - Sign out (P3)
 
-- [ ] T241 [US6] Test first, then sign out: global sign-out, clear tokens and local progress, new anonymous player id; signing in again brings the progress back: `front/src/account/session.ts`, `front/tests/e2e/accounts.spec.ts`
+- [X] T241 [US6] Test first, then sign out: global sign-out, clear tokens and local progress, new anonymous player id; signing in again brings the progress back: `front/src/account/session.ts`, `front/tests/e2e/accounts.spec.ts`
 
 ## Phase 9: Inactive accounts (FR-120)
 

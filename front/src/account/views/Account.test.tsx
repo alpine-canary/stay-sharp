@@ -90,3 +90,28 @@ describe("Account passkeys (FR-105)", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(/could not be reached/);
   });
 });
+
+describe("Account sign-out (US6)", () => {
+  it("signs out from its own button and says it is working", async () => {
+    const user = userEvent.setup();
+    let finish: () => void = () => undefined;
+    const onSignOut = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const props: AccountProps = {
+      runtime: { cognito: cognito([[]]), session: session(), api: joinedApi },
+      current: () => progress,
+      replace: vi.fn(),
+      onSignOut,
+      passkeys: { supported: () => false, create: vi.fn() },
+    };
+    render(<AccountView {...props} />);
+    await user.click(screen.getByRole("button", { name: "Sign out" }));
+    expect(onSignOut).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("button", { name: "Signing out…" })).toBeDisabled();
+    finish();
+  });
+});
