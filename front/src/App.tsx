@@ -6,6 +6,7 @@ import { signedInHint } from "./accountHint";
 import type { Live } from "./account/live";
 import { createClient, type ApiClient, type PlayState } from "./api/client";
 import { Link } from "./components/Link";
+import { ShareSite } from "./components/ShareSite";
 import { navigate, useRoute } from "./router";
 import {
   createStore,
@@ -291,9 +292,12 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
         <span>
           © 2026 <a href="https://www.lumineth.com/">Lumineth</a>
         </span>
-        <nav aria-label="Legal">
-          <Link href="/privacy">Privacy</Link>
-        </nav>
+        <span className="foot-links">
+          <ShareSite />
+          <nav aria-label="Legal">
+            <Link href="/privacy">Privacy</Link>
+          </nav>
+        </span>
       </footer>
     </div>
   );

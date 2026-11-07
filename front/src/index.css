@@ -450,6 +450,23 @@ code {
   color: inherit;
 }
 
+.site-foot .link-btn {
+  color: inherit;
+}
+
+.foot-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+
+.share-site {
+  display: inline-flex;
+  gap: 8px;
+  align-items: baseline;
+  flex-wrap: wrap;
+}
+
 /* --- Buttons -------------------------------------------------------------------------------- */
 
 .btn {

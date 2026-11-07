@@ -60,7 +60,7 @@ describe("shell", () => {
   it("tells the player when saved progress was reset", async () => {
     window.localStorage.setItem(STORAGE_KEY, "{broken");
     render(<App store={createStore(window.localStorage)} client={fakeClient(() => Promise.resolve(TODAY))} />);
-    expect(screen.getByRole("status")).toHaveTextContent("could not be read");
+    expect(screen.getByText(/could not be read/).closest('[role="status"]')).not.toBeNull();
     await waitFor(() => expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument());
   });
 
