@@ -109,4 +109,30 @@ describe("SignIn", () => {
     render(<SignIn cognito={fakeCognito()} onSignedIn={vi.fn()} passkeys={NO_PASSKEYS} />);
     expect(screen.queryByRole("button", { name: /passkey/ })).toBeNull();
   });
+
+  it("after a wrong code, offers a passkey for the same address", async () => {
+    const user = userEvent.setup();
+    const cognito = fakeCognito({ answer: vi.fn().mockRejectedValue(new SignInError("code")) });
+    const onSignedIn = vi.fn();
+    const device: PasskeyDevice = { supported: () => true, get: vi.fn().mockResolvedValue({ id: "cred" }) };
+    render(<SignIn cognito={cognito} onSignedIn={onSignedIn} passkeys={device} />);
+    await user.type(screen.getByLabelText("E-mail address"), "player@example.test{Enter}");
+    await screen.findByLabelText("Code");
+    // Not before a code has failed.
+    expect(screen.queryByRole("button", { name: "Sign in with a passkey instead" })).toBeNull();
+    await user.type(screen.getByLabelText("Code"), "000000{Enter}");
+    await user.click(await screen.findByRole("button", { name: "Sign in with a passkey instead" }));
+    expect(cognito.startPasskey).toHaveBeenCalledWith("player@example.test");
+    expect(onSignedIn).toHaveBeenCalledWith(TOKENS, false);
+  });
+
+  it("no passkey offer after a wrong code where the device has none", async () => {
+    const user = userEvent.setup();
+    const cognito = fakeCognito({ answer: vi.fn().mockRejectedValue(new SignInError("code")) });
+    render(<SignIn cognito={cognito} onSignedIn={vi.fn()} passkeys={NO_PASSKEYS} />);
+    await user.type(screen.getByLabelText("E-mail address"), "player@example.test{Enter}");
+    await user.type(await screen.findByLabelText("Code"), "000000{Enter}");
+    await screen.findByRole("alert");
+    expect(screen.queryByRole("button", { name: "Sign in with a passkey instead" })).toBeNull();
+  });
 });

@@ -64,6 +64,23 @@ describe("shell", () => {
     await waitFor(() => expect(screen.getByRole("heading", { level: 1 })).toBeInTheDocument());
   });
 
+  it("on the account page, the header leads back to today's set instead of to itself", () => {
+    window.history.pushState(null, "", "/account");
+    render(<App store={createStore(window.localStorage)} client={fakeClient(() => Promise.resolve(TODAY))} />);
+    const nav = screen.getByRole("navigation", { name: "Site" });
+    expect(nav).toContainElement(screen.getByRole("link", { name: "Today's set" }));
+    expect(screen.getByRole("link", { name: "Today's set" })).toHaveAttribute("href", "/");
+    expect(screen.queryByRole("link", { name: "Account" })).toBeNull();
+    window.history.pushState(null, "", "/");
+  });
+
+  it("shows the Account link everywhere else", () => {
+    window.history.pushState(null, "", "/privacy");
+    render(<App store={createStore(window.localStorage)} client={fakeClient(() => Promise.resolve(TODAY))} />);
+    expect(screen.getByRole("navigation", { name: "Site" })).toContainElement(screen.getByRole("link", { name: "Account" }));
+    window.history.pushState(null, "", "/");
+  });
+
   it("shows a not-found view for an unknown path", () => {
     window.history.pushState(null, "", "/nope");
     render(<App store={createStore(window.localStorage)} client={fakeClient(() => Promise.resolve(TODAY))} />);

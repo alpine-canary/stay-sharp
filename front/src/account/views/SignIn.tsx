@@ -23,6 +23,19 @@ function message(error: unknown): string {
   return error instanceof SignInError ? error.message : new SignInError("unknown").message;
 }
 
+/** Sign in with a passkey for this address (from the e-mail step, or after a wrong code). */
+async function signInWithPasskey(cognito: Cognito, passkeys: PasskeyDevice, email: string): Promise<Tokens> {
+  const pending = await cognito.startPasskey(email);
+  let credential: Record<string, unknown>;
+  try {
+    credential = await passkeys.get(pending.options);
+  } catch {
+    // Cancelled, or no passkey for this site on this device.
+    throw new SignInError("passkey");
+  }
+  return cognito.finishPasskey(pending, credential);
+}
+
 export function SignIn({ cognito, onSignedIn, passkeys = BROWSER_PASSKEYS }: SignInProps) {
   const [pending, setPending] = useState<Pending | null>(null);
   const [keep, setKeep] = useState(false);
@@ -32,6 +45,7 @@ export function SignIn({ cognito, onSignedIn, passkeys = BROWSER_PASSKEYS }: Sig
       pending={pending}
       onPending={setPending}
       onBack={() => setPending(null)}
+      passkeys={passkeys}
       onSignedIn={(tokens) => onSignedIn(tokens, keep)}
     />
   ) : (
@@ -83,15 +97,7 @@ function EmailStep({
     setBusy(true);
     setError(null);
     try {
-      const pending = await cognito.startPasskey(email);
-      let credential: Record<string, unknown>;
-      try {
-        credential = await passkeys.get(pending.options);
-      } catch {
-        // Cancelled, or no passkey for this site on this device.
-        throw new SignInError("passkey");
-      }
-      onSignedIn(await cognito.finishPasskey(pending, credential));
+      onSignedIn(await signInWithPasskey(cognito, passkeys, email));
     } catch (failure) {
       setError(message(failure));
       setBusy(false);
@@ -148,19 +154,25 @@ function CodeStep({
   pending,
   onPending,
   onBack,
+  passkeys,
   onSignedIn,
 }: {
   cognito: Cognito;
   pending: Pending;
   onPending: (pending: Pending) => void;
   onBack: () => void;
+  passkeys: PasskeyDevice;
   onSignedIn: (tokens: Tokens) => void;
 }) {
   const id = useId();
   const heading = useRef<HTMLHeadingElement>(null);
+  const [canPasskey] = useState(() => passkeys.supported());
   const [code, setCode] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // After a wrong or expired code, a passkey is offered too. Offered whether or not this
+  // address has an account, so the screen never tells which (FR-106).
+  const [codeFailed, setCodeFailed] = useState(false);
   const [sent, setSent] = useState(false);
 
   useEffect(() => {
@@ -173,6 +185,18 @@ function CodeStep({
     setError(null);
     try {
       onSignedIn(await cognito.answer(pending, code));
+    } catch (failure) {
+      setError(message(failure));
+      setCodeFailed(failure instanceof SignInError && (failure.kind === "code" || failure.kind === "expired"));
+      setBusy(false);
+    }
+  }
+
+  async function withPasskey() {
+    setBusy(true);
+    setError(null);
+    try {
+      onSignedIn(await signInWithPasskey(cognito, passkeys, pending.email));
     } catch (failure) {
       setError(message(failure));
       setBusy(false);
@@ -220,10 +244,15 @@ function CodeStep({
         </p>
       )}
       {sent && <p role="status">A new code is on its way.</p>}
-      <div>
+      <div className="actions">
         <button type="submit" className="btn" disabled={busy}>
           {busy ? "Signing in…" : "Sign in"}
         </button>
+        {codeFailed && canPasskey && (
+          <button type="button" className="btn ghost" onClick={withPasskey} disabled={busy}>
+            Sign in with a passkey instead
+          </button>
+        )}
       </div>
       <p className="form-links">
         <button type="button" className="link-btn" onClick={resend}>

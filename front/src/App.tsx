@@ -173,14 +173,24 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
           Stay Sharp
         </Link>
         <nav className="top-links" aria-label="Site">
-          <Link href="/account" className="account-link">
-            {/* A person icon on a phone, the word from 640 px; the name stays "Account". */}
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <circle cx="12" cy="8.5" r="4" fill="none" stroke="currentColor" strokeWidth="2" />
-              <path d="M4.5 20.5c1.2-3.6 4.1-5.5 7.5-5.5s6.3 1.9 7.5 5.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-            </svg>
-            <span className="account-word">Account</span>
-          </Link>
+          {route.view === "account" ? (
+            // On the account pages the way out is the game, not this same page again.
+            <Link href="/" className="account-link">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M8 5.5v13l10.5-6.5z" fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" />
+              </svg>
+              <span className="account-word">Today's set</span>
+            </Link>
+          ) : (
+            <Link href="/account" className="account-link">
+              {/* A person icon on a phone, the word from 640 px; the name stays "Account". */}
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <circle cx="12" cy="8.5" r="4" fill="none" stroke="currentColor" strokeWidth="2" />
+                <path d="M4.5 20.5c1.2-3.6 4.1-5.5 7.5-5.5s6.3 1.9 7.5 5.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+              </svg>
+              <span className="account-word">Account</span>
+            </Link>
+          )}
         </nav>
         <span className="by">
           by{" "}

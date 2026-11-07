@@ -15,8 +15,8 @@ the SES sandbox). The machine running the checks on 2026-11-07 was heavily loade
 | A6 | Progress follows within 1 minute | 2026-11-07 | local | Pass (e2e, two contexts) |
 | A7 | Version conflict | 2026-11-07 | local | Pass (integration); a second conflict while joining is left for the next sync (unit) |
 | A8 | Passkey add and sign in | 2026-11-07 | local | Pass (virtual authenticator). Dev: passkeys on since 2026-11-07, **not yet tried on a real device** |
-| A9 | Wrong or expired code | 2026-11-07 | local | Pass (e2e, plain refusal). Dev: **not yet tried** |
-| A10 | Delete | 2026-11-07 | local | Pass (integration and e2e, retry after an injected failure; deletion races covered since the review). Dev: **not yet tried** (it deletes the maintainer's dev account) |
+| A9 | Wrong or expired code | 2026-11-07 | local and dev | Pass (e2e, plain refusal; the maintainer on dev). A wrong code now also offers a passkey where the device has one, whether or not the address has an account |
+| A10 | Delete | 2026-11-07 | local and dev | Pass (integration and e2e, retry after an injected failure; deletion races covered since the review). Dev: the maintainer deleted their account; the log says `account deleted` and the user pool is empty |
 | A11 | Sign out | 2026-11-07 | local | Pass (e2e: new anonymous id, tokens and sync state gone, sign-in brings the progress back) |
 | A12 | Logs | 2026-11-07 | local and dev | Pass. Integration test over a whole account life (it found and fixed botocore DEBUG dumps). Dev: no log line holds the address |
 | A13 | Lighthouse and axe | 2026-11-07 | local and dev | axe: no violation on any account screen, light and dark. Lighthouse on dev, desktop: 100 x4 on every page, /account included. Mobile: accessibility, best practices and SEO 100 everywhere; performance 97 to 100 from run to run on the same build (home 100 then 98), so to measure again on a quiet machine |
@@ -31,5 +31,5 @@ Also checked on dev on 2026-11-07:
   again on a quiet machine before prod.
 - First-screen size: 85 147 B gzipped, within the budget in `front/bundle-budget.json`.
 
-Left for the maintainer on dev (one phone, a few minutes): add a passkey, sign out, sign in
-with the passkey (A8); type a wrong code once (A9); delete the account (A10).
+Left for the maintainer on dev: A8, a passkey added and used on a real phone (nothing in the
+logs shows it either way).
