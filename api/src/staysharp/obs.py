@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import logging
 import os
 from functools import cache
 
@@ -19,6 +20,12 @@ from aws_lambda_powertools import Logger, Metrics
 from staysharp import aws, config
 
 logger = Logger(service="staysharp")
+
+# The AWS libraries log whole requests and responses at DEBUG: item values (display names), and
+# for Cognito and SES e-mail addresses. Never below WARNING, whatever level the function runs at
+# (FR-117).
+for _name in ("botocore", "boto3", "urllib3", "s3transfer"):
+    logging.getLogger(_name).setLevel(logging.WARNING)
 # No "service" dimension: alarms match metrics by their exact dimension set (R11), and Powertools
 # would add one from POWERTOOLS_SERVICE_NAME. An empty service turns it off.
 metrics = Metrics(namespace="StaySharp", service="")

@@ -6,6 +6,7 @@ import datetime as dt
 
 import pytest
 
+from staysharp import clock
 from staysharp.handlers import account_jobs
 from staysharp.store import accounts, deletion
 from tests.integration.accounts_world import NOW, SUB, A
@@ -54,7 +55,7 @@ def test_the_whole_job_runs_locally_and_reports_counts_only(
 ) -> None:
     """Every step together, with the real metric names (a name outside R11 fails here)."""
     monkeypatch.setenv("FAKE_COGNITO", "1")
-    monkeypatch.setattr(account_jobs.clock, "now", lambda: NOW)
+    monkeypatch.setattr(clock, "now", lambda: NOW)
     accounts.adopt(SUB, A, NOW)
     result = account_jobs.run()
     assert result == {
@@ -66,4 +67,3 @@ def test_the_whole_job_runs_locally_and_reports_counts_only(
         "inactive_failed": 0,
         "unconfirmed_removed": 0,
     }
-
