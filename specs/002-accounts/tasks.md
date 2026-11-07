@@ -101,7 +101,7 @@ follows the player.
 - [X] T247 [P] Log check during the account e2e run: no e-mail, name, code, token or IP in captured logs (FR-117): `api/tests/integration/test_logs_no_pii.py`
 - [X] T248 Runbooks: delete on request by e-mail, SES bounces and complaints, stuck deletion alarm: `docs/runbooks/accounts.md`
 - [X] T249 Reviewer agent pass on the whole feature against the AGENTS.md checklist; fix findings with tests
-- [ ] T250 Dev validation of quickstart A1 to A15, recorded in `specs/002-accounts/checklists/release.md`
+- [X] T250 Dev validation of quickstart A1 to A15, recorded in `specs/002-accounts/checklists/release.md`
 - [ ] T251 [maintainer] Approve the prod deploy (user pool deletion protection, SES out of sandbox, DNS records)
 
 ## Dependencies

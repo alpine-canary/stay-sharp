@@ -14,7 +14,7 @@ the SES sandbox). The machine running the checks on 2026-11-07 was heavily loade
 | A5 | Second browser merge | 2026-11-07 | local | Pass (integration). Since the review: two unfinished dailies never leave a replay beside an open daily, and "first finished" uses the finish time |
 | A6 | Progress follows within 1 minute | 2026-11-07 | local | Pass (e2e, two contexts) |
 | A7 | Version conflict | 2026-11-07 | local | Pass (integration); a second conflict while joining is left for the next sync (unit) |
-| A8 | Passkey add and sign in | 2026-11-07 | local | Pass (virtual authenticator). Dev: passkeys on since 2026-11-07, **not yet tried on a real device** |
+| A8 | Passkey add and sign in | 2026-11-07 | local and dev | Pass (virtual authenticator locally; on dev the maintainer added a passkey on a real device and signed in with it) |
 | A9 | Wrong or expired code | 2026-11-07 | local and dev | Pass (e2e, plain refusal; the maintainer on dev). A wrong code now also offers a passkey where the device has one, whether or not the address has an account |
 | A10 | Delete | 2026-11-07 | local and dev | Pass (integration and e2e, retry after an injected failure; deletion races covered since the review). Dev: the maintainer deleted their account; the log says `account deleted` and the user pool is empty |
 | A11 | Sign out | 2026-11-07 | local | Pass (e2e: new anonymous id, tokens and sync state gone, sign-in brings the progress back) |
@@ -31,5 +31,6 @@ Also checked on dev on 2026-11-07:
   again on a quiet machine before prod.
 - First-screen size: 85 147 B gzipped, within the budget in `front/bundle-budget.json`.
 
-Left for the maintainer on dev: A8, a passkey added and used on a real phone (nothing in the
-logs shows it either way).
+All 15 scenarios pass on 2026-11-07. Still to do before prod: V17 and mobile Lighthouse again
+on a quiet machine, SES production access (refused once, second request to send), the IONOS
+alias `stay-sharp@lumineth.com`, and the maintainer's approval (T251).
