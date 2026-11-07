@@ -46,6 +46,22 @@ export function shareText(input: ShareInput): string {
 
 export type CopyStatus = null | "copied" | "manual";
 
+/** The phone's share sheet, where the browser has one (most phones, Safari, Edge). */
+export function canShare(): boolean {
+  return typeof navigator !== "undefined" && typeof navigator.share === "function";
+}
+
+/** Open the share sheet. True when shared or closed by the player; false when it failed. */
+export async function shareSheet(text: string): Promise<boolean> {
+  try {
+    await navigator.share({ text });
+    return true;
+  } catch (error) {
+    // Closing the sheet is not a failure.
+    return error instanceof DOMException && error.name === "AbortError";
+  }
+}
+
 /** Copy to the clipboard; when that is not possible, select the element's text instead
  * (Story 3, scenario 3) and say so. */
 export async function copyOrSelect(text: string, element: HTMLElement | null): Promise<CopyStatus> {
@@ -73,8 +89,15 @@ export function ShareCard(props: ShareInput) {
   const box = useRef<HTMLPreElement>(null);
   const [status, setStatus] = useState<CopyStatus>(null);
 
+  const sheet = canShare();
+
   async function copy() {
     setStatus(await copyOrSelect(text, box.current));
+  }
+
+  async function share() {
+    setStatus(null);
+    if (!(await shareSheet(text))) await copy();
   }
 
   return (
@@ -96,7 +119,12 @@ export function ShareCard(props: ShareInput) {
         <li>{props.address}</li>
       </ul>
       <div className="row">
-        <button type="button" className="btn" onClick={() => void copy()}>
+        {sheet && (
+          <button type="button" className="btn" onClick={() => void share()}>
+            Share
+          </button>
+        )}
+        <button type="button" className={sheet ? "btn ghost" : "btn"} onClick={() => void copy()}>
           Copy result
         </button>
       </div>

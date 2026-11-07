@@ -93,4 +93,43 @@ describe("ShareCard", () => {
     });
     expect(screen.getByRole("status")).toHaveTextContent(/could not copy.*selected/i);
   });
+  it("offers the share sheet where the browser has one, with the same text", async () => {
+    const share = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, share });
+    render(<ShareCard {...BASE} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Share" }));
+    });
+    expect(share).toHaveBeenCalledWith({ text: shareText(BASE) });
+    expect(screen.getByRole("button", { name: "Copy result" })).toBeInTheDocument();
+  });
+
+  it("says nothing when the player closes the share sheet", async () => {
+    const share = vi.fn().mockRejectedValue(new DOMException("closed", "AbortError"));
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, share, clipboard: { writeText } });
+    render(<ShareCard {...BASE} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Share" }));
+    });
+    expect(writeText).not.toHaveBeenCalled();
+    expect(screen.getByRole("status")).toBeEmptyDOMElement();
+  });
+
+  it("copies instead when the share sheet fails", async () => {
+    const share = vi.fn().mockRejectedValue(new DOMException("no", "NotAllowedError"));
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.stubGlobal("navigator", { ...navigator, share, clipboard: { writeText } });
+    render(<ShareCard {...BASE} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Share" }));
+    });
+    expect(writeText).toHaveBeenCalledWith(shareText(BASE));
+  });
+
+  it("shows only the copy button where there is no share sheet", () => {
+    vi.stubGlobal("navigator", { ...navigator, share: undefined });
+    render(<ShareCard {...BASE} />);
+    expect(screen.queryByRole("button", { name: "Share" })).toBeNull();
+  });
 });
