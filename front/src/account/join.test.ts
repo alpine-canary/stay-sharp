@@ -27,7 +27,7 @@ describe("joinAccount (T229)", () => {
     let progress = withDay(HERE, "2026-11-02");
     const a = api({ primaryPlayerId: HERE, created: true, merged: { plays: 0, replays: 0 } }, { version: 0, body: {} });
     const joined = await joinAccount(a, () => progress, (p) => (progress = p));
-    expect(joined).toEqual({ created: true, combined: false, version: 1 });
+    expect(joined).toEqual({ created: true, combined: false, version: 1, pending: false });
     expect(a.adopt).toHaveBeenCalledWith(HERE);
     expect(a.putProgress).toHaveBeenCalledWith(0, toCopy(progress));
     expect(progress.playerId).toBe(HERE);
@@ -53,5 +53,23 @@ describe("joinAccount (T229)", () => {
     const joined = await joinAccount(a, () => progress, (p) => (progress = p));
     expect(joined.version).toBe(4);
     expect(Object.keys(progress.days.senior).sort()).toEqual(["2026-11-01", "2026-11-03", "2026-11-04"]);
+  });
+
+  it("a second conflict leaves the copy marked as still to send, so the next sync sends it", async () => {
+    let progress = withDay(HERE, "2026-11-03");
+    const a = api({ primaryPlayerId: HERE, created: false, merged: { plays: 0, replays: 0 } }, { version: 2, body: toCopy(withDay(HERE, "2026-11-01")) });
+    (a.putProgress as ReturnType<typeof vi.fn>)
+      .mockResolvedValueOnce({ stored: { version: 3, body: toCopy(withDay(HERE, "2026-11-04")) }, conflict: true })
+      .mockResolvedValueOnce({ stored: { version: 5, body: toCopy(withDay(HERE, "2026-11-05")) }, conflict: true });
+    const joined = await joinAccount(a, () => progress, (p) => (progress = p));
+    expect(joined.pending).toBe(true);
+    expect(joined.version).toBe(5);
+    expect(Object.keys(progress.days.senior)).toContain("2026-11-05");
+  });
+
+  it("nothing left to send after a clean store", async () => {
+    let progress = withDay(HERE, "2026-11-03");
+    const a = api({ primaryPlayerId: HERE, created: true, merged: { plays: 0, replays: 0 } }, { version: 0, body: {} });
+    expect((await joinAccount(a, () => progress, (p) => (progress = p))).pending).toBe(false);
   });
 });

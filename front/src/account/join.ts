@@ -13,6 +13,8 @@ export interface Joined {
   /** Two histories were put together: say so to the player. */
   combined: boolean;
   version: number;
+  /** The merged copy is not on the account yet (someone kept writing): the next sync sends it. */
+  pending: boolean;
 }
 
 function hasDays(p: Progress): boolean {
@@ -32,13 +34,22 @@ export async function joinAccount(api: AccountApi, current: () => Progress, repl
   replace(next);
   const { stored, conflict } = await api.putProgress(remote.version, toCopy(next));
   let version = stored.version;
+  let pending = false;
   if (conflict) {
     // Someone wrote in between: merge once more and store.
     const again = fromCopy(stored.body, primary, isProgress);
     if (again) next = mergeProgress(next, again, "max");
     replace(next);
-    version = (await api.putProgress(stored.version, toCopy(next))).stored.version;
+    const second = await api.putProgress(stored.version, toCopy(next));
+    version = second.stored.version;
+    if (second.conflict) {
+      // Still moving: take what is there now and leave the rest to the next sync.
+      const latest = fromCopy(second.stored.body, primary, isProgress);
+      if (latest) next = mergeProgress(next, latest, "max");
+      replace(next);
+      pending = true;
+    }
   }
   const combined = how === "sum" && !adopted.created && (adopted.merged.plays > 0 || (hasDays(local) && theirs !== null && hasDays(theirs)));
-  return { created: adopted.created, combined, version };
+  return { created: adopted.created, combined, version, pending };
 }

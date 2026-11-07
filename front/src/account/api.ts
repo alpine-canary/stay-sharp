@@ -24,6 +24,8 @@ export class AccountApiError extends Error {
   }
 }
 
+const TIMEOUT_MS = 10_000;
+
 export interface AccountApiOptions {
   token: (forceRefresh?: boolean) => Promise<string | null>;
   fetchImpl?: typeof fetch;
@@ -42,14 +44,23 @@ export function createAccountApi({ token, fetchImpl = (i, n) => fetch(i, n), bas
           headers: { Authorization: `Bearer ${access}`, "Content-Type": "application/json", ...headers },
           cache: "no-store",
           credentials: "same-origin",
+          // A request that hangs would hold up every later sync: give up, as if offline
+          // (where the browser can; Safari before 16 has no AbortSignal.timeout).
+          ...(typeof AbortSignal.timeout === "function" ? { signal: AbortSignal.timeout(TIMEOUT_MS) } : {}),
           ...(body === undefined ? {} : { body: JSON.stringify(body) }),
         });
       } catch {
         throw new AccountApiError(0, null);
       }
       if (response.status === 401 && !retry) continue;
-      const text = await response.text();
-      const parsed: unknown = text ? JSON.parse(text) : null;
+      let parsed: unknown = null;
+      try {
+        const text = await response.text();
+        parsed = text ? JSON.parse(text) : null;
+      } catch {
+        // Not JSON (a gateway error page) or cut off: an error with the status, or offline.
+        throw new AccountApiError(response.ok ? 0 : response.status, null);
+      }
       if (response.ok || accept.includes(response.status)) return { status: response.status, body: parsed };
       const code = (parsed as { code?: string } | null)?.code ?? null;
       throw new AccountApiError(response.status, code);

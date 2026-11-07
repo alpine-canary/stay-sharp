@@ -11,6 +11,18 @@ export interface DeleteAccountProps {
   onDeleted: () => void;
 }
 
+/** What the player is told: "nothing was deleted" only when the server surely did not start. */
+function deleteFailure(failure: unknown): string {
+  if (failure instanceof AccountApiError && failure.status === 503) {
+    return "Deleting has started but is not finished. Please try again in a minute.";
+  }
+  if (failure instanceof AccountApiError && failure.status >= 400 && failure.status < 500) {
+    return "Your account could not be reached. Nothing was deleted. Please try again later.";
+  }
+  // Offline, timed out or a server error: it may have started. Trying again finishes it.
+  return "We could not check that your account was deleted. Please try again in a minute.";
+}
+
 export function DeleteAccount({ api, onDeleted }: DeleteAccountProps) {
   const [step, setStep] = useState<"ask" | "confirm" | "working">("ask");
   const [error, setError] = useState<string | null>(null);
@@ -27,11 +39,7 @@ export function DeleteAccount({ api, onDeleted }: DeleteAccountProps) {
       await api.deleteAccount();
       onDeleted();
     } catch (failure) {
-      setError(
-        failure instanceof AccountApiError && failure.status === 503
-          ? "Deleting has started but is not finished. Please try again in a minute."
-          : "Your account could not be reached. Nothing was deleted. Please try again later.",
-      );
+      setError(deleteFailure(failure));
       setStep("confirm");
     }
   }

@@ -32,9 +32,9 @@ export interface AccountProps {
 
 type Joining = { state: "working" } | { state: "done"; created: boolean; combined: boolean } | { state: "failed"; message: string };
 
-function remember(version: number) {
+function remember(version: number, pending: boolean) {
   try {
-    window.localStorage.setItem(SYNC_KEY, JSON.stringify({ version, pending: false }));
+    window.localStorage.setItem(SYNC_KEY, JSON.stringify({ version, pending }));
   } catch {
     // The next sync starts from version 0 and merges: nothing is lost.
   }
@@ -50,7 +50,7 @@ function joinOnce(api: Runtime["api"], current: () => Progress, replace: (p: Pro
     const me = await api.me();
     if (me && me.primaryPlayerId === current().playerId) return { state: "done", created: false, combined: false };
     const joined = await joinAccount(api, current, replace);
-    remember(joined.version);
+    remember(joined.version, joined.pending);
     return { state: "done", created: joined.created, combined: joined.combined };
   })().finally(() => {
     inFlight = null;

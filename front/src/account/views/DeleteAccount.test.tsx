@@ -37,6 +37,27 @@ describe("DeleteAccount (T234)", () => {
     expect(screen.getByRole("button", { name: "Yes, delete everything" })).toBeEnabled();
   });
 
+  it.each([
+    [new AccountApiError(500, null)],
+    [new AccountApiError(0, null)],
+  ])("a timeout or a lost answer never claims that nothing was deleted (%s)", async (failure) => {
+    const user = userEvent.setup();
+    render(<DeleteAccount api={api(() => Promise.reject(failure))} onDeleted={vi.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Delete my account" }));
+    await user.click(screen.getByRole("button", { name: "Yes, delete everything" }));
+    const alert = await screen.findByRole("alert");
+    expect(alert).not.toHaveTextContent(/Nothing was deleted/);
+    expect(alert).toHaveTextContent(/try again/i);
+  });
+
+  it("a refusal before anything started says nothing was deleted", async () => {
+    const user = userEvent.setup();
+    render(<DeleteAccount api={api(() => Promise.reject(new AccountApiError(401, "unauthorized")))} onDeleted={vi.fn()} />);
+    await user.click(screen.getByRole("button", { name: "Delete my account" }));
+    await user.click(screen.getByRole("button", { name: "Yes, delete everything" }));
+    expect(await screen.findByRole("alert")).toHaveTextContent(/Nothing was deleted/);
+  });
+
   it("can be called off", async () => {
     const user = userEvent.setup();
     const a = api(() => Promise.resolve());

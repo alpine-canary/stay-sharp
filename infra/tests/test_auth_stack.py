@@ -162,3 +162,26 @@ def test_the_sender_counts_its_e_mails_under_its_own_keys_only(
     assert statement["Condition"] == {
         "ForAllValues:StringLike": {"dynamodb:LeadingKeys": ["MAIL#*"]}
     }
+
+
+@pytest.mark.parametrize("stage", ["dev", "prod"])
+def test_the_maintainer_hears_when_codes_do_not_go_out(template: TemplateOf, stage: str) -> None:
+    t = template(f"staysharp-{stage}-auth")
+    alarms = {
+        a["Properties"]["MetricName"]: a["Properties"]
+        for a in resources(t, "AWS::CloudWatch::Alarm").values()
+    }
+    assert alarms["Errors"]["Dimensions"] == [
+        {"Name": "FunctionName", "Value": f"staysharp-{stage}-mail-sender"}
+    ]
+    assert alarms["SignInMailLimited"]["Threshold"] == 20
+    assert all(a["AlarmActions"] for a in alarms.values())
+    (metric_filter,) = resources(t, "AWS::Logs::MetricFilter").values()
+    assert "sign-in e-mail limited" in metric_filter["Properties"]["FilterPattern"]
+
+
+def test_a_new_address_replaces_the_old_one_only_once_verified(template: TemplateOf) -> None:
+    props = pool(template("staysharp-prod-auth"))["Properties"]
+    assert props["UserAttributeUpdateSettings"] == {
+        "AttributesRequireVerificationBeforeUpdate": ["email"]
+    }

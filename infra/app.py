@@ -95,6 +95,7 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
             site_host=SITE_DOMAIN if prod else dev_host,
             table=data.table,
             pepper=data.pepper,
+            topic=ops.topic,
             env=main_env,
         )
         auth.add_dependency(mail)

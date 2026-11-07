@@ -23,6 +23,7 @@ from __future__ import annotations
 from typing import Any
 
 from aws_cdk import CfnOutput, Duration, RemovalPolicy, Stack
+from aws_cdk import aws_cloudwatch as cloudwatch
 from aws_cdk import aws_cognito as cognito
 from aws_cdk import aws_dynamodb as dynamodb
 from aws_cdk import aws_iam as iam
@@ -30,12 +31,16 @@ from aws_cdk import aws_kms as kms
 from aws_cdk import aws_lambda as lambda_
 from aws_cdk import aws_logs as logs
 from aws_cdk import aws_secretsmanager as secretsmanager
+from aws_cdk import aws_sns as sns
 from constructs import Construct
 
 from stacks.bundling import mailer_code
 from stacks.mail_stack import SENDER
+from stacks.ops_stack import make_alarm
 
 MAILER_HANDLER = "staysharp.handlers.mail_sender.handler"
+# Held-back code e-mails in an hour before the maintainer hears of it.
+MAIL_LIMITED_ALARM = 20
 
 
 class AuthStack(Stack):
@@ -48,6 +53,7 @@ class AuthStack(Stack):
         site_host: str | None,
         table: dynamodb.ITableV2,
         pepper: secretsmanager.ISecret,
+        topic: sns.ITopic,
         **kwargs: Any,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -90,6 +96,13 @@ class AuthStack(Stack):
             )
         )
         name = f"staysharp-{stage}-mail-sender"
+        mailer_logs = logs.LogGroup(
+            self,
+            "MailSenderLogs",
+            log_group_name=f"/aws/lambda/{name}",
+            retention=logs.RetentionDays.ONE_MONTH,
+            removal_policy=removal,
+        )
         self.mailer = lambda_.Function(
             self,
             "MailSender",
@@ -109,16 +122,11 @@ class AuthStack(Stack):
                 "POWERTOOLS_SERVICE_NAME": "mail-sender",
                 "POWERTOOLS_LOGGER_LOG_EVENT": "false",
             },
-            log_group=logs.LogGroup(
-                self,
-                "MailSenderLogs",
-                log_group_name=f"/aws/lambda/{name}",
-                retention=logs.RetentionDays.ONE_MONTH,
-                removal_policy=removal,
-            ),
+            log_group=mailer_logs,
             logging_format=lambda_.LoggingFormat.JSON,
         )
         self.code_key.grant_decrypt(self.mailer)
+        self._mailer_alarms(name, mailer_logs, topic)
         # The send counters (store/mail_limits.py): their own keys only, never player data.
         pepper.grant_read(self.mailer)
         self.mailer.add_to_role_policy(
@@ -148,6 +156,9 @@ class AuthStack(Stack):
             sign_in_aliases=cognito.SignInAliases(email=True),
             sign_in_case_sensitive=False,
             auto_verify=cognito.AutoVerifiedAttrs(email=True),
+            # A changed address only replaces the old one once its code is typed: a token holder
+            # cannot lock the player out with an address they do not own.
+            keep_original=cognito.KeepOriginalAttrs(email=True),
             standard_attributes=cognito.StandardAttributes(
                 email=cognito.StandardAttribute(required=True, mutable=True)
             ),
@@ -189,3 +200,48 @@ class AuthStack(Stack):
 
         CfnOutput(self, "UserPoolId", value=self.user_pool.user_pool_id)
         CfnOutput(self, "ClientId", value=self.client.user_pool_client_id)
+
+    def _mailer_alarms(self, name: str, mailer_logs: logs.ILogGroup, topic: sns.ITopic) -> None:
+        """No code e-mail goes out and nobody would know: tell the maintainer."""
+        quiet = cloudwatch.TreatMissingData.NOT_BREACHING
+        make_alarm(
+            self,
+            "MailSenderErrors",
+            topic=topic,
+            metric=cloudwatch.Metric(
+                namespace="AWS/Lambda",
+                metric_name="Errors",
+                dimensions_map={"FunctionName": name},
+                statistic="Sum",
+                period=Duration.minutes(15),
+            ),
+            threshold=1,
+            treat_missing_data=quiet,
+            description=(
+                "Sign-in codes could not be sent (SES refused or failed). "
+                "See docs/runbooks/accounts.md section 4."
+            ),
+        )
+        limited = logs.MetricFilter(
+            self,
+            "MailLimited",
+            log_group=mailer_logs,
+            filter_pattern=logs.FilterPattern.string_value(
+                "$.message", "=", "sign-in e-mail limited"
+            ),
+            metric_namespace="StaySharp",
+            metric_name="SignInMailLimited",
+            metric_value="1",
+        )
+        make_alarm(
+            self,
+            "MailLimitedAlarm",
+            topic=topic,
+            metric=limited.metric(statistic="Sum", period=Duration.hours(1)),
+            threshold=MAIL_LIMITED_ALARM,
+            treat_missing_data=quiet,
+            description=(
+                "Many code e-mails were held back by the send limits: someone may be abusing "
+                "the sign-up form, or players cannot get codes. See docs/runbooks/accounts.md."
+            ),
+        )
