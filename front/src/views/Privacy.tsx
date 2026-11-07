@@ -2,8 +2,8 @@
 // Written so a 12-year-old can follow it. Every fact here matches the code: browser storage
 // (src/storage.ts), the table and its expiry times (infra/stacks/data_stack.py, store/*.py),
 // logs without IP addresses (api_stack.py), accounts (infra/stacks/auth_stack.py,
-// store/accounts.py, store/deletion.py). Add the 24-month rule for inactive accounts here only
-// once it runs (task T243).
+// store/accounts.py, store/deletion.py, store/inactive.py for the 24-month rule and the
+// unconfirmed sign-ups).
 
 import { Link } from "../components/Link";
 
@@ -68,6 +68,11 @@ export function Privacy() {
       </ul>
       <p>
         All of it stays in Zurich, Switzerland. Our logs never keep your e-mail address or your sign-in codes.
+      </p>
+      <p>
+        If you do not use your account for two years, we send you one e-mail. A month later, unless you have
+        signed in, we delete the account and everything kept with it. If you ask for a code to create an
+        account but never type it, we delete your e-mail address after 7 days.
       </p>
       <p>
         <strong>Delete my account</strong>, on your account page, deletes all of it within a minute: your

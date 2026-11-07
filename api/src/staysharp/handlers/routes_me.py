@@ -49,7 +49,7 @@ def _me(account: accounts.Account) -> Me:
 @router.get("/me")
 def get_me() -> Response[str]:
     account = _active(_sub())
-    accounts.touch(account.sub, clock.now())
+    accounts.touch(account.sub, clock.now(), known=account.last_active_month)
     return json_response(_me(account))
 
 
@@ -96,6 +96,8 @@ def adopt() -> Response[str]:
 @router.get("/me/progress")
 def get_progress() -> Response[str]:
     account = _active(_sub())
+    # Opening the game signed in pulls the progress: that is activity too (FR-120).
+    accounts.touch(account.sub, clock.now(), known=account.last_active_month)
     copy = accounts.get_progress(account.sub)
     return json_response(Progress(version=copy.version, body=copy.body))
 
@@ -118,5 +120,5 @@ def put_progress() -> Response[str]:
             Progress(version=conflict.stored.version, body=conflict.stored.body),
             HTTPStatus.CONFLICT,
         )
-    accounts.touch(account.sub, now)
+    accounts.touch(account.sub, now, known=account.last_active_month)
     return json_response(Progress(version=stored.version, body=stored.body))

@@ -85,11 +85,14 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
         prod = stage == "prod"
         ops = OpsStack(app, f"{prefix}-ops", stage=stage, env=main_env)
         data = DataStack(app, f"{prefix}-data", stage=stage, env=main_env)
+        # The players' address: the public domain in prod, the CloudFront host in dev.
+        dev_host = _context(app, "devSiteHost")
+        site_host = SITE_DOMAIN if prod or not dev_host else dev_host
         auth = AuthStack(
             app,
             f"{prefix}-auth",
             stage=stage,
-            site_host=SITE_DOMAIN if prod else _context(app, "devSiteHost"),
+            site_host=SITE_DOMAIN if prod else dev_host,
             env=main_env,
         )
         auth.add_dependency(mail)
@@ -103,6 +106,7 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
             topic=ops.topic,
             user_pool=auth.user_pool,
             user_pool_client=auth.client,
+            site_url=f"https://{site_host}",
             deployment_config=None if prod else _context(app, "devDeploymentConfig"),
             drill=None if prod else _context(app, "drill"),
             env=main_env,

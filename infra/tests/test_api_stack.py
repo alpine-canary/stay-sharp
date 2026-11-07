@@ -148,19 +148,53 @@ def test_the_api_role_cannot_call_cognito(template: TemplateOf, stage: str) -> N
 
 
 @pytest.mark.parametrize("stage", STAGES)
-@pytest.mark.parametrize("function", ["account-delete", "account-jobs"])
-def test_only_the_delete_and_jobs_functions_delete_cognito_users(
-    template: TemplateOf, stage: str, function: str
+@pytest.mark.parametrize(
+    ("function", "actions"),
+    [
+        ("account-delete", "cognito-idp:AdminDeleteUser"),
+        (
+            "account-jobs",
+            ["cognito-idp:AdminDeleteUser", "cognito-idp:AdminGetUser", "cognito-idp:ListUsers"],
+        ),
+    ],
+)
+def test_only_the_delete_and_jobs_functions_reach_cognito_users(
+    template: TemplateOf, stage: str, function: str, actions: object
 ) -> None:
     statements = _statements_of_role(template, stage, f"staysharp-{stage}-{function}")
     cognito = [s for s in statements if "cognito-idp" in json.dumps(s)]
     assert len(cognito) == 1
     (statement,) = cognito
-    assert statement["Action"] == "cognito-idp:AdminDeleteUser"  # type: ignore[index]
+    assert statement["Action"] == actions  # type: ignore[index]
     # The stage's own pool, never "*".
     assert "PlayersCF26CFA0Arn" in json.dumps(statement["Resource"])  # type: ignore[index]
     everything = json.dumps(resources(template(f"staysharp-{stage}-api"), "AWS::IAM::Policy"))
-    assert everything.count("cognito-idp:") == 2
+    assert everything.count("cognito-idp:AdminDeleteUser") == 2
+    assert everything.count("cognito-idp:AdminGetUser") == 1
+
+
+@pytest.mark.parametrize("stage", STAGES)
+def test_the_jobs_warn_inactive_accounts_from_our_sender_only(
+    template: TemplateOf, stage: str
+) -> None:
+    statements = _statements_of_role(template, stage, f"staysharp-{stage}-account-jobs")
+    (ses,) = [s for s in statements if "ses:" in json.dumps(s)]
+    assert ses["Action"] == "ses:SendEmail"  # type: ignore[index]
+    assert ses["Condition"] == {  # type: ignore[index]
+        "StringEquals": {"ses:FromAddress": "stay-sharp@lumineth.com"}
+    }
+    functions = resources(template(f"staysharp-{stage}-api"), "AWS::Lambda::Function")
+    (jobs,) = [
+        f
+        for f in functions.values()
+        if f["Properties"].get("FunctionName") == f"staysharp-{stage}-account-jobs"
+    ]
+    env = jobs["Properties"]["Environment"]["Variables"]
+    assert env["SENDER"] == "stay-sharp@lumineth.com"
+    if stage == "prod":
+        assert env["SITE_URL"] == "https://stay-sharp.lumineth.com"
+    else:
+        assert env["SITE_URL"].startswith("https://")
 
 
 @pytest.mark.parametrize("stage", STAGES)

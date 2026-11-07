@@ -249,9 +249,15 @@ def adopt(sub: str, player_id: str, now: dt.datetime) -> Adopted:
     )
 
 
-def touch(sub: str, now: dt.datetime) -> None:
-    """Record activity, at most one write a month (inactive accounts, FR-120)."""
+def touch(sub: str, now: dt.datetime, *, known: str | None = None) -> None:
+    """Record activity, at most one write a month (inactive accounts, FR-120).
+
+    ``known`` is the month already read with the account: when it is this month, nothing is
+    written at all. Any activity also clears an inactivity warning (``warnedAt``).
+    """
     current = month(now)
+    if known == current:
+        return
     try:
         aws.dynamodb().update_item(
             TableName=table.table_name(),

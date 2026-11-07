@@ -17,7 +17,7 @@ from collections.abc import Callable
 from functools import cache
 from typing import Any
 
-from staysharp import aws
+from staysharp.mail import ses_send
 from staysharp.obs import logger
 
 SUBJECT = "Your Stay Sharp code"
@@ -71,19 +71,6 @@ def kms_decrypt() -> Decrypt:
         return bytes(plaintext).decode()
 
     return decrypt
-
-
-def ses_send(to: str, subject: str, text: str) -> None:
-    aws.sesv2().send_email(
-        FromEmailAddress=f"Stay Sharp <{os.environ['SENDER']}>",
-        Destination={"ToAddresses": [to]},
-        Content={
-            "Simple": {
-                "Subject": {"Data": subject, "Charset": "UTF-8"},
-                "Body": {"Text": {"Data": text, "Charset": "UTF-8"}},
-            }
-        },
-    )
 
 
 def send_code(event: dict[str, Any], decrypt: Decrypt, send: Send) -> bool:

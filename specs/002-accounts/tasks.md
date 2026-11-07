@@ -90,8 +90,8 @@ follows the player.
 
 ## Phase 9: Inactive accounts (FR-120)
 
-- [ ] T242 [P] Test first (mocked clock): warning e-mail once at 23 months of inactivity, deletion at 24 months with the US3 steps, `lastActiveMonth` updated at most once a month per account: `api/tests/integration/test_inactive.py`
-- [ ] T243 Inactive accounts in the daily job and the warning e-mail through SES (plain text, no tracking): `api/src/staysharp/handlers/account_jobs.py`
+- [X] T242 [P] Test first (mocked clock): warning e-mail once at 23 months of inactivity, deletion at 24 months with the US3 steps, `lastActiveMonth` updated at most once a month per account: `api/tests/integration/test_inactive.py`
+- [X] T243 Inactive accounts in the daily job and the warning e-mail through SES (plain text, no tracking): `api/src/staysharp/handlers/account_jobs.py`
 
 ## Phase 10: Polish
 

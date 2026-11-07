@@ -95,9 +95,11 @@ def test_passkeys_bound_to_the_public_host_in_prod(template: TemplateOf) -> None
     assert "WEB_AUTHN" in props["Policies"]["SignInPolicy"]["AllowedFirstAuthFactors"]
 
 
-def test_dev_passkeys_wait_for_the_dev_host(template: TemplateOf) -> None:
+def test_dev_passkeys_wait_for_the_dev_host() -> None:
     # The dev CloudFront host is known only after the first web deploy (context devSiteHost).
-    props = pool(template("staysharp-dev-auth"))["Properties"]
+    context = {k: v for k, v in cdk_context().items() if k != "devSiteHost"}
+    stack = build_app(context).synth().get_stack_by_name("staysharp-dev-auth")
+    props = pool(assertions.Template.from_json(stack.template))["Properties"]
     assert "WebAuthnRelyingPartyID" not in props
     assert "WEB_AUTHN" not in props["Policies"]["SignInPolicy"]["AllowedFirstAuthFactors"]
 

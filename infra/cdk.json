@@ -19,6 +19,7 @@
       "prod": null
     },
     "siteCommit": "initial",
+    "devSiteHost": "d3fzlsqovr82ud.cloudfront.net",
     "@aws-cdk/core:defaultCrossStackReferences": "strong"
   }
 }

@@ -39,6 +39,7 @@ from aws_cdk import aws_sns as sns
 from constructs import Construct
 
 from stacks.bundling import api_code
+from stacks.mail_stack import SENDER
 from stacks.ops_stack import make_alarm
 
 LOG_RETENTION = logs.RetentionDays.ONE_MONTH
@@ -105,6 +106,7 @@ class ApiStack(Stack):
         topic: sns.ITopic,
         user_pool: cognito.IUserPool,
         user_pool_client: cognito.IUserPoolClient,
+        site_url: str,
         deployment_config: str | None = None,
         drill: str | None = None,
         **kwargs: Any,
@@ -199,7 +201,9 @@ class ApiStack(Stack):
             access_log_settings=AccessLogs(access_logs),
         )
 
-        self._accounts(stage, environment, table, pepper, user_pool, user_pool_client, topic)
+        self._accounts(
+            stage, environment, table, pepper, user_pool, user_pool_client, topic, site_url
+        )
         self._delivery(stage, topic, config_name)
 
     def _accounts(
@@ -211,6 +215,7 @@ class ApiStack(Stack):
         user_pool: cognito.IUserPool,
         user_pool_client: cognito.IUserPoolClient,
         topic: sns.ITopic,
+        site_url: str,
     ) -> None:
         """Account routes behind the JWT authorizer, the delete function and the job (T207)."""
         jwt = authorizers.HttpUserPoolAuthorizer(
@@ -263,7 +268,7 @@ class ApiStack(Stack):
             integration=integrations.HttpLambdaIntegration("AccountDelete", self.delete_function),
             authorizer=jwt,
         )
-        self._account_jobs(stage, environment, table, pepper, user_pool, topic)
+        self._account_jobs(stage, environment, table, pepper, user_pool, topic, site_url)
 
     def _account_jobs(
         self,
@@ -273,8 +278,10 @@ class ApiStack(Stack):
         pepper: secretsmanager.ISecret,
         user_pool: cognito.IUserPool,
         topic: sns.ITopic,
+        site_url: str,
     ) -> None:
-        """Hourly: finish stuck deletions (T233); inactive accounts later (T243)."""
+        """Hourly: finish stuck deletions (T233), warn and delete inactive accounts and remove
+        unconfirmed sign-ups (T243)."""
         name = f"staysharp-{stage}-account-jobs"
         jobs = lambda_.Function(
             self,
@@ -287,7 +294,12 @@ class ApiStack(Stack):
             memory_size=512,
             timeout=Duration.minutes(5),
             reserved_concurrent_executions=1,
-            environment={**environment, "USER_POOL_ID": user_pool.user_pool_id},
+            environment={
+                **environment,
+                "USER_POOL_ID": user_pool.user_pool_id,
+                "SENDER": SENDER,
+                "SITE_URL": site_url,
+            },
             log_group=logs.LogGroup(
                 self,
                 "AccountJobsLogs",
@@ -302,7 +314,20 @@ class ApiStack(Stack):
         pepper.grant_read(jobs)
         jobs.add_to_role_policy(
             iam.PolicyStatement(
-                actions=["cognito-idp:AdminDeleteUser"], resources=[user_pool.user_pool_arn]
+                actions=[
+                    "cognito-idp:AdminDeleteUser",
+                    "cognito-idp:AdminGetUser",
+                    "cognito-idp:ListUsers",
+                ],
+                resources=[user_pool.user_pool_arn],
+            )
+        )
+        # The inactivity warning, from our sender only (any recipient: SES checks both).
+        jobs.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["ses:SendEmail"],
+                resources=[f"arn:aws:ses:{self.region}:{self.account}:identity/*"],
+                conditions={"StringEquals": {"ses:FromAddress": SENDER}},
             )
         )
         events.Rule(

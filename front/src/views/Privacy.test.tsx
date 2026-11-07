@@ -22,4 +22,10 @@ describe("Privacy", () => {
     expect(screen.getByText(/deletes all of it within a minute/)).toBeInTheDocument();
     expect(screen.getByText(/Backups keep a copy for up to 35 days/)).toBeInTheDocument();
   });
+
+  it("says when an unused account or address is deleted (FR-120, T243)", () => {
+    render(<Privacy />);
+    expect(screen.getByText(/do not use your account for two years/)).toBeInTheDocument();
+    expect(screen.getByText(/delete your e-mail address after 7 days/)).toBeInTheDocument();
+  });
 });

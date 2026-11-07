@@ -44,13 +44,13 @@ def secretsmanager() -> SecretsManagerClient:
 
 @cache
 def cognito() -> CognitoIdentityProviderClient:
-    """Used only by the account delete and jobs functions (AdminDeleteUser)."""
+    """Only for the account delete and jobs functions (delete, get and list users)."""
     return boto3.client("cognito-idp", region_name=_region(), config=CONFIG)
 
 
 @cache
 def sesv2() -> SESV2Client:
-    """Used only by the sign-in e-mail sender, in the stage's own Region (eu-central-2)."""
+    """Plain-text e-mail (staysharp.mail), in the stage's own Region (eu-central-2)."""
     return boto3.client("sesv2", region_name=_region(), config=CONFIG)
 
 

@@ -191,6 +191,11 @@ def _email_of(sub: str) -> str | None:
     return next((email for email, user in _STATE.users.items() if user.sub == sub), None)
 
 
+def email_of(sub: str) -> str | None:
+    """AdminGetUser's e-mail attribute, for the inactive-account warning."""
+    return _email_of(sub)
+
+
 def _tokens(sub: str, *, with_refresh: bool = True) -> dict[str, Any]:
     # Tokens issued in the same second as a sign-out must still be valid afterwards.
     now = math.ceil(max(time.time(), _STATE.revoked_before.get(sub, 0)))

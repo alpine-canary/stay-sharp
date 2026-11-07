@@ -225,6 +225,7 @@ def test_prod_refuses_drills() -> None:
             topic=topic,
             user_pool=pool,
             user_pool_client=client,
+            site_url="https://stay-sharp.lumineth.com",
             drill="fail-traffic",
         )
 
