@@ -96,7 +96,7 @@ follows the player.
 ## Phase 10: Polish
 
 - [X] T244 [P] Display name: rules and blocked words, `PUT /me`: `api/src/staysharp/domain/names.py`, tests in `api/tests/unit/test_names.py`
-- [ ] T245 [P] axe on every account screen in light and dark, and accessible authentication checks (paste in the code field, no CAPTCHA): `front/tests/e2e/a11y.spec.ts`
+- [X] T245 [P] axe on every account screen in light and dark, and accessible authentication checks (paste in the code field, no CAPTCHA): `front/tests/e2e/a11y.spec.ts`
 - [ ] T246 [P] Lighthouse 100 on `/account` mobile and desktop; first-screen bundle size unchanged (a test fails if the main chunk grows by more than 1 KB): `front/lighthouserc.json`, `front/tests/bundle.test.ts`
 - [ ] T247 [P] Log check during the account e2e run: no e-mail, name, code, token or IP in captured logs (FR-117): `api/tests/integration/test_logs_no_pii.py`
 - [ ] T248 Runbooks: delete on request by e-mail, SES bounces and complaints, stuck deletion alarm: `docs/runbooks/accounts.md`

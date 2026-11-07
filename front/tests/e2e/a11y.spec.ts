@@ -58,6 +58,54 @@ for (const scheme of ["light", "dark"] as const) {
       await noViolations(page, "practice");
     });
 
+    test("every account screen (T245, FR-118)", async ({ page }) => {
+      test.skip(!!process.env.BASE_URL, "needs the local fake sign-in");
+      test.setTimeout(60_000);
+      await page.goto("/account");
+      await expect(page.getByRole("heading", { level: 1, name: "Are you 16 or older?" })).toBeVisible();
+      await noViolations(page, "age question");
+      await page.getByRole("button", { name: "No, I am under 16" }).click();
+      await expect(page.getByRole("heading", { level: 1, name: "You can keep playing without an account" })).toBeVisible();
+      await noViolations(page, "under 16");
+
+      await page.goto("/account");
+      await page.getByRole("button", { name: "Yes, I am 16 or older" }).click();
+      await expect(page.getByLabel("E-mail address")).toBeVisible();
+      await noViolations(page, "e-mail");
+      await page.getByRole("button", { name: "Send me a code" }).click();
+      await expect(page.getByRole("alert")).toBeVisible();
+      await noViolations(page, "e-mail error");
+      await page.getByLabel("E-mail address").fill(`a11y-${crypto.randomUUID().slice(0, 8)}@example.test`);
+      await page.getByRole("button", { name: "Send me a code" }).click();
+      await expect(page.getByRole("heading", { level: 1, name: "Check your e-mail" })).toBeFocused();
+      await noViolations(page, "code");
+
+      // Accessible authentication (WCAG 3.3.8): no CAPTCHA, no puzzle, and the code can be
+      // pasted or filled in by the phone (one-time-code), never retyped from memory.
+      const code = page.getByLabel("Code");
+      await expect(code).toHaveAttribute("autocomplete", "one-time-code");
+      expect(await page.locator("iframe, [class*=captcha i], [id*=captcha i]").count()).toBe(0);
+      await code.fill("000000");
+      await page.getByRole("button", { name: "Sign in" }).click();
+      await expect(page.getByRole("alert")).toBeVisible();
+      await noViolations(page, "wrong code");
+      await code.fill("");
+      await code.focus();
+      await page.keyboard.insertText("123 456"); // as pasted, with a space
+      await page.getByRole("button", { name: "Sign in" }).click();
+      await expect(page.getByRole("heading", { level: 1, name: "Your account" })).toBeVisible();
+      await noViolations(page, "signed in");
+
+      await page.getByRole("button", { name: "Delete my account" }).click();
+      await expect(page.getByRole("heading", { name: "Delete your account for good?" })).toBeFocused();
+      await noViolations(page, "delete confirmation");
+      await page.getByRole("button", { name: "Keep my account" }).click();
+
+      await page.getByRole("button", { name: "Sign out" }).click();
+      await expect(page.getByRole("heading", { level: 1, name: "You are signed out" })).toBeFocused();
+      await noViolations(page, "signed out");
+    });
+
     test("privacy, bad challenge link and not found", async ({ page }) => {
       for (const [path, heading] of [
         ["/privacy", "What we keep, and where"],
