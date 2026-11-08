@@ -152,6 +152,12 @@ only).
    to the dev CloudFront host (`dxxxxxxxx.cloudfront.net`) in `infra/cdk.json` and redeploy
    `staysharp-dev-auth` and `staysharp-dev-api` (the inactivity e-mail links to it). Without
    it, dev signs in with e-mail codes only. Done on 2026-11-07.
+   **Until prod**, dev also answers on `stay-sharp.lumineth.com` (context `devPublicName`,
+   2026-11-08): a CNAME `stay-sharp` → the dev CloudFront host at IONOS, the edge certificate on
+   the dev distribution, passkeys on the public name, `X-Robots-Tag: noindex` on every dev
+   response. **Before the first prod deploy**: set `devPublicName` to `false`, deploy
+   `staysharp-dev-auth`, `staysharp-dev-api` and `staysharp-dev-web` (a name can sit on one
+   distribution only), then point the CNAME to the prod distribution.
 7. **Replies.** Players may answer a code e-mail. `lumineth.com` receives mail at IONOS: an
    alias `stay-sharp@lumineth.com` that forwards to the maintainer keeps those replies (and
    bounce notices) from being lost. Created on 2026-11-08; a test e-mail sent through SES to the
