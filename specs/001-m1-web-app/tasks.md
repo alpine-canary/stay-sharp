@@ -306,8 +306,8 @@ returns within the next 5 (V14 for the server side).
 Not code, and done in the private content repository only. Listed here so the launch gate is
 visible; the questions themselves never appear in this repository.
 
-- [ ] T122 Write and approve 70 Senior questions (14 days x 5 decks) in the content repo, none previously public (SC-008)
-- [ ] T123 Write and approve 70 Starter questions with a second reader, following FR-024a, in the content repo (SC-008)
+- [X] T122 Write and approve 70 Senior questions (14 days x 5 decks) in the content repo, none previously public (SC-008)
+- [X] T123 Write and approve 70 Starter questions with a second reader, following FR-024a, in the content repo (SC-008)
 - [ ] T124 Schedule 14 days per level from the launch date, publish to prod through the content CI, and check `StockDaysAhead >= 14` per level (SC-008)
 
 ---
@@ -376,7 +376,7 @@ US2 and US3, then US4 and US5, each checked in dev on its own before the next.
 ## Added 2026-11-06: Junior level
 
 - [x] T125 Junior level between Starter and Senior: server levels, play ids, question and schedule schemas, OpenAPI contract, stock alarm per level, seed targets, website level choice and labels, challenge level from the play, progress upgrade that adds Junior without losing a streak (spec clarification 2026-11-06)
-- [ ] T126 [maintainer] Write and approve Junior questions (5 samples, then the launch stock in the private content repository); until then local fixtures reuse Senior's samples
+- [X] T126 [maintainer] Write and approve Junior questions (5 samples, then the launch stock in the private content repository); until then local fixtures reuse Senior's samples
 
 ## Notes
 
