@@ -7,7 +7,8 @@
         "rule": "side-tab",
         "value": "*",
         "files": [
-          "front/src/index.css"
+          "front/src/index.css",
+          "src/index.css"
         ],
         "createdAt": "2026-11-07T18:29:36.451Z",
         "reason": "Claude: the flagged rule (.island .squares li.cur) is an inset bottom bar marking the current question square in the progress row, from the M1 design (DESIGN.md), not a side accent on a card"
