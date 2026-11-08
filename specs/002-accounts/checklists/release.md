@@ -34,4 +34,4 @@ Also checked on dev on 2026-11-07:
 All 15 scenarios pass on 2026-11-07. Still to do before prod: mobile Lighthouse performance 100 confirmed
 on a quiet machine, SES production access (refused once; on 2026-11-08 the alias `stay-sharp@lumineth.com` was
 created and a test e-mail through it arrived, the CLI refused a second request with
-ConflictException, and the maintainer answered the refused case in the Support Center), and the maintainer's approval (T251).
+ConflictException, and the maintainer answered the refused case in the Support Center, pointing to the live preview since the final domain does not exist yet), and the maintainer's approval (T251).
