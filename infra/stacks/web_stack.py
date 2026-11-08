@@ -105,7 +105,17 @@ class WebStack(Stack):
                         header="Permissions-Policy",
                         value="camera=(), microphone=(), geolocation=(), interest-cohort=()",
                         override=True,
-                    )
+                    ),
+                    # Dev holds test questions and may answer on the public name: never indexed.
+                    *(
+                        []
+                        if prod
+                        else [
+                            cloudfront.ResponseCustomHeader(
+                                header="X-Robots-Tag", value="noindex, nofollow", override=True
+                            )
+                        ]
+                    ),
                 ]
             ),
         )

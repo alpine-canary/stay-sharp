@@ -97,7 +97,7 @@ def test_passkeys_bound_to_the_public_host_in_prod(template: TemplateOf) -> None
 
 def test_dev_passkeys_wait_for_the_dev_host() -> None:
     # The dev CloudFront host is known only after the first web deploy (context devSiteHost).
-    context = {k: v for k, v in cdk_context().items() if k != "devSiteHost"}
+    context = {k: v for k, v in cdk_context().items() if k not in ("devSiteHost", "devPublicName")}
     stack = build_app(context).synth().get_stack_by_name("staysharp-dev-auth")
     props = pool(assertions.Template.from_json(stack.template))["Properties"]
     assert "WebAuthnRelyingPartyID" not in props
@@ -105,11 +105,18 @@ def test_dev_passkeys_wait_for_the_dev_host() -> None:
 
 
 def test_dev_passkeys_with_the_dev_host() -> None:
-    context = cdk_context() | {"devSiteHost": "d1234abcd.cloudfront.net"}
+    context = cdk_context() | {"devSiteHost": "d1234abcd.cloudfront.net", "devPublicName": False}
     stack = build_app(context).synth().get_stack_by_name("staysharp-dev-auth")
     props = pool(assertions.Template.from_json(stack.template))["Properties"]
     assert props["WebAuthnRelyingPartyID"] == "d1234abcd.cloudfront.net"
     assert "WEB_AUTHN" in props["Policies"]["SignInPolicy"]["AllowedFirstAuthFactors"]
+
+
+def test_dev_passkeys_on_the_public_name_while_dev_has_it() -> None:
+    context = cdk_context() | {"devSiteHost": "d1234abcd.cloudfront.net", "devPublicName": True}
+    stack = build_app(context).synth().get_stack_by_name("staysharp-dev-auth")
+    props = pool(assertions.Template.from_json(stack.template))["Properties"]
+    assert props["WebAuthnRelyingPartyID"] == "stay-sharp.lumineth.com"
 
 
 def test_deletion_protection_and_retention_in_prod_only(template: TemplateOf) -> None:

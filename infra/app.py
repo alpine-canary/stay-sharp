@@ -17,6 +17,11 @@ Stacks:
 Context ``devSiteHost``: the dev CloudFront host, for dev passkeys (set after the first web
 deploy; without it dev signs in with e-mail codes only).
 
+Context ``devPublicName``: while prod is not live, dev answers on the public name too (so SES and
+players can see a real address), with the edge certificate; passkeys and the inactivity link then
+use the public name. A name can be on one distribution only: set it to ``false`` and redeploy
+``staysharp-dev-web`` before the first prod deploy (docs/runbooks/account-setup.md).
+
 Context for drills in dev only: ``devDeploymentConfig`` (for example
 ``LambdaCanary10Percent5Minutes``) and ``drill`` (``selfcheck-fail`` or ``fail-traffic``).
 """
@@ -85,14 +90,16 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
         prod = stage == "prod"
         ops = OpsStack(app, f"{prefix}-ops", stage=stage, env=main_env)
         data = DataStack(app, f"{prefix}-data", stage=stage, env=main_env)
-        # The players' address: the public domain in prod, the CloudFront host in dev.
+        # The players' address: the public domain in prod (and in dev while devPublicName is
+        # set), the CloudFront host in dev otherwise.
+        public = prod or bool(_context(app, "devPublicName"))
         dev_host = _context(app, "devSiteHost")
-        site_host = SITE_DOMAIN if prod or not dev_host else dev_host
+        site_host = SITE_DOMAIN if public or not dev_host else dev_host
         auth = AuthStack(
             app,
             f"{prefix}-auth",
             stage=stage,
-            site_host=SITE_DOMAIN if prod else dev_host,
+            site_host=SITE_DOMAIN if public else dev_host,
             table=data.table,
             pepper=data.pepper,
             topic=ops.topic,
@@ -121,8 +128,8 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
             api_domain=api.api_domain,
             site_commit=site_commit,
             site_dist=site_dist,
-            domain_name=SITE_DOMAIN if prod else None,
-            certificate=edge.certificate if prod else None,
+            domain_name=SITE_DOMAIN if public else None,
+            certificate=edge.certificate if public else None,
             web_acl_arn=edge.web_acl.attr_arn,
             auth_config={
                 "endpoint": f"https://cognito-idp.{REGION}.amazonaws.com/",
@@ -131,7 +138,7 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
             env=main_env,
             cross_region_references=True,
         )
-        # The certificate (prod) and the web ACL (both stages) come from the edge stack.
+        # The certificate (public name) and the web ACL (both stages) come from the edge stack.
         web.add_stack_dependency(edge)
         CdnAlarmsStack(
             app,

@@ -20,6 +20,7 @@
     },
     "siteCommit": "initial",
     "devSiteHost": "d3fzlsqovr82ud.cloudfront.net",
+    "devPublicName": true,
     "@aws-cdk/core:defaultCrossStackReferences": "strong"
   }
 }

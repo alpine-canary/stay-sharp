@@ -97,9 +97,38 @@ def test_strict_security_headers(template: TemplateOf, stage: str) -> None:
     assert all("ResponseHeadersPolicyId" in b for b in behaviors)
 
 
-def test_only_prod_uses_the_public_name(template: TemplateOf) -> None:
-    assert distribution(template, "prod")["Aliases"] == ["stay-sharp.lumineth.com"]
-    assert "Aliases" not in distribution(template, "dev")
+def _dev_distribution(context: dict[str, Any]) -> dict[str, Any]:
+    stack = build_app(context).synth().get_stack_by_name("staysharp-dev-web")
+    (dist,) = resources(
+        assertions.Template.from_json(stack.template), "AWS::CloudFront::Distribution"
+    ).values()
+    config: dict[str, Any] = dist["Properties"]["DistributionConfig"]
+    return config
+
+
+def test_prod_uses_the_public_name(template: TemplateOf) -> None:
+    config = distribution(template, "prod")
+    assert config["Aliases"] == ["stay-sharp.lumineth.com"]
+    assert config["ViewerCertificate"]["MinimumProtocolVersion"] == "TLSv1.2_2021"
+
+
+def test_dev_uses_the_public_name_only_while_devpublicname_is_set() -> None:
+    on = _dev_distribution(cdk_context() | {"devPublicName": True})
+    off = _dev_distribution(cdk_context() | {"devPublicName": False})
+    assert on["Aliases"] == ["stay-sharp.lumineth.com"]
+    assert "Aliases" not in off
+
+
+def test_dev_is_never_indexed_and_prod_is(template: TemplateOf) -> None:
+    def custom(stage: str) -> dict[str, str]:
+        (policy,) = resources(
+            template(f"staysharp-{stage}-web"), "AWS::CloudFront::ResponseHeadersPolicy"
+        ).values()
+        items = policy["Properties"]["ResponseHeadersPolicyConfig"]["CustomHeadersConfig"]["Items"]
+        return {i["Header"]: i["Value"] for i in items}
+
+    assert custom("dev")["X-Robots-Tag"] == "noindex, nofollow"
+    assert "X-Robots-Tag" not in custom("prod")
 
 
 @pytest.mark.parametrize("stage", STAGES)
