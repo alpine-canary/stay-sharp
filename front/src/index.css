@@ -437,6 +437,7 @@ code {
   flex-wrap: wrap;
   gap: 8px 20px;
   justify-content: space-between;
+  align-items: center;
   font-size: 15px;
   color: var(--muted);
 }
@@ -454,16 +455,92 @@ code {
   color: inherit;
 }
 
+/* Lumineth credit after the ©, as on the agency's client sites: a white badge with the mark. */
+.foot-credit {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  min-height: 44px;
+}
+
+.foot-credit .credit {
+  margin-left: 0.4em;
+}
+
+/* On one line from 640 px: every part centred on the badge. Below, the sentence wraps as text. */
+@media (min-width: 640px) {
+  .foot-credit .credit {
+    display: inline-flex;
+    align-items: center;
+    white-space: pre;
+  }
+}
+
+.site-foot .credit a {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
+  margin-left: 0.2em;
+  padding: 0.2em 0.65em 0.2em 0.3em;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: #fff;
+  color: #0f2a44;
+  font-weight: 500;
+  text-decoration: none;
+  line-height: 1.2;
+  vertical-align: middle;
+}
+
+.site-foot .credit a:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.credit-logo {
+  width: 1.25em;
+  height: 1.25em;
+  border-radius: 3px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .site-foot .credit a {
+    transition: transform 160ms ease-out;
+  }
+  .site-foot .credit a:hover {
+    transform: translateY(-1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site-foot .credit a {
+    transition: none;
+  }
+}
+
+@media (max-width: 639px) {
+  .foot-credit .credit {
+    flex-basis: 100%;
+    margin-left: 0;
+    padding-bottom: 8px;
+    line-height: 1.5;
+  }
+  .foot-credit .credit-sep {
+    display: none;
+  }
+}
+
 .foot-links {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 8px 20px;
 }
 
 .share-site {
   display: inline-flex;
   gap: 8px;
-  align-items: baseline;
+  align-items: center;
   flex-wrap: wrap;
 }
 

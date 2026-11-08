@@ -11,7 +11,7 @@ async function signInWithCode(page: Page, address: string) {
   await page.getByLabel("E-mail address").fill(address);
   await page.getByRole("button", { name: "Send me a code" }).click();
   await page.getByLabel("Code").fill("123456");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Your account" })).toBeVisible();
 }
 

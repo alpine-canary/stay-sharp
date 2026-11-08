@@ -21,7 +21,7 @@ test("create an account with an e-mail code, after the age question (US2, US5)",
   await page.getByRole("button", { name: "Send me a code" }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Check your e-mail" })).toBeFocused();
   await page.getByLabel("Code").fill("123456");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
 
   await expect(page.getByRole("heading", { level: 1, name: "Your account" })).toBeVisible();
   await expect(page.getByText(`Signed in as ${address}.`)).toBeVisible();
@@ -33,7 +33,7 @@ test("a wrong code is refused in plain words (A9)", async ({ page }) => {
   await page.getByLabel("E-mail address").fill(email());
   await page.getByRole("button", { name: "Send me a code" }).click();
   await page.getByLabel("Code").fill("000000");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("alert")).toHaveText("That code did not work. Check it, or ask for a new one.");
 });
 
@@ -85,7 +85,7 @@ async function signIn(page: Page, address: string) {
   await page.getByLabel("E-mail address").fill(address);
   await page.getByRole("button", { name: "Send me a code" }).click();
   await page.getByLabel("Code").fill("123456");
-  await page.getByRole("button", { name: "Sign in" }).click();
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await expect(page.getByRole("heading", { level: 1, name: "Your account" })).toBeVisible();
 }
 

@@ -86,13 +86,13 @@ for (const scheme of ["light", "dark"] as const) {
       await expect(code).toHaveAttribute("autocomplete", "one-time-code");
       expect(await page.locator("iframe, [class*=captcha i], [id*=captcha i]").count()).toBe(0);
       await code.fill("000000");
-      await page.getByRole("button", { name: "Sign in" }).click();
+      await page.getByRole("button", { name: "Sign in", exact: true }).click();
       await expect(page.getByRole("alert")).toBeVisible();
       await noViolations(page, "wrong code");
       await code.fill("");
       await code.focus();
       await page.keyboard.insertText("123 456"); // as pasted, with a space
-      await page.getByRole("button", { name: "Sign in" }).click();
+      await page.getByRole("button", { name: "Sign in", exact: true }).click();
       await expect(page.getByRole("heading", { level: 1, name: "Your account" })).toBeVisible();
       await noViolations(page, "signed in");
 

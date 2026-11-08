@@ -309,8 +309,43 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
         )}
       </main>
       <footer className="site-foot">
-        <span>
-          © 2026 <a href="https://www.lumineth.com/">Lumineth</a>
+        <span className="foot-credit">
+          © 2026 Stay Sharp
+          <span className="credit">
+            <span className="credit-sep" aria-hidden="true">
+              ·{" "}
+            </span>
+            Website by{" "}
+            <a
+              href="https://www.lumineth.com/"
+              hrefLang="fr"
+              target="_blank"
+              rel="noopener"
+              translate="no"
+            >
+              {/* Lumineth's mark in the brand colours, on its white tile. */}
+              <svg className="credit-logo" viewBox="0 0 48 48" aria-hidden="true">
+                <rect width="48" height="48" rx="11" fill="#fff" />
+                <rect x="12" y="9" width="8.5" height="30" rx="4.25" fill="#0F2A44" />
+                <rect x="12" y="30.5" width="24" height="8.5" rx="4.25" fill="#0E7C66" />
+                <path
+                  d="M12 34.75a4.25 4.25 0 0 1 4.25-4.25h4.25V39h-4.25A4.25 4.25 0 0 1 12 34.75z"
+                  fill="#5FD3B4"
+                />
+                <rect
+                  x="28.8"
+                  y="10.8"
+                  width="7.4"
+                  height="7.4"
+                  rx="1.3"
+                  transform="rotate(45 32.5 14.5)"
+                  fill="#0E7C66"
+                />
+              </svg>
+              Lumineth
+            </a>
+            <span className="credit-tag">, bespoke websites and software, Geneva</span>
+          </span>
         </span>
         <span className="foot-links">
           <ShareSite />
