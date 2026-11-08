@@ -153,7 +153,7 @@ only).
    `staysharp-dev-auth` and `staysharp-dev-api` (the inactivity e-mail links to it). Without
    it, dev signs in with e-mail codes only. Done on 2026-11-07.
    **Until prod**, dev also answers on `stay-sharp.lumineth.com` (context `devPublicName`,
-   2026-11-08): a CNAME `stay-sharp` → the dev CloudFront host at IONOS, the edge certificate on
+   2026-11-08): a CNAME `stay-sharp` → the dev CloudFront host in the Route 53 zone `lumineth.com` (the domain is delegated to AWS; mail stays at IONOS), the edge certificate on
    the dev distribution, passkeys on the public name, `X-Robots-Tag: noindex` on every dev
    response. **Before the first prod deploy**: set `devPublicName` to `false`, deploy
    `staysharp-dev-auth`, `staysharp-dev-api` and `staysharp-dev-web` (a name can sit on one
