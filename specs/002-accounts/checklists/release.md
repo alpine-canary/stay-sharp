@@ -32,5 +32,6 @@ Also checked on dev on 2026-11-07:
 - First-screen size: 85 147 B gzipped, within the budget in `front/bundle-budget.json`.
 
 All 15 scenarios pass on 2026-11-07. Still to do before prod: mobile Lighthouse performance 100 confirmed
-on a quiet machine, the IONOS alias `stay-sharp@lumineth.com` (planned for 2026-11-08), then the second SES
-production access request (refused once; sent from this repository once the alias works), and the maintainer's approval (T251).
+on a quiet machine, SES production access (refused once; on 2026-11-08 the alias `stay-sharp@lumineth.com` was
+created and a test e-mail through it arrived, the CLI refused a second request with
+ConflictException, and the maintainer answered the refused case in the Support Center), and the maintainer's approval (T251).

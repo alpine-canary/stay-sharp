@@ -144,10 +144,15 @@ only).
      --use-case-description "One-time sign-in codes for an optional account of a free daily quiz. Sent only when a player asks for one. Bounces and complaints go to the maintainer."
    ```
 
+   This command works only for a first request. AWS refused the first one; a second call then
+   answers `ConflictException`, and the only way is to reply to the refused case in the Support
+   Center with what changed (sender limits, alarms, the alias in item 7). Replied on 2026-11-08.
+
 6. **Dev passkeys.** After the first `staysharp-dev-web` deploy, set the context `devSiteHost`
    to the dev CloudFront host (`dxxxxxxxx.cloudfront.net`) in `infra/cdk.json` and redeploy
    `staysharp-dev-auth` and `staysharp-dev-api` (the inactivity e-mail links to it). Without
    it, dev signs in with e-mail codes only. Done on 2026-11-07.
 7. **Replies.** Players may answer a code e-mail. `lumineth.com` receives mail at IONOS: an
    alias `stay-sharp@lumineth.com` that forwards to the maintainer keeps those replies (and
-   bounce notices) from being lost.
+   bounce notices) from being lost. Created on 2026-11-08; a test e-mail sent through SES to the
+   alias arrived.
