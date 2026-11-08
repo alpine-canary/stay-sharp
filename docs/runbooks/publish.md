@@ -32,7 +32,9 @@ bug), `explanation`, and `source` (`url`, `date`) for AI this week.
 
 Set `status: approved`, `approved_by` and `approved_at`. A Starter question also needs
 `second_reader`: someone other than the author has read it. Only approved questions are published
-(FR-025). No question text is written by a model in M1.
+(FR-025). A question drafted with a model's help is first checked by an independent reviewer
+pass (it solves the question again, checks facts, code and line numbers) and lists what it fixed;
+the maintainer approves after reading that list.
 
 ## 4. Schedule
 
