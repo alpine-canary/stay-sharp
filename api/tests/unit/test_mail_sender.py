@@ -125,7 +125,7 @@ def test_the_handler_counts_every_send(monkeypatch: pytest.MonkeyPatch) -> None:
     outbox = Outbox()
     counted: list[str] = []
     monkeypatch.setattr(mail_sender, "kms_decrypt", lambda: fake_decrypt)
-    monkeypatch.setattr(mail_sender, "ses_send", outbox)
+    monkeypatch.setattr(mail_sender, "send_mail", outbox)
 
     def over(address: str, _now: object) -> bool:
         counted.append(address)

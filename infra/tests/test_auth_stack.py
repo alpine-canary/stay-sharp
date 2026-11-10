@@ -192,3 +192,43 @@ def test_a_new_address_replaces_the_old_one_only_once_verified(template: Templat
     assert props["UserAttributeUpdateSettings"] == {
         "AttributesRequireVerificationBeforeUpdate": ["email"]
     }
+
+
+@pytest.mark.parametrize(
+    ("stack", "function"),
+    [
+        ("staysharp-dev-auth", "staysharp-dev-mail-sender"),
+        ("staysharp-prod-auth", "staysharp-prod-mail-sender"),
+        ("staysharp-dev-api", "staysharp-dev-account-jobs"),
+        ("staysharp-prod-api", "staysharp-prod-account-jobs"),
+    ],
+)
+def test_e_mail_goes_through_smtp_while_smtphost_is_set(stack: str, function: str) -> None:
+    for host in ("smtp.example.net", None):
+        context = cdk_context() | {"smtpHost": host}
+        synthed = build_app(context).synth().get_stack_by_name(stack)
+        t = assertions.Template.from_json(synthed.template)
+        (fn,) = [
+            f["Properties"]
+            for f in resources(t, "AWS::Lambda::Function").values()
+            if f["Properties"].get("FunctionName") == function
+        ]
+        variables = fn["Environment"]["Variables"]
+        policies = json.dumps(resources(t, "AWS::IAM::Policy"))
+        if host is None:
+            assert "SMTP_HOST" not in variables
+            assert "staysharp/smtp" not in policies
+        else:
+            assert variables["SMTP_HOST"] == host
+            assert variables["SMTP_SECRET_ID"] == "staysharp/smtp"  # noqa: S105
+            assert "secret:staysharp/smtp-??????" in policies
+        # SES stays allowed, so going back is a context change only.
+        assert '"ses:SendEmail"' in policies
+
+
+def test_the_smtp_login_is_a_kept_secret_once_per_account(template: TemplateOf) -> None:
+    (secret,) = resources(template("staysharp-mail"), "AWS::SecretsManager::Secret").values()
+    assert secret["Properties"]["Name"] == "staysharp/smtp"
+    assert secret["DeletionPolicy"] == "Retain"
+    for stage in ("dev", "prod"):
+        assert not resources(template(f"staysharp-{stage}-auth"), "AWS::SecretsManager::Secret")

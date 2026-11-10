@@ -162,3 +162,27 @@ only).
    alias `stay-sharp@lumineth.com` that forwards to the maintainer keeps those replies (and
    bounce notices) from being lost. Created on 2026-11-08; a test e-mail sent through SES to the
    alias arrived.
+8. **Through IONOS while SES is in the sandbox** (decided 2026-11-10). With the context
+   `smtpHost` set in `infra/cdk.json`, the code sender and the account job send through that SMTP
+   server (implicit TLS, port 465) instead of SES; the rest is unchanged (limits, logs, alarms).
+   The login is the secret `staysharp/smtp` (stack `staysharp-mail`, created with a placeholder
+   password, kept if the stack goes).
+   1. In IONOS, turn `stay-sharp@lumineth.com` from a forward into a mailbox (the forward has
+      no login), and forward that mailbox to the maintainer so replies still arrive.
+   2. Deploy `staysharp-mail`, then put the mailbox login in the secret from your terminal; the
+      password is typed hidden and never lands in the history or the repository:
+
+      ```sh
+      read -rs "P?IONOS password: " && aws secretsmanager put-secret-value \
+        --profile stay-sharp --region eu-central-2 --secret-id staysharp/smtp \
+        --secret-string "$(jq -n --arg p "$P" '{username: "stay-sharp@lumineth.com", password: $p}')"; unset P
+      ```
+
+   3. Deploy `staysharp-<stage>-auth` and `staysharp-<stage>-api`, ask for a code and check it
+      arrives (and is not in spam).
+   4. SPF already allows IONOS (`include:_spf-eu.ionos.com`). DKIM: IONOS signs only with the
+      records it shows in its DNS settings for the domain; the zone is in Route 53, so copy them
+      there if IONOS lists any.
+   5. **Back to SES** once `ProductionAccessEnabled` is `true`: remove `smtpHost` from
+      `infra/cdk.json` and deploy the same stacks again. SES stays allowed in the meantime.
+

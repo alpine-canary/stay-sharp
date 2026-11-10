@@ -35,7 +35,7 @@ from aws_cdk import aws_sns as sns
 from constructs import Construct
 
 from stacks.bundling import mailer_code
-from stacks.mail_stack import SENDER
+from stacks.mail_stack import SENDER, use_smtp
 from stacks.ops_stack import make_alarm
 
 MAILER_HANDLER = "staysharp.handlers.mail_sender.handler"
@@ -54,6 +54,7 @@ class AuthStack(Stack):
         table: dynamodb.ITableV2,
         pepper: secretsmanager.ISecret,
         topic: sns.ITopic,
+        smtp_host: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
@@ -125,6 +126,8 @@ class AuthStack(Stack):
             log_group=mailer_logs,
             logging_format=lambda_.LoggingFormat.JSON,
         )
+        if smtp_host:
+            use_smtp(self.mailer, smtp_host)
         self.code_key.grant_decrypt(self.mailer)
         self._mailer_alarms(name, mailer_logs, topic)
         # The send counters (store/mail_limits.py): their own keys only, never player data.

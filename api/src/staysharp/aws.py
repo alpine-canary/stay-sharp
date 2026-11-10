@@ -60,3 +60,6 @@ def reset() -> None:
     secretsmanager.cache_clear()
     cognito.cache_clear()
     sesv2.cache_clear()
+    from staysharp import mail  # noqa: PLC0415 - avoid an import cycle
+
+    mail.smtp_login.cache_clear()

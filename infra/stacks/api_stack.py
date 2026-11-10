@@ -39,7 +39,7 @@ from aws_cdk import aws_sns as sns
 from constructs import Construct
 
 from stacks.bundling import api_code
-from stacks.mail_stack import SENDER
+from stacks.mail_stack import SENDER, use_smtp
 from stacks.ops_stack import make_alarm
 
 LOG_RETENTION = logs.RetentionDays.ONE_MONTH
@@ -109,9 +109,11 @@ class ApiStack(Stack):
         site_url: str,
         deployment_config: str | None = None,
         drill: str | None = None,
+        smtp_host: str | None = None,
         **kwargs: Any,
     ) -> None:
         super().__init__(scope, construct_id, **kwargs)
+        self.smtp_host = smtp_host
         prod = stage == "prod"
         if prod and (drill or deployment_config not in (None, "LambdaCanary10Percent5Minutes")):
             raise ValueError("prod always deploys with the canary and never runs a drill")
@@ -310,6 +312,8 @@ class ApiStack(Stack):
             retry_attempts=0,
             on_failure=destinations.SnsDestination(topic),
         )
+        if self.smtp_host:
+            use_smtp(jobs, self.smtp_host)
         table.grant_read_write_data(jobs)
         pepper.grant_read(jobs)
         jobs.add_to_role_policy(

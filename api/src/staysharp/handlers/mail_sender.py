@@ -2,8 +2,9 @@
 
 A user pool in eu-central-2 may only send through SES in Frankfurt or London. To keep every
 e-mail address and code in Switzerland, Cognito hands each code, encrypted with the stage's KMS
-key, to this function in eu-central-2, which decrypts it and sends it with SES in eu-central-2
-from ``stay-sharp@lumineth.com`` (infra/stacks/auth_stack.py).
+key, to this function in eu-central-2, which decrypts it and sends it from
+``stay-sharp@lumineth.com`` (infra/stacks/auth_stack.py): with SES in eu-central-2, or through
+the mailbox's SMTP server while the account is in the SES sandbox (staysharp.mail).
 
 Only the trigger source is logged: never the address, the code or the encrypted code. At most
 5 codes an hour and 10 a day go to one address, 300 an hour in all (store/mail_limits.py).
@@ -19,7 +20,7 @@ from functools import cache
 from typing import Any
 
 from staysharp import clock
-from staysharp.mail import ses_send
+from staysharp.mail import send_mail
 from staysharp.obs import logger
 from staysharp.store import mail_limits
 
@@ -114,6 +115,6 @@ def send_code(
 def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:  # noqa: ARG001
     logger.remove_keys(["function_arn"])
     send_code(
-        event, kms_decrypt(), ses_send, lambda address: mail_limits.allow(address, clock.now())
+        event, kms_decrypt(), send_mail, lambda address: mail_limits.allow(address, clock.now())
     )
     return event

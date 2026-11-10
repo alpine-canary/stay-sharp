@@ -85,6 +85,9 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
     site_commit = _context(app, "siteCommit") or "initial"
     # Path of the built front end (front/dist); only the deploy workflow sets it.
     site_dist = _context(app, "siteDist")
+    # Sign-in and warning e-mails go out through this SMTP server (the sender's mailbox) when
+    # set, through SES otherwise: the way out while the account is in the SES sandbox.
+    smtp_host = _context(app, "smtpHost")
     for stage in STAGES:
         prefix = f"staysharp-{stage}"
         prod = stage == "prod"
@@ -103,6 +106,7 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
             table=data.table,
             pepper=data.pepper,
             topic=ops.topic,
+            smtp_host=smtp_host,
             env=main_env,
         )
         auth.add_dependency(mail)
@@ -119,6 +123,7 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
             site_url=f"https://{site_host}",
             deployment_config=None if prod else _context(app, "devDeploymentConfig"),
             drill=None if prod else _context(app, "drill"),
+            smtp_host=smtp_host,
             env=main_env,
         )
         web = WebStack(

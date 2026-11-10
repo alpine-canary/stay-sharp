@@ -61,7 +61,7 @@ def test_an_account_life_leaves_no_personal_data_in_logs(
             "request": {"code": "encrypted", "userAttributes": {"email": EMAIL}},
         }
         monkeypatch.setattr(mail_sender, "kms_decrypt", lambda: lambda _c: CODE)
-        monkeypatch.setattr(mail_sender, "ses_send", lambda *a: sent.append(a))
+        monkeypatch.setattr(mail_sender, "send_mail", lambda *a: sent.append(a))
         mail_sender.handler(event, FakeContext())
 
         # Account, name, progress.
@@ -84,7 +84,7 @@ def test_an_account_life_leaves_no_personal_data_in_logs(
         )
         monkeypatch.setattr(clock, "now", lambda: later)
         monkeypatch.setattr(account_jobs, "email_of", lambda: lambda _s: EMAIL)
-        monkeypatch.setattr(account_jobs, "ses_send", lambda *a: sent.append(a))
+        monkeypatch.setattr(account_jobs, "send_mail", lambda *a: sent.append(a))
         account_jobs.run()
         monkeypatch.setattr(account_delete, "delete_user", lambda: lambda _s: None)
         headers = {"authorization": f"Bearer {TOKEN}"}

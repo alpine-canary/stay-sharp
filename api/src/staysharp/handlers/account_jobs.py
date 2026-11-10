@@ -19,7 +19,7 @@ from typing import Any
 
 from staysharp import clock, config
 from staysharp.handlers.account_delete import delete_user
-from staysharp.mail import ses_send
+from staysharp.mail import send_mail
 from staysharp.metrics import emit
 from staysharp.obs import account_hash, logger, metrics
 from staysharp.store import deletion, inactive
@@ -68,7 +68,7 @@ def run() -> dict[str, int]:
     now = clock.now()
     remove_user = delete_user()
     result = finish_deletions(now, remove_user)
-    idle = inactive.run(now, send=ses_send, email_of=email_of(), delete_user=remove_user)
+    idle = inactive.run(now, send=send_mail, email_of=email_of(), delete_user=remove_user)
     idle["unconfirmed"] = inactive.remove_unconfirmed(now, unconfirmed(), remove_user)
     emit("InactiveAccountsWarned", idle["warned"])
     emit("InactiveAccountsDeleted", idle["deleted"])
