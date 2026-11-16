@@ -146,7 +146,7 @@ only).
 
    This command works only for a first request. AWS refused the first one; a second call then
    answers `ConflictException`, and the only way is to reply to the refused case in the Support
-   Center with what changed (sender limits, alarms, the alias in item 7). Replied on 2026-11-08.
+   Center with what changed (sender limits, alarms, the alias in item 7). Replied on 2026-11-08; production access granted on 2026-11-16 (50 000 e-mails a day, 14 a second).
 
 6. **Dev passkeys.** After the first `staysharp-dev-web` deploy, set the context `devSiteHost`
    to the dev CloudFront host (`dxxxxxxxx.cloudfront.net`) in `infra/cdk.json` and redeploy
@@ -162,7 +162,7 @@ only).
    alias `stay-sharp@lumineth.com` that forwards to the maintainer keeps those replies (and
    bounce notices) from being lost. Created on 2026-11-08; a test e-mail sent through SES to the
    alias arrived.
-8. **Through IONOS while SES is in the sandbox** (decided 2026-11-10). With the context
+8. **Through IONOS while SES is in the sandbox** (decided 2026-11-10, never switched on: SES production access came on 2026-11-16; kept as a fallback). With the context
    `smtpHost` set in `infra/cdk.json`, the code sender and the account job send through that SMTP
    server (implicit TLS, port 465) instead of SES; the rest is unchanged (limits, logs, alarms).
    The login is the secret `staysharp/smtp` (stack `staysharp-mail`, created with a placeholder
