@@ -106,9 +106,10 @@ jobs:
       - name: find the dev URL
         id: dev
         run: |
-          dist=$(aws cloudformation describe-stack-resources --stack-name staysharp-dev-web \
-            --query "StackResources[?ResourceType=='AWS::CloudFront::Distribution'].PhysicalResourceId" --output text)
-          echo "url=https://$(aws cloudfront get-distribution --id "$dist" --query Distribution.DomainName --output text)" >> "$GITHUB_OUTPUT"
+          # The CloudFront host is in cdk.json (devSiteHost): no extra read right for the role.
+          host=$(jq -r '.context.devSiteHost' infra/cdk.json)
+          if [ -z "$host" ] || [ "$host" = null ]; then echo "refused: devSiteHost is not set"; exit 1; fi
+          echo "url=https://$host" >> "$GITHUB_OUTPUT"
       - name: API integration tests (DynamoDB Local)
         run: uv run --directory api pytest -m integration
       - name: Playwright against dev (daily by keyboard, leak scan before each answer)
