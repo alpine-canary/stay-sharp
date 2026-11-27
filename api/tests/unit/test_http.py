@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from staysharp.handlers.http import ApiError, caller_sub
+from staysharp.handlers.http import ApiError, caller_sub, campaign_source
 
 
 def event(claims: dict[str, Any] | None) -> dict[str, Any]:
@@ -36,3 +36,22 @@ def test_anything_else_is_401(claims: dict[str, Any] | None) -> None:
         caller_sub(event(claims))
     assert caught.value.status == 401
     assert caught.value.code == "unauthorized"
+
+
+@pytest.mark.parametrize(
+    ("headers", "expected"),
+    [
+        ({"x-source": "linkedin"}, "linkedin"),
+        ({"x-source": "x"}, "x"),
+        ({"x-source": "hn"}, "hn"),
+        ({"x-source": "devto"}, "devto"),
+        ({"x-source": "facebook"}, None),
+        ({"x-source": "LinkedIn"}, None),
+        ({"x-source": ""}, None),
+        ({}, None),
+    ],
+)
+def test_campaign_source_keeps_allowed_values_only(
+    headers: dict[str, str], expected: str | None
+) -> None:
+    assert campaign_source(headers) == expected

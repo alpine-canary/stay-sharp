@@ -38,6 +38,19 @@ ALLOWED: dict[str, tuple[MetricUnit, str | None]] = {
     "FaultInjectionActive": (COUNT, None),
 }
 
+# Campaign source (2026-11): the network a visit came from (utm_source, sent as X-Source). An
+# aggregate count per network, never per player. Fixed list: at most 4 series per metric.
+SOURCES = frozenset({"linkedin", "x", "hn", "devto"})
+BY_SOURCE = (
+    "PlaysStarted",
+    "PlaysFinished",
+    "ChallengesCreated",
+    "ChallengesOpened",
+    "ChallengesFinished",
+)
+for _name in BY_SOURCE:
+    ALLOWED[f"{_name}BySource"] = (COUNT, "Source")
+
 # Also emitted with ``Stage`` alone, so the paging alarm sums over versions (R10, FR-028).
 ALSO_PER_STAGE = frozenset({"ScoringFailures"})
 
@@ -52,6 +65,8 @@ def _check_value(dimension: str, value: str) -> None:
         raise ValueError(f"unknown level {value!r}")
     if dimension == "FunctionVersion" and not (value == "$LATEST" or value.isdigit()):
         raise ValueError(f"unexpected function version {value!r}")
+    if dimension == "Source" and value not in SOURCES:
+        raise ValueError(f"unknown source {value!r}")
 
 
 def emit(name: str, value: float = 1, *, dimension: tuple[str, str] | None = None) -> None:
@@ -77,3 +92,10 @@ def emit(name: str, value: float = 1, *, dimension: tuple[str, str] | None = Non
     ) as metric:
         metric.service = ""  # single_metric reads POWERTOOLS_SERVICE_NAME on its own
         metric.add_dimension(name=dimension[0], value=dimension[1])
+
+
+def counted(name: str, source: str | None) -> None:
+    """Count ``name`` once, and once more per campaign source when the visit has one."""
+    emit(name)
+    if source is not None:
+        emit(f"{name}BySource", dimension=("Source", source))

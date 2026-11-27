@@ -28,7 +28,7 @@ def distribution(template: TemplateOf, stage: str) -> dict[str, Any]:
 
 
 @pytest.mark.parametrize("stage", STAGES)
-def test_api_is_never_cached_and_forwards_two_headers(template: TemplateOf, stage: str) -> None:
+def test_api_is_never_cached_and_forwards_three_headers(template: TemplateOf, stage: str) -> None:
     config = distribution(template, stage)
     (api,) = [b for b in config["CacheBehaviors"] if b["PathPattern"] == "/api/*"]
     # Not cached (the API answers no-store) but the cache policy is what lets CloudFront pass the
@@ -53,7 +53,7 @@ def test_api_is_never_cached_and_forwards_two_headers(template: TemplateOf, stag
     settings = policy["Properties"]["OriginRequestPolicyConfig"]
     assert settings["HeadersConfig"] == {
         "HeaderBehavior": "whitelist",
-        "Headers": ["X-Player-Id", "Content-Type"],
+        "Headers": ["X-Player-Id", "Content-Type", "X-Source"],
     }
     assert settings["QueryStringsConfig"] == {"QueryStringBehavior": "none"}
     assert settings["CookiesConfig"] == {"CookieBehavior": "none"}

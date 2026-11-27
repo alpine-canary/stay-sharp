@@ -2,7 +2,8 @@
 
 - Static files live under ``site/<commit>/``; the origin path points at the current one, so
   redeploying the previous commit is an instant revert (W6).
-- ``/api/*`` is never cached and forwards only ``X-Player-Id`` and ``Content-Type`` (C2), plus
+- ``/api/*`` is never cached and forwards only ``X-Player-Id``, ``Content-Type`` (C2) and
+  ``X-Source`` (campaign network, 2026-11), plus
   ``Authorization`` for the account routes (M2). CloudFront passes ``Authorization`` on GET only
   through a cache policy, so ``/api/*`` has its own: at most 1 second, and the API answers
   ``Cache-Control: no-store``, so nothing is ever stored.
@@ -43,7 +44,8 @@ CSP = "; ".join(
         "upgrade-insecure-requests",
     ]
 )
-API_HEADERS = ("X-Player-Id", "Content-Type")
+# X-Source: the campaign network of the visit (utm_source), counted per network by the API.
+API_HEADERS = ("X-Player-Id", "Content-Type", "X-Source")
 
 
 class WebStack(Stack):

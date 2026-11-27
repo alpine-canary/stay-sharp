@@ -16,7 +16,7 @@ from aws_lambda_powertools.event_handler.router import APIGatewayHttpRouter
 
 from staysharp import clock, metrics
 from staysharp.domain.models import ChallengeCreated, ChallengeView, CreateChallengeRequest
-from staysharp.handlers.http import ApiError, json_response
+from staysharp.handlers.http import ApiError, campaign_source, json_response
 from staysharp.obs import player_hash
 from staysharp.store import challenges, plays
 from staysharp.store.plays import PlayRef
@@ -31,6 +31,10 @@ EXPIRED = "This challenge has ended: links last 30 days. You can still play toda
 def _player() -> str:
     player_id: str = router.context["player_id"]
     return player_id
+
+
+def _source() -> str | None:
+    return campaign_source(router.current_event.headers)
 
 
 def load(challenge_id: str) -> challenges.Challenge:
@@ -63,7 +67,7 @@ def create() -> Response[str]:
         )
     challenge_id = challenges.create(_player(), play, now)
     if challenge_id != play.created_challenge_id:
-        metrics.emit("ChallengesCreated")
+        metrics.counted("ChallengesCreated", _source())
     return json_response(ChallengeCreated(challenge_id=challenge_id, path=f"/c/{challenge_id}"))
 
 
@@ -99,7 +103,7 @@ def view(challenge_id: str) -> Response[str]:
             )
         )
 
-    metrics.emit("ChallengesOpened")
+    metrics.counted("ChallengesOpened", _source())
     others = challenge.results
     you = challenges.result(challenge.challenge_id, _player())
     if you is None:
@@ -107,7 +111,7 @@ def view(challenge_id: str) -> Response[str]:
         if play is not None:
             you = challenges.snapshot(play)
             if challenges.record(challenge, _player(), you, clock.now()):
-                metrics.emit("ChallengesFinished")
+                metrics.counted("ChallengesFinished", _source())
                 others += 1
     if you is None:
         return json_response(ChallengeView(**base, viewer="colleague_before", others=others))

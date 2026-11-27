@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
 from http import HTTPStatus
 from typing import Any
 
@@ -9,6 +10,7 @@ from aws_lambda_powertools.event_handler import Response
 from pydantic import BaseModel
 
 from staysharp.domain.models import Error, ErrorCode
+from staysharp.metrics import SOURCES
 
 JSON = "application/json"
 
@@ -51,3 +53,13 @@ def caller_sub(raw_event: dict[str, Any]) -> str:
     if claims.get("token_use") != "access" or not isinstance(sub, str) or not sub:
         raise ApiError(HTTPStatus.UNAUTHORIZED, "unauthorized", "Please sign in again.")
     return sub
+
+
+def campaign_source(headers: Mapping[str, str]) -> str | None:
+    """The campaign network of this visit (X-Source, from utm_source), or None.
+
+    Only the fixed list counts; anything else is ignored, never refused: a visit is never
+    turned away because of a link parameter.
+    """
+    value = headers.get("x-source")
+    return value if value in SOURCES else None

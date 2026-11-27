@@ -32,7 +32,7 @@ from staysharp.domain.models import (
 )
 from staysharp.domain.views import question_view
 from staysharp.handlers import routes_challenges
-from staysharp.handlers.http import ApiError, json_response
+from staysharp.handlers.http import ApiError, campaign_source, json_response
 from staysharp.obs import bind_question, logger
 from staysharp.store import answers, plays, questions, table
 from staysharp.store.plays import Play, PlayRef
@@ -44,6 +44,10 @@ NOT_READY = "Today's set is not ready yet. Please come back a little later."
 
 
 # --- Helpers ---------------------------------------------------------------------------------
+
+
+def _source() -> str | None:
+    return campaign_source(router.current_event.headers)
 
 
 def _player() -> str:
@@ -222,7 +226,7 @@ def start_play() -> Response[str]:
             HTTPStatus.CONFLICT, "conflict", "Finish this set before replaying it."
         ) from error
     if created:
-        metrics.emit("PlaysStarted")
+        metrics.counted("PlaysStarted", _source())
 
     question = None
     if play.next_index is not None and calendar.play_date_allowed(
@@ -302,9 +306,9 @@ def answer(play_id: str, index: str) -> Response[str]:
     if graded.suspiciously_fast:
         metrics.emit("SuspiciouslyFast", dimension=("Deck", served.deck))
     if graded.challenge_recorded:
-        metrics.emit("ChallengesFinished")
+        metrics.counted("ChallengesFinished", _source())
     if graded.finished_play:
-        metrics.emit("PlaysFinished")
+        metrics.counted("PlaysFinished", _source())
         duration = int((now - play.started_at).total_seconds() * 1000)
         metrics.emit("PlayDurationMs", max(0, duration))
     return json_response(result_of(question, graded.served, duplicate=False))

@@ -93,3 +93,35 @@ def test_no_service_dimension_even_with_the_lambda_variable(
     ]
     assert dimension_sets
     assert all("service" not in d for d in dimension_sets), dimension_sets
+
+
+# --- Campaign source (2026-11): aggregate counts per network, never per player -----------------
+
+
+@pytest.mark.parametrize("source", sorted(metrics.SOURCES))
+def test_by_source_metrics_take_an_allowed_source(source: str) -> None:
+    for name in metrics.BY_SOURCE:
+        metrics.emit(f"{name}BySource", dimension=("Source", source))
+
+
+@pytest.mark.parametrize("source", ["facebook", "LinkedIn", "", "x; drop", "a" * 200])
+def test_an_unknown_source_is_refused(source: str) -> None:
+    with pytest.raises(ValueError):
+        metrics.emit("PlaysStartedBySource", dimension=("Source", source))
+
+
+def test_counted_emits_the_total_and_the_source(capsys: pytest.CaptureFixture[str]) -> None:
+    metrics.counted("PlaysStarted", "linkedin")
+    powertools_metrics.flush_metrics()
+    blobs = [json.loads(line) for line in capsys.readouterr().out.strip().splitlines()]
+    by_source = [b for b in blobs if "PlaysStartedBySource" in b]
+    assert [b["Source"] for b in by_source] == ["linkedin"]
+    assert any("PlaysStarted" in b and "Source" not in b for b in blobs)
+
+
+def test_counted_without_a_source_emits_the_total_only(capsys: pytest.CaptureFixture[str]) -> None:
+    metrics.counted("PlaysStarted", None)
+    powertools_metrics.flush_metrics()
+    out = capsys.readouterr().out
+    assert "PlaysStarted" in out
+    assert "BySource" not in out

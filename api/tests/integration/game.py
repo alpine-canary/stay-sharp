@@ -30,6 +30,8 @@ class Game:
     mode: str = "daily"
     day: dt.date = TODAY
     calls: list[str] = field(default_factory=list)
+    # The X-Source header the site sends for a campaign visit (utm_source), or none.
+    source: str | None = None
 
     @property
     def play_id(self) -> str:
@@ -63,21 +65,35 @@ class Game:
 
     # --- API calls ---------------------------------------------------------------------------
 
+    @property
+    def headers(self) -> dict[str, str]:
+        return {"x-source": self.source} if self.source else {}
+
     def start(self, **extra: Any) -> dict[str, Any]:
         payload = {"level": self.level, "mode": self.mode, **extra}
         if self.day != calendar.zurich_today(self.now) and "date" not in payload:
             payload["date"] = self.day.isoformat()
-        return call("POST", "/api/v1/plays", body=payload, player=self.player)
+        return call("POST", "/api/v1/plays", body=payload, player=self.player, headers=self.headers)
 
     def get(self) -> dict[str, Any]:
-        return call("GET", f"/api/v1/plays/{self.play_id}", player=self.player)
+        return call(
+            "GET", f"/api/v1/plays/{self.play_id}", player=self.player, headers=self.headers
+        )
 
     def relax(self) -> dict[str, Any]:
-        return call("POST", f"/api/v1/plays/{self.play_id}/relaxed", player=self.player)
+        return call(
+            "POST",
+            f"/api/v1/plays/{self.play_id}/relaxed",
+            player=self.player,
+            headers=self.headers,
+        )
 
     def open(self, index: int) -> dict[str, Any]:
         return call(
-            "POST", f"/api/v1/plays/{self.play_id}/questions/{index}/open", player=self.player
+            "POST",
+            f"/api/v1/plays/{self.play_id}/questions/{index}/open",
+            player=self.player,
+            headers=self.headers,
         )
 
     def answer(self, index: int, payload: dict[str, Any] | str) -> dict[str, Any]:
@@ -86,6 +102,7 @@ class Game:
             f"/api/v1/plays/{self.play_id}/questions/{index}/answer",
             body=payload,
             player=self.player,
+            headers=self.headers,
         )
 
     def play_all(self, *, right: bool = True, think_s: float = 5) -> list[dict[str, Any]]:

@@ -18,6 +18,14 @@ components:
       in: header
       required: true
       schema: { type: string, format: uuid }
+    Source:
+      name: X-Source
+      in: header
+      required: false
+      description: |
+        Campaign network of the visit, from utm_source (2026-11). Counted per network as an
+        aggregate metric, never stored with the player. Any other value is ignored, never refused.
+      schema: { type: string }
     PlayId:
       name: playId
       in: path
@@ -155,7 +163,7 @@ paths:
   /plays:
     post:
       summary: Start or resume a play. Idempotent for the same player, date, level and mode.
-      parameters: [ { $ref: '#/components/parameters/PlayerId' } ]
+      parameters: [ { $ref: '#/components/parameters/PlayerId' }, { $ref: '#/components/parameters/Source' } ]
       requestBody:
         content:
           application/json:
@@ -197,7 +205,7 @@ paths:
   /plays/{playId}/questions/{index}/answer:
     post:
       summary: Grade an answer. The same answer again returns the stored result (duplicate true).
-      parameters: [ { $ref: '#/components/parameters/PlayerId' }, { $ref: '#/components/parameters/PlayId' }, { $ref: '#/components/parameters/Index' } ]
+      parameters: [ { $ref: '#/components/parameters/PlayerId' }, { $ref: '#/components/parameters/Source' }, { $ref: '#/components/parameters/PlayId' }, { $ref: '#/components/parameters/Index' } ]
       requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/AnswerRequest' } } } }
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/AnswerResult' } } } }
@@ -250,7 +258,7 @@ paths:
   /challenges:
     post:
       summary: Create (or return the existing) challenge for a finished play.
-      parameters: [ { $ref: '#/components/parameters/PlayerId' } ]
+      parameters: [ { $ref: '#/components/parameters/PlayerId' }, { $ref: '#/components/parameters/Source' } ]
       requestBody: { content: { application/json: { schema: { type: object, additionalProperties: false, required: [playId], properties: { playId: { type: string } } } } } }
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ChallengeCreated' } } } }
@@ -264,7 +272,7 @@ paths:
         finished), colleague_before (owner result shown as score only, no squares) or
         colleague_after (both snapshots). A colleague who already finished that set gets their
         snapshot written from their existing play on first view.
-      parameters: [ { $ref: '#/components/parameters/PlayerId' }, { name: challengeId, in: path, required: true, schema: { type: string, pattern: '^[A-Z2-7]{12}$' } } ]
+      parameters: [ { $ref: '#/components/parameters/PlayerId' }, { $ref: '#/components/parameters/Source' }, { name: challengeId, in: path, required: true, schema: { type: string, pattern: '^[A-Z2-7]{12}$' } } ]
       responses:
         '200': { description: OK, content: { application/json: { schema: { $ref: '#/components/schemas/ChallengeView' } } } }
         '404': { description: 'Unknown or malformed (code not_found), or expired (code expired).', content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }

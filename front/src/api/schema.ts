@@ -94,6 +94,11 @@ export interface paths {
                 query?: never;
                 header: {
                     "X-Player-Id": components["parameters"]["PlayerId"];
+                    /**
+                     * @description Campaign network of the visit, from utm_source (2026-11). Counted per network as an
+                     *     aggregate metric, never stored with the player. Any other value is ignored, never refused.
+                     */
+                    "X-Source"?: components["parameters"]["Source"];
                 };
                 path?: never;
                 cookie?: never;
@@ -319,6 +324,11 @@ export interface paths {
                 query?: never;
                 header: {
                     "X-Player-Id": components["parameters"]["PlayerId"];
+                    /**
+                     * @description Campaign network of the visit, from utm_source (2026-11). Counted per network as an
+                     *     aggregate metric, never stored with the player. Any other value is ignored, never refused.
+                     */
+                    "X-Source"?: components["parameters"]["Source"];
                 };
                 path: {
                     playId: components["parameters"]["PlayId"];
@@ -540,6 +550,11 @@ export interface paths {
                 query?: never;
                 header: {
                     "X-Player-Id": components["parameters"]["PlayerId"];
+                    /**
+                     * @description Campaign network of the visit, from utm_source (2026-11). Counted per network as an
+                     *     aggregate metric, never stored with the player. Any other value is ignored, never refused.
+                     */
+                    "X-Source"?: components["parameters"]["Source"];
                 };
                 path?: never;
                 cookie?: never;
@@ -614,6 +629,11 @@ export interface paths {
                 query?: never;
                 header: {
                     "X-Player-Id": components["parameters"]["PlayerId"];
+                    /**
+                     * @description Campaign network of the visit, from utm_source (2026-11). Counted per network as an
+                     *     aggregate metric, never stored with the player. Any other value is ignored, never refused.
+                     */
+                    "X-Source"?: components["parameters"]["Source"];
                 };
                 path: {
                     challengeId: string;
@@ -753,6 +773,11 @@ export interface components {
     responses: never;
     parameters: {
         PlayerId: string;
+        /**
+         * @description Campaign network of the visit, from utm_source (2026-11). Counted per network as an
+         *     aggregate metric, never stored with the player. Any other value is ignored, never refused.
+         */
+        Source: string;
         PlayId: string;
         Index: number;
     };
