@@ -16,6 +16,7 @@ import hmac
 import json
 import re
 import unicodedata
+from collections import Counter
 from collections.abc import Iterable, Iterator, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -101,9 +102,23 @@ def secret_texts(question: Mapping[str, Any]) -> list[str]:
     return texts
 
 
+def guarded_texts(questions: Sequence[Mapping[str, Any]]) -> list[str]:
+    """The secret texts of these questions, without a deck's standing instruction.
+
+    A prompt shared word for word by several questions ("Pick the worst line and say what is
+    wrong with it.") is the deck's instruction, shown on the public pages and in the samples;
+    only what makes a question its own is guarded.
+    """
+    prompts = Counter(" ".join(normalise(str(q.get("prompt", "")))) for q in questions)
+    texts: list[str] = []
+    for q in questions:
+        shared = prompts[" ".join(normalise(str(q.get("prompt", ""))))] > 1
+        texts += secret_texts(q)[1:] if shared else secret_texts(q)
+    return texts
+
+
 def build(key: bytes, content: Content, *, today: dt.date) -> Fingerprints:
-    texts = [t for q in scheduled_from(content, today) for t in secret_texts(q)]
-    return from_texts(key, texts)
+    return from_texts(key, guarded_texts(scheduled_from(content, today)))
 
 
 class Scanner:

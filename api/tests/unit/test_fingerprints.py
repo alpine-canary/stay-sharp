@@ -164,3 +164,17 @@ def test_the_scan_needs_the_key(monkeypatch: pytest.MonkeyPatch, tmp_path: Path)
     fp = tmp_path / "f.json"
     fp.write_text(fingerprints.from_texts(KEY, []).to_json())
     assert leak_scan.main(["--fingerprints", str(fp), "--repo", str(tmp_path)]) == 2
+
+
+def test_a_deck_instruction_shared_by_several_questions_is_not_guarded() -> None:
+    instruction = "Pick the worst line and say what is wrong with it."
+    questions = [
+        {"prompt": instruction, "explanation": f"Explanation number {n} of a spot question here."}
+        for n in (1, 2)
+    ] + [{"prompt": "A prompt of its own that only this one question uses.", "explanation": ""}]
+    texts = fingerprints.guarded_texts(questions)
+    assert instruction not in texts
+    assert "A prompt of its own that only this one question uses." in texts
+    assert "Explanation number 1 of a spot question here." in texts
+    prints = fingerprints.from_texts(KEY, texts)
+    assert fingerprints.Scanner(KEY, prints).count(instruction) == 0
