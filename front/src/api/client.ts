@@ -51,6 +51,8 @@ export class ApiError extends Error {
 
 export interface ClientOptions {
   playerId: () => string;
+  /** Campaign network of this visit (src/campaign.ts), sent as X-Source on player calls. */
+  source?: () => string | null;
   baseUrl?: string;
   timeoutMs?: number;
   fetchImpl?: typeof fetch;
@@ -77,6 +79,13 @@ export function createClient(options: ClientOptions) {
   const timeoutMs = options.timeoutMs ?? DEFAULT_TIMEOUT_MS;
   const doFetch = options.fetchImpl ?? ((input: RequestInfo | URL, init?: RequestInit) => fetch(input, init));
 
+  function playerHeaders(): Record<string, string> {
+    const headers: Record<string, string> = { "X-Player-Id": options.playerId(), "Content-Type": "application/json" };
+    const source = options.source?.();
+    if (source) headers["X-Source"] = source;
+    return headers;
+  }
+
   async function once(call: Call): Promise<{ status: number; body: unknown }> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), timeoutMs);
@@ -86,7 +95,7 @@ export function createClient(options: ClientOptions) {
         ? { method: call.method, signal: controller.signal, credentials: "same-origin" }
         : {
             method: call.method,
-            headers: { "X-Player-Id": options.playerId(), "Content-Type": "application/json" },
+            headers: playerHeaders(),
             signal: controller.signal,
             credentials: "same-origin",
             cache: "no-store",

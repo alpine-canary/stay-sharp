@@ -33,6 +33,20 @@ describe("api client", () => {
     expect(init?.cache).toBe("no-store");
   });
 
+  it("sends the campaign source on player calls when the visit has one", async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(json(200, { playId: "p" }));
+    await createClient({ playerId: () => PLAYER, source: () => "linkedin", fetchImpl }).getPlay("2026-11-20.senior.daily");
+    const [, init] = fetchImpl.mock.calls[0] ?? [];
+    expect((init?.headers as Record<string, string>)["X-Source"]).toBe("linkedin");
+  });
+
+  it("sends no source header without a campaign source", async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockResolvedValue(json(200, { playId: "p" }));
+    await client(fetchImpl).getPlay("2026-11-20.senior.daily");
+    const [, init] = fetchImpl.mock.calls[0] ?? [];
+    expect(init?.headers as Record<string, string>).not.toHaveProperty("X-Source");
+  });
+
   it("retries an idempotent call once after a network error", async () => {
     const fetchImpl = vi
       .fn<typeof fetch>()

@@ -5,6 +5,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import { signedInHint } from "./accountHint";
 import type { Live } from "./account/live";
 import { createClient, type ApiClient, type PlayState } from "./api/client";
+import { campaignSource } from "./campaign";
 import { AgeAsk, clearEarlyAnswer } from "./components/AgeAsk";
 import { Link } from "./components/Link";
 import { ShareSite } from "./components/ShareSite";
@@ -63,7 +64,7 @@ export function App({ store: givenStore, client: givenClient }: AppProps = {}) {
   const client = useMemo(
     () =>
       givenClient ??
-      createClient({ playerId: () => store.load().progress.playerId }),
+      createClient({ playerId: () => store.load().progress.playerId, source: campaignSource }),
     [givenClient, store],
   );
   const route = useRoute();
