@@ -17,7 +17,7 @@
     "githubIds": {"owner": 264568478, "stay-sharp": 1474025525, "stay-sharp-content": 1474025605},
     "launchDate": {
       "dev": "2026-11-01",
-      "prod": "2026-11-27"
+      "prod": "2026-11-28"
     },
     "siteCommit": "initial",
     "devSiteHost": "d3fzlsqovr82ud.cloudfront.net",
