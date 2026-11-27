@@ -25,7 +25,11 @@ export function takeSource(where: Where, history: Pick<History, "replaceState">)
   if (!UTM.some((key) => params.has(key))) return source;
   for (const key of UTM) params.delete(key);
   const rest = params.toString();
-  history.replaceState(null, "", `${where.pathname}${rest ? `?${rest}` : ""}${where.hash}`);
+  try {
+    history.replaceState(null, "", `${where.pathname}${rest ? `?${rest}` : ""}${where.hash}`);
+  } catch {
+    // Cleaning the address is a nicety: never let it stop the app from starting.
+  }
   return source;
 }
 

@@ -27,4 +27,11 @@ describe("campaign source", () => {
     expect(takeSource({ pathname: "/", search: "", hash: "" }, { replaceState })).toBeNull();
     expect(replaceState).not.toHaveBeenCalled();
   });
+
+  it("still returns the source when the browser refuses to rewrite the address", () => {
+    const replaceState = vi.fn(() => {
+      throw new DOMException("refused", "SecurityError");
+    });
+    expect(takeSource({ pathname: "//elsewhere", search: "?utm_source=x", hash: "" }, { replaceState })).toBe("x");
+  });
 });
