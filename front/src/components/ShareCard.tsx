@@ -20,6 +20,11 @@ export interface ShareInput {
   address: string;
 }
 
+interface ShareCardProps extends ShareInput {
+  /** Called once per copy or completed share (counted by the API, campaign 2026-11). */
+  onShared?: () => void;
+}
+
 // Distinct shapes of colour that screen readers name differently ("green square", "yellow
 // square", "red square"), so the card reads without colour.
 const SQUARE: Record<string, string> = { "1": "🟩", "0.5": "🟨", "0": "🟥" };
@@ -51,14 +56,13 @@ export function canShare(): boolean {
   return typeof navigator !== "undefined" && typeof navigator.share === "function";
 }
 
-/** Open the share sheet. True when shared or closed by the player; false when it failed. */
-export async function shareSheet(text: string): Promise<boolean> {
+/** Open the share sheet: "shared", "closed" by the player (not a failure), or "failed". */
+export async function shareSheet(text: string): Promise<"shared" | "closed" | "failed"> {
   try {
     await navigator.share({ text });
-    return true;
+    return "shared";
   } catch (error) {
-    // Closing the sheet is not a failure.
-    return error instanceof DOMException && error.name === "AbortError";
+    return error instanceof DOMException && error.name === "AbortError" ? "closed" : "failed";
   }
 }
 
@@ -84,7 +88,7 @@ export async function copyOrSelect(text: string, element: HTMLElement | null): P
 
 export const MANUAL_COPY = "This browser could not copy it. The text is selected: copy it with your keyboard or a long press.";
 
-export function ShareCard(props: ShareInput) {
+export function ShareCard({ onShared, ...props }: ShareCardProps) {
   const text = shareText(props);
   const box = useRef<HTMLPreElement>(null);
   const [status, setStatus] = useState<CopyStatus>(null);
@@ -92,12 +96,16 @@ export function ShareCard(props: ShareInput) {
   const sheet = canShare();
 
   async function copy() {
-    setStatus(await copyOrSelect(text, box.current));
+    const copied = await copyOrSelect(text, box.current);
+    setStatus(copied);
+    if (copied === "copied") onShared?.();
   }
 
   async function share() {
     setStatus(null);
-    if (!(await shareSheet(text))) await copy();
+    const outcome = await shareSheet(text);
+    if (outcome === "shared") onShared?.();
+    if (outcome === "failed") await copy();
   }
 
   return (

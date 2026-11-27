@@ -202,6 +202,11 @@ export function createClient(options: ClientOptions) {
       return { result: data as AnswerResult, conflict: false };
     },
 
+    /** The result card was copied or shared: counted once, so never retried. */
+    async shared(): Promise<void> {
+      await request({ method: "POST", path: "/shares", idempotent: false });
+    },
+
     /** Creating twice returns the same challenge, so a retry is safe. */
     async createChallenge(playId: string): Promise<ChallengeCreated> {
       return (await request({ method: "POST", path: "/challenges", body: { playId }, idempotent: true }))

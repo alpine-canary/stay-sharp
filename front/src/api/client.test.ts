@@ -47,6 +47,15 @@ describe("api client", () => {
     expect(init?.headers as Record<string, string>).not.toHaveProperty("X-Source");
   });
 
+  it("reports a shared result with one POST and no retry", async () => {
+    const fetchImpl = vi.fn<typeof fetch>().mockRejectedValue(new TypeError("Failed to fetch"));
+    await expect(client(fetchImpl).shared()).rejects.toBeInstanceOf(ApiError);
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    const [url, init] = fetchImpl.mock.calls[0] ?? [];
+    expect(url).toBe("/api/v1/shares");
+    expect(init?.method).toBe("POST");
+  });
+
   it("retries an idempotent call once after a network error", async () => {
     const fetchImpl = vi
       .fn<typeof fetch>()

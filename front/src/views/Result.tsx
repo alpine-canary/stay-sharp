@@ -133,6 +133,7 @@ export function Result({ client, playId, progress }: ResultProps) {
               elapsedMs={play.elapsedMs ?? 0}
               streak={streak(Object.keys(progress.days[play.level]), play.date).current}
               address={window.location.host}
+              onShared={() => void client.shared().catch(() => undefined)}
             />
           </div>
         )}

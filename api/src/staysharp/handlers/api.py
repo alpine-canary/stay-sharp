@@ -30,6 +30,7 @@ from staysharp.handlers import (
     routes_me,
     routes_plays,
     routes_practice,
+    routes_shares,
     routes_today,
 )
 from staysharp.handlers.http import ApiError, caller_sub, error_response
@@ -48,6 +49,7 @@ app.include_router(routes_today.router)
 app.include_router(routes_plays.router)
 app.include_router(routes_challenges.router)
 app.include_router(routes_practice.router)
+app.include_router(routes_shares.router)
 app.include_router(routes_me.router)
 
 

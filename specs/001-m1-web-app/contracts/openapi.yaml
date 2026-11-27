@@ -255,6 +255,15 @@ paths:
           description: A different answer was already recorded for this attempt; the stored result is returned.
           content: { application/json: { schema: { type: object, additionalProperties: false, required: [code, recorded], properties: { code: { const: conflict }, recorded: { $ref: '#/components/schemas/AnswerResult' } } } } }
         '503': { description: Temporary storage failure after retries. Safe to retry. }
+  /shares:
+    post:
+      summary: |
+        The player copied or shared their result card (campaign 2026-11). Counted as an
+        aggregate, and per network with X-Source; nothing is stored. No body.
+      parameters: [ { $ref: '#/components/parameters/PlayerId' }, { $ref: '#/components/parameters/Source' } ]
+      responses:
+        '204': { description: Counted. }
+        '400': { description: Missing or invalid player id., content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } } }
   /challenges:
     post:
       summary: Create (or return the existing) challenge for a finished play.

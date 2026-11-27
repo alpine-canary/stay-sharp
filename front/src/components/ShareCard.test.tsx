@@ -132,4 +132,37 @@ describe("ShareCard", () => {
     render(<ShareCard {...BASE} />);
     expect(screen.queryByRole("button", { name: "Share" })).toBeNull();
   });
+
+  it("reports a copy and a completed share, not a closed sheet or a manual copy", async () => {
+    const onShared = vi.fn();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    const share = vi
+      .fn()
+      .mockResolvedValueOnce(undefined)
+      .mockRejectedValueOnce(new DOMException("closed", "AbortError"));
+    vi.stubGlobal("navigator", { ...navigator, share, clipboard: { writeText } });
+    render(<ShareCard {...BASE} onShared={onShared} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Copy result" }));
+    });
+    expect(onShared).toHaveBeenCalledTimes(1);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Share" }));
+    });
+    expect(onShared).toHaveBeenCalledTimes(2);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Share" }));
+    });
+    expect(onShared).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not report a copy the browser could not make", async () => {
+    const onShared = vi.fn();
+    vi.stubGlobal("navigator", { ...navigator, clipboard: undefined });
+    render(<ShareCard {...BASE} onShared={onShared} />);
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Copy result" }));
+    });
+    expect(onShared).not.toHaveBeenCalled();
+  });
 });

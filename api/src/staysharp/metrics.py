@@ -34,6 +34,8 @@ ALLOWED: dict[str, tuple[MetricUnit, str | None]] = {
     "InactiveAccountsWarned": (COUNT, None),
     "InactiveAccountsDeleted": (COUNT, None),
     "SelfCheckFailures": (COUNT, None),
+    # Result card copied or shared (campaign 2026-11): no player id, no content.
+    "ResultsShared": (COUNT, None),
     # Dev only: emitted by api/testing/fault_injection.py while injection is on (W11).
     "FaultInjectionActive": (COUNT, None),
 }
@@ -47,6 +49,7 @@ BY_SOURCE = (
     "ChallengesCreated",
     "ChallengesOpened",
     "ChallengesFinished",
+    "ResultsShared",
 )
 for _name in BY_SOURCE:
     ALLOWED[f"{_name}BySource"] = (COUNT, "Source")

@@ -535,6 +535,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/shares": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * The player copied or shared their result card (campaign 2026-11). Counted as an
+         *     aggregate, and per network with X-Source; nothing is stored. No body.
+         */
+        post: {
+            parameters: {
+                query?: never;
+                header: {
+                    "X-Player-Id": components["parameters"]["PlayerId"];
+                    /**
+                     * @description Campaign network of the visit, from utm_source (2026-11). Counted per network as an
+                     *     aggregate metric, never stored with the player. Any other value is ignored, never refused.
+                     */
+                    "X-Source"?: components["parameters"]["Source"];
+                };
+                path?: never;
+                cookie?: never;
+            };
+            requestBody?: never;
+            responses: {
+                /** @description Counted. */
+                204: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content?: never;
+                };
+                /** @description Missing or invalid player id. */
+                400: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["Error"];
+                    };
+                };
+            };
+        };
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/challenges": {
         parameters: {
             query?: never;
