@@ -61,6 +61,24 @@ def test_today_uses_the_zurich_day(checked: Checked) -> None:
     }
 
 
+def test_before_launch_game_one_is_coming_and_nothing_is_ready(
+    checked: Checked, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("LAUNCH_DATE", "2026-11-22")
+    result = checked("GET", "/api/v1/today", player=None)
+    assert result["statusCode"] == 200
+    assert json.loads(result["body"]) == {
+        "date": "2026-11-21",
+        "gameNumber": 1,
+        "weekStart": "2026-11-16",
+        "levels": [
+            {"level": "senior", "ready": False},
+            {"level": "junior", "ready": False},
+            {"level": "starter", "ready": False},
+        ],
+    }
+
+
 def test_the_harness_rejects_an_unknown_field(openapi: OpenAPI) -> None:
     body: dict[str, Any] = {
         "date": "2026-11-21",
