@@ -122,13 +122,15 @@ jobs:
         env:
           LHCI_URL: ${{ steps.dev.outputs.url }}
         # Every page, mobile then desktop (FR-034). The deployed site replaces the local preview.
+        # lighthouserc.remote.json: dev is noindex by design (is-crawlable skipped) and the score
+        # for performance is reported, not enforced, from GitHub's far-away runners (2026-11-27).
         run: |
           urls=()
           for path in / /play /practice /privacy; do urls+=("--collect.url=$LHCI_URL$path"); done
           for preset in mobile desktop; do
             extra=()
             if [ "$preset" = desktop ]; then extra+=("--collect.settings.preset=desktop"); fi
-            pnpm --dir front exec lhci autorun "${urls[@]}" "${extra[@]}" --collect.startServerCommand= \
+            pnpm --dir front exec lhci autorun --config=lighthouserc.remote.json "${urls[@]}" "${extra[@]}" --collect.startServerCommand= \
               --upload.target=filesystem --upload.outputDir="/tmp/lhci-$preset"
           done
 
