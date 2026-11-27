@@ -14,6 +14,21 @@ const SLOW_4G = {
   uploadThroughput: (750 * 1024) / 8,
 };
 const CPU_SLOWDOWN = 4;
+
+// The emulated latency adds to the real one, so a runner far from the stage (GitHub's are in the
+// US, the stage in Zurich) would measure a phone much slower than Slow 4G. Measure the runner's
+// own round trip to the API (best of five, after a warm-up) and emulate only what is missing.
+async function realRttMs(baseUrl: string): Promise<number> {
+  const url = new URL("/api/health", baseUrl).toString();
+  await fetch(url);
+  let best = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < 5; i += 1) {
+    const t = performance.now();
+    await fetch(url);
+    best = Math.min(best, performance.now() - t);
+  }
+  return best;
+}
 const BUDGET_MS = 2000;
 
 test.skip(!process.env.BASE_URL, "measured on a deployed stage only (BASE_URL)");
@@ -41,7 +56,10 @@ test("first question interactive under 2 s on a throttled phone", async ({ brows
   const page = await context.newPage();
   const cdp = await context.newCDPSession(page);
   await cdp.send("Network.enable");
-  await cdp.send("Network.emulateNetworkConditions", SLOW_4G);
+  const rtt = await realRttMs(process.env.BASE_URL ?? "");
+  const latency = Math.max(0, SLOW_4G.latency - Math.round(rtt));
+  console.log(`runner round trip ${Math.round(rtt)} ms, emulated latency ${latency} ms`);
+  await cdp.send("Network.emulateNetworkConditions", { ...SLOW_4G, latency });
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: CPU_SLOWDOWN });
 
   const started = Date.now();
