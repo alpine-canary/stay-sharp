@@ -11,6 +11,8 @@ from aws_cdk import cx_api
 from tests.conftest import TemplateOf, actions_of, all_policy_statements, resources
 
 OWNER = "alpine-canary"
+PUBLIC = f"repo:{OWNER}@264568478/stay-sharp@1474025525"
+CONTENT = f"repo:{OWNER}@264568478/stay-sharp-content@1474025605"
 
 
 def test_one_budget_with_actual_and_forecast_alerts(template: TemplateOf) -> None:
@@ -64,10 +66,10 @@ def role_subs(template: TemplateOf) -> dict[str, Any]:
 
 def test_four_roles_each_trusted_by_one_exact_sub(template: TemplateOf) -> None:
     assert role_subs(template) == {
-        "staysharp-github-diff": f"repo:{OWNER}/stay-sharp:pull_request",
-        "staysharp-github-devdeploy": f"repo:{OWNER}/stay-sharp:ref:refs/heads/main",
-        "staysharp-github-proddeploy": f"repo:{OWNER}/stay-sharp:environment:production",
-        "staysharp-github-contentpublish": f"repo:{OWNER}/stay-sharp-content:ref:refs/heads/main",
+        "staysharp-github-diff": f"{PUBLIC}:pull_request",
+        "staysharp-github-devdeploy": f"{PUBLIC}:ref:refs/heads/main",
+        "staysharp-github-proddeploy": f"{PUBLIC}:environment:production",
+        "staysharp-github-contentpublish": f"{CONTENT}:ref:refs/heads/main",
     }
 
 

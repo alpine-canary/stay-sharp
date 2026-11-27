@@ -8,8 +8,8 @@
 #          the site and switch the origin path (W6).
 #
 # OIDC roles from the staysharp-account stack, one per purpose, trusted by one exact `sub`:
-#   vars.AWS_DEVDEPLOY_ROLE_ARN   (repo:<owner>/stay-sharp:ref:refs/heads/main)
-#   vars.AWS_PRODDEPLOY_ROLE_ARN  (repo:<owner>/stay-sharp:environment:production)
+#   vars.AWS_DEVDEPLOY_ROLE_ARN   (repo:<owner>@<owner id>/stay-sharp@<repo id>:ref:refs/heads/main)
+#   vars.AWS_PRODDEPLOY_ROLE_ARN  (repo:<owner>@<owner id>/stay-sharp@<repo id>:environment:production)
 # The ARNs live in GitHub variables, never in this file. Every third-party action is pinned to a
 # commit SHA; the default token is read-only; no artefacts are uploaded; diffs stay in the log.
 

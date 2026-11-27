@@ -65,6 +65,7 @@ def build_app(context: dict[str, Any] | None = None) -> cdk.App:
         "staysharp-account",
         env=main_env,
         github_owner=_context(app, "githubOwner"),
+        github_ids=_context(app, "githubIds"),
         description="Stay Sharp: GitHub OIDC roles, leak-guard bucket (once per account)",
     )
     mail = MailStack(

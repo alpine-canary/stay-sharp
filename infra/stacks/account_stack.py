@@ -34,6 +34,7 @@ class AccountStack(Stack):
         construct_id: str,
         *,
         github_owner: str,
+        github_ids: dict[str, int],
         repository: str = "stay-sharp",
         content_repository: str = "stay-sharp-content",
         **kwargs: Any,
@@ -79,7 +80,12 @@ class AccountStack(Stack):
                 max_session_duration=Duration.hours(1),
             )
 
-        repo = f"repo:{github_owner}/{repository}"
+        # GitHub signs new repositories with an immutable subject: owner and repository carry
+        # their numeric ids, so a deleted and re-created repository of the same name is refused.
+        def subject(name: str) -> str:
+            return f"repo:{github_owner}@{github_ids['owner']}/{name}@{github_ids[name]}"
+
+        repo = subject(repository)
 
         def cdk_role(kind: str) -> str:
             return (
@@ -162,7 +168,7 @@ class AccountStack(Stack):
         # command), content keys only. Transactions are authorised item by item.
         self.content_role = github_role(
             "ContentPublish",
-            f"repo:{github_owner}/{content_repository}:ref:refs/heads/main",
+            f"{subject(content_repository)}:ref:refs/heads/main",
             "publish questions and daily sets",
         )
         prod_table = (
