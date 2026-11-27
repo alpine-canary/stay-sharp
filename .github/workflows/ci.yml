@@ -39,7 +39,7 @@ jobs:
         with:
           python-version: "3.13"
       - name: api - install
-        run: uv sync --directory api --locked
+        run: uv sync --directory api --locked --all-extras
       - name: api - lint
         run: |
           uv run --directory api ruff check .
