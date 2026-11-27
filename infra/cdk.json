@@ -16,11 +16,11 @@
     "githubOwner": "alpine-canary",
     "launchDate": {
       "dev": "2026-11-01",
-      "prod": null
+      "prod": "2026-11-27"
     },
     "siteCommit": "initial",
     "devSiteHost": "d3fzlsqovr82ud.cloudfront.net",
-    "devPublicName": true,
+    "devPublicName": false,
     "@aws-cdk/core:defaultCrossStackReferences": "strong"
   }
 }
