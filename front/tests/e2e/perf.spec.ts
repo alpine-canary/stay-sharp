@@ -30,6 +30,9 @@ async function realRttMs(baseUrl: string): Promise<number> {
   return best;
 }
 const BUDGET_MS = 2000;
+// GitHub's runners sit far from the stage: there the measure is reported, not enforced (maintainer
+// decision 2026-11-27). The budget stays binding on any other run (from Europe, PERF_STRICT=1).
+const STRICT = !process.env.GITHUB_ACTIONS || process.env.PERF_STRICT === "1";
 
 test.skip(!process.env.BASE_URL, "measured on a deployed stage only (BASE_URL)");
 
@@ -68,6 +71,10 @@ test("first question interactive under 2 s on a throttled phone", async ({ brows
   const elapsed = Date.now() - started;
   test.info().annotations.push({ type: "first question interactive (ms)", description: String(elapsed) });
   console.log(`first question interactive: ${elapsed} ms`);
-  expect(elapsed).toBeLessThan(BUDGET_MS);
+  if (STRICT) {
+    expect(elapsed).toBeLessThan(BUDGET_MS);
+  } else if (elapsed >= BUDGET_MS) {
+    console.log(`::warning::first question interactive in ${elapsed} ms from the CI runner (budget ${BUDGET_MS} ms, enforced from Europe only)`);
+  }
   await context.close();
 });
