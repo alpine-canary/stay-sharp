@@ -14,10 +14,15 @@ const template = readFileSync(join(dist, "index.html"), "utf8");
 const empty = '<div id="root"></div>';
 if (!template.includes(empty)) throw new Error("dist/index.html has no empty #root");
 
+// og:url names the home page; another page (a challenge link above all) must not claim it.
+const ogUrl = /\s*<meta property="og:url" content="[^"]*" \/>/;
+if (!ogUrl.test(template)) throw new Error("dist/index.html has no og:url");
+
 for (const [url, file] of Object.entries(PAGES)) {
   const html = render(url);
   if (!html.includes("Stay Sharp")) throw new Error(`prerender of ${url} looks empty`);
-  writeFileSync(join(dist, file), template.replace(empty, `<div id="root">${html}</div>`));
+  const page = file === "index.html" ? template : template.replace(ogUrl, "");
+  writeFileSync(join(dist, file), page.replace(empty, `<div id="root">${html}</div>`));
   console.log(`prerendered ${url} -> ${file} (${html.length} chars)`);
 }
 rmSync(ssr, { recursive: true, force: true });
